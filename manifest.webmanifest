@@ -1,10 +1,11 @@
 {
   "name": "PE Teacher OS",
   "short_name": "PE Teacher",
+  "description": "Programmazione, archivio sport e test motori per Educazione Fisica",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#07111f",
-  "theme_color": "#07111f",
+  "background_color": "#07131f",
+  "theme_color": "#07131f",
   "icons": [
     {
       "src": "assets/icon.svg",

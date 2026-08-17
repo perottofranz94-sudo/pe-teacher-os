@@ -1,27 +1,18 @@
-# PE Teacher OS
+# PE Teacher OS v2
 
-Pacchetto pronto per GitHub Pages.
+Versione ridisegnata con:
+- archivio sport visuale
+- 1.390 attività verificate
+- classi + alunni protetti da Supabase/RLS
+- livelli classe-sport
+- programmazione automatica
+- calendario e chiusure
+- test motori
+- classifiche per sesso
+- Hall of Fame
+- migrazione anno scolastico
+- PWA per iPhone
 
-## Caricamento
-1. Crea una nuova repository GitHub (consigliato: `pe-teacher-os`).
-2. Carica tutti i file di questo pacchetto mantenendo la cartella `assets`.
-3. GitHub → Settings → Pages.
-4. Build and deployment → Deploy from a branch.
-5. Branch `main`, cartella `/ (root)`.
-6. Salva.
-
-## Funzioni già collegate
-- login Supabase
-- dashboard
-- classi
-- calendario
-- chiusure scolastiche / gite
-- generazione moduli progressivi
-- archivio esercizi verificati
-- scheda esercizio completa
-- apertura lezione da 120'
-- cambio esercizio limitato allo stesso sport
-- sostituzione senza rigenerare l'intera lezione
-- PWA installabile su iPhone
-
-`config.js` contiene soltanto la publishable key di Supabase, adatta al frontend. Le RLS restano il vero controllo di accesso.
+## Aggiornamento GitHub
+Carica il contenuto dello ZIP nella root della repository e conferma la sostituzione dei file.
+GitHub Pages si aggiornerà automaticamente.
