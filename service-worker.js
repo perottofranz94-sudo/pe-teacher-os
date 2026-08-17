@@ -1,4 +1,4 @@
-const C='attivamente-v3-3-mobile-nav-20260817';
+const C='attivamente-v3-4-school-level-primary-integrated-20260817';
 const A=['./','./index.html','./styles.css','./app.js','./config.js','./manifest.webmanifest','./primary_games.json','./assets/attivamente-brand.png','./assets/icon-180.png','./assets/icon-192.png','./assets/icon-512.png'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(A)))});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))),self.clients.claim()]))});

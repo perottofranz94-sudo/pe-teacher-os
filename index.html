@@ -122,6 +122,7 @@
 
 
 <section id="view-primarygames" class="view">
+  <button id="backPrimaryToSports" class="back-btn">← Torna a tutti gli sport</button>
   <div class="primary-hero">
     <div><span class="kicker">GIOCHI SCUOLA PRIMARIA</span><h3>Il tuo libro dei giochi, sempre con te.</h3><p>I 75 giochi originali del tuo libro, con immagine, difficoltà, materiali, descrizione, regole e varianti. I nuovi giochi che aggiungi vengono sincronizzati tra i tuoi dispositivi.</p></div>
     <div class="primary-hero-actions"><div class="primary-count"><b id="primaryGameCount">75</b><span>giochi</span></div><button id="newPrimaryGameBtn" class="btn white">+ Crea nuovo gioco</button></div>
@@ -159,7 +160,6 @@
   <button data-view="dashboard" class="active">⌂<span>Home</span></button>
   <button data-view="planner">✦<span>Pianifica</span></button>
   <button data-view="sports">◈<span>Sport</span></button>
-  <button data-view="primarygames">✹<span>Primaria</span></button>
   <button data-view="tests">⌁<span>Test</span></button>
 </nav>
 </div>
@@ -172,11 +172,16 @@
 <dialog id="exerciseModal" class="modal wide"><div class="modal-head"><div><span class="kicker">SCHEDA ESERCIZIO</span><h3 id="exerciseModalTitle"></h3></div><button data-close="exerciseModal">×</button></div><div id="exerciseModalBody"></div></dialog>
 <dialog id="lessonModal" class="modal wide"><div class="modal-head"><div><span class="kicker">LEZIONE</span><h3 id="lessonModalTitle"></h3></div><button data-close="lessonModal">×</button></div><div id="lessonBody"></div></dialog>
 
+<dialog id="replaceModeModal" class="modal"><div class="modal-head"><div><span class="kicker">CAMBIA ATTIVITÀ</span><h3>Come vuoi sostituirla?</h3></div><button data-close="replaceModeModal">×</button></div><div class="replace-mode-grid"><button id="replaceSameSport" class="replace-mode-card"><b>Mantieni la stessa disciplina</b><span>Ti mostro soltanto le attività dello stesso sport.</span></button><button id="replaceFree" class="replace-mode-card"><b>Cambia liberamente</b><span>Scegli tra tutti gli sport e Giochi Scuola Primaria.</span></button></div></dialog>
+
+<dialog id="replacePickerModal" class="modal wide"><div class="modal-head"><div><span class="kicker">SCEGLI NUOVA ATTIVITÀ</span><h3 id="replacePickerTitle">Archivio</h3></div><button data-close="replacePickerModal">×</button></div><div id="replacePickerBody"></div></dialog>
+
 <dialog id="classModal" class="modal wide">
 <div class="modal-head"><div><span class="kicker">CLASSE</span><h3 id="classModalTitle">Nuova classe</h3></div><button data-close="classModal">×</button></div>
 <form id="classForm">
 <input id="classId" type="hidden">
-<div class="form-row"><label>Nome classe<input id="className" required placeholder="Es. Prima media"></label><label>Grado<select id="classGrade"><option value="1">Prima media</option><option value="2">Seconda media</option><option value="3">Terza media</option></select></label></div>
+<div class="form-row"><label>Nome classe<input id="className" required placeholder="Es. Prima A"></label><label>Grado scolastico<select id="classSchoolLevel" required><option value="">Seleziona…</option><option value="primary">Scuola primaria</option><option value="lower_secondary">Secondaria di primo grado</option><option value="upper_secondary">Secondaria di secondo grado</option></select></label></div>
+<div class="form-row"><label>Classe / anno<select id="classGrade" required></select></label><div class="school-level-help" id="schoolLevelHelp">Seleziona prima il grado scolastico.</div></div>
 <div class="form-row"><label>Femmine<input id="femaleCount" type="number" min="0" required></label><label>Maschi<input id="maleCount" type="number" min="0" required></label></div>
 <div class="modal-section"><div class="section-title-row compact"><div><span class="kicker">ALUNNI</span><h4>Nomi e cognomi</h4></div><button id="addStudentRow" type="button" class="btn secondary small-btn">+ Aggiungi alunno</button></div><div id="studentRows"></div></div>
 <div class="modal-section"><span class="kicker">LIVELLI SPORTIVI</span><div id="sportLevelGrid" class="level-grid"></div></div>

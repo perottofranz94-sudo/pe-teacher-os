@@ -1,3 +1,7 @@
+# AttivaMente v3.4
+
+Upgrade: grado scolastico nelle classi, Giochi Scuola Primaria integrati nell’Archivio Sport e sostituzione attività con scelta “stessa disciplina” / “cambia liberamente”.
+
 # PE Teacher OS v2
 
 Versione ridisegnata con:
