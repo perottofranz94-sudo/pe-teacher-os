@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f"><meta name="apple-mobile-web-app-capable" content="yes">
+<title>PE Teacher OS</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="assets/icon.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="login" class="center"><form id="loginForm" class="card auth">
+<div class="logo">PE</div><h1>PE Teacher OS</h1><p>Programmazione intelligente per Educazione Fisica.</p>
+<input id="email" type="email" placeholder="Email" required><input id="password" type="password" placeholder="Password" required>
+<button>Accedi</button><small id="msg"></small></form></div>
+
+<div id="app" class="app hidden">
+<aside>
+<div class="brand"><div class="logo">PE</div><div><b>PE Teacher OS</b><small>Middle School Edition</small></div></div>
+<nav>
+<button data-view="dashboard" class="active">⌂ Dashboard</button>
+<button data-view="calendar">◫ Calendario</button>
+<button data-view="classes">◎ Classi</button>
+<button data-view="planner">✦ Programmazione</button>
+<button data-view="archive">◈ Archivio esercizi</button>
+<button data-view="settings">⚙ Impostazioni</button>
+</nav><button id="logout" class="ghost">Esci</button>
+</aside>
+
+<main>
+<header><div><small id="eyebrow">PANORAMICA</small><h2 id="title">Dashboard</h2></div><button id="newModule">+ Nuovo modulo</button></header>
+
+<section id="dashboard" class="view active">
+<div class="hero"><div><span class="pill">PE Teacher OS · v1</span><h3>L’app definitiva per le tue lezioni.</h3>
+<p>Genera moduli progressivi da 120’, rispetta livelli, calendario, chiusure e numero di alunni. Poi modifica tutto con un tocco.</p>
+<button data-jump="planner">Genera un modulo</button></div><div class="bigNumber">800<small>schede verificate</small></div></div>
+<div class="metrics"><article><small>Classi</small><b id="mClasses">—</b></article><article><small>Sport</small><b id="mSports">—</b></article><article><small>Lezioni</small><b id="mLessons">—</b></article><article><small>Moduli</small><b id="mModules">—</b></article></div>
+<div class="two"><div class="card"><small>PROSSIME LEZIONI</small><h3>In arrivo</h3><div id="upcoming"></div></div><div class="card"><small>MODULI</small><h3>Progressioni recenti</h3><div id="recentModules"></div></div></div>
+</section>
+
+<section id="calendar" class="view"><div class="toolbar"><button id="prev">‹</button><b id="calTitle"></b><button id="next">›</button><button id="addException">+ Chiusura / gita</button></div><div id="calGrid" class="calendar"></div></section>
+
+<section id="classes" class="view"><div class="card"><small>CLASSI</small><h3>Le tue classi</h3><div id="classGrid" class="grid3"></div></div></section>
+
+<section id="planner" class="view"><div class="two">
+<div class="card"><small>GENERA MODULO</small><h3>Crea una progressione</h3>
+<form id="moduleForm">
+<label>Classe<select id="pClass"></select></label><label>Sport<select id="pSport"></select></label>
+<div class="row"><label>Settimane<input id="pWeeks" type="number" min="1" max="12" value="3"></label><label>Durata<input id="pDuration" type="number" min="45" max="180" value="120"></label></div>
+<div class="row"><label>Da<input id="pStart" type="date"></label><label>Livello<select id="pLevel"><option value="">Usa livello classe-sport</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label></div>
+<button>✦ Genera programmazione</button><small id="plannerMsg"></small></form></div>
+<div class="card"><small>MODULI PROGRAMMATI</small><h3>Progressioni</h3><div id="moduleList"></div></div></div></section>
+
+<section id="archive" class="view"><div class="toolbar filters"><input id="search" placeholder="Cerca esercizio…"><select id="sportFilter"></select><select id="diffFilter"><option value="">Tutte le difficoltà</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div><div id="exerciseGrid" class="grid4"></div></section>
+
+<section id="settings" class="view"><div class="two"><div class="card"><small>ANNO SCOLASTICO</small><h3>Chiusure scuola</h3><button id="schoolClose">+ Aggiungi chiusura</button><div id="closures"></div></div><div class="card"><small>ORARIO</small><h3>Orario settimanale</h3><div id="timetable"></div></div></div></section>
+</main>
+
+<nav class="bottom"><button data-view="dashboard">⌂<small>Home</small></button><button data-view="calendar">◫<small>Calendario</small></button><button data-view="planner">✦<small>Pianifica</small></button><button data-view="archive">◈<small>Archivio</small></button></nav>
+</div>
+
+<dialog id="lessonModal"><div class="modalHead"><div><small>LEZIONE</small><h3 id="lessonTitle"></h3></div><button data-close="lessonModal">×</button></div><div id="lessonMeta"></div><div id="timeline"></div></dialog>
+<dialog id="exerciseModal"><div class="modalHead"><div><small>ESERCIZIO</small><h3 id="exerciseTitle"></h3></div><button data-close="exerciseModal">×</button></div><div id="exerciseDetail"></div></dialog>
+<dialog id="replaceModal" class="wide"><div class="modalHead"><div><small>CAMBIA ESERCIZIO</small><h3>Solo esercizi dello stesso sport</h3></div><button data-close="replaceModal">×</button></div><div class="row"><input id="replaceSearch" placeholder="Cerca…"><select id="replaceDiff"><option value="">Tutte le difficoltà</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div><div id="replaceGrid" class="grid3 scroll"></div></dialog>
+<dialog id="exceptionModal"><div class="modalHead"><div><small>CALENDARIO</small><h3>Nuova eccezione</h3></div><button data-close="exceptionModal">×</button></div><form id="exceptionForm"><label>Ambito<select id="eScope"><option value="school">Tutta la scuola</option><option value="class">Solo una classe</option></select></label><label id="eClassWrap" class="hidden">Classe<select id="eClass"></select></label><label>Tipo<select id="eType"><option value="holiday">Vacanza / chiusura</option><option value="school_event">Gita / uscita / evento</option><option value="no_lesson">Lezione annullata</option><option value="other">Altro</option></select></label><div class="row"><label>Dal<input id="eStart" type="date"></label><label>Al<input id="eEnd" type="date"></label></div><label>Motivo<input id="eReason" placeholder="Es. vacanze di Natale"></label><button>Salva</button></form></dialog>
+<div id="toast"></div>
+<script type="module" src="app.js"></script>
+</body></html>
