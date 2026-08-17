@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#07131f">
+<meta name="theme-color" content="#103c67">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>PE Teacher OS</title>
+<title>AttivaMente</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="assets/icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
+<meta name="apple-mobile-web-app-title" content="AttivaMente">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,13 +18,14 @@
 
 <section id="authView" class="auth-view">
   <div class="auth-panel glass">
-    <div class="brand-mark">PE</div>
-    <span class="kicker">PHYSICAL EDUCATION OPERATING SYSTEM</span>
-    <h1>PE Teacher OS</h1>
-    <p>Programmazione, archivio, test motori e crescita degli alunni in un’unica app.</p>
+    <img class="auth-brand-image" src="assets/attivamente-brand.png" alt="AttivaMente · Giochi motori & mente attiva">
+    <span class="kicker">GIOCHI MOTORI &amp; MENTE ATTIVA</span>
+    <h1><span>Attiva</span><em>Mente</em></h1>
+    <p>La tua piattaforma personale per programmazione, archivio sportivo, test motori e gestione delle lezioni.</p>
+    <div class="secure-note">🔒 Accesso riservato · i dati restano sincronizzati tramite Supabase tra i tuoi dispositivi.</div>
     <form id="loginForm">
-      <label>Email<input id="email" type="email" required placeholder="nome@scuola.it"></label>
-      <label>Password<input id="password" type="password" required placeholder="••••••••"></label>
+      <label>Email<input id="email" type="email" required placeholder="La tua email" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+      <label>Password<input id="password" type="password" required placeholder="••••••••" autocomplete="current-password"></label>
       <button class="btn primary" type="submit">Entra nell’app</button>
     </form>
     <small id="loginMsg"></small>
@@ -31,7 +34,7 @@
 
 <div id="appView" class="shell hidden">
 <aside class="sidebar glass">
-  <div class="brand-row"><div class="brand-mark small">PE</div><div><strong>PE Teacher OS</strong><span>Middle School</span></div></div>
+  <div class="brand-row"><img class="sidebar-logo" src="assets/icon-192.png" alt=""><div><strong><span class="brand-white">Attiva</span><span class="brand-orange">Mente</span></strong><span>Giochi motori &amp; mente attiva</span></div></div>
   <nav>
     <button data-view="dashboard" class="nav-btn active"><span>⌂</span>Dashboard</button>
     <button data-view="calendar" class="nav-btn"><span>◫</span>Calendario</button>
@@ -47,13 +50,13 @@
 <main class="content">
 <header class="topbar">
   <div><span id="pageKicker" class="kicker">PANORAMICA</span><h2 id="pageTitle">Dashboard</h2></div>
-  <button id="quickPlan" class="btn primary">+ Nuovo modulo</button>
+  <div class="topbar-actions"><span id="syncStatus" class="sync-status" title="Sincronizzazione Supabase"><i></i><span>Sincronizzato</span></span><button id="quickPlan" class="btn primary">+ Nuovo modulo</button></div>
 </header>
 
 <section id="view-dashboard" class="view active">
   <div class="hero-card">
     <div class="hero-copy">
-      <span class="hero-chip">PE TEACHER OS · V2</span>
+      <span class="hero-chip">ATTIVAMENTE · V2</span>
       <h3>La regia completa delle tue lezioni.</h3>
       <p>1.390 attività verificate, programmazione progressiva, calendario reale, test motori e Hall of Fame.</p>
       <div class="hero-actions"><button class="btn white" data-jump="planner">Genera una programmazione</button><button class="btn glass-btn" data-jump="sports">Esplora gli sport</button></div>

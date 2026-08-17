@@ -1,7 +1,7 @@
 
 import{createClient}from'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import{SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY}from'./config.js';
-const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const st={user:null,year:null,classes:[],sports:[],sportCounts:{},lessons:[],modules:[],tests:[],exceptions:[],hof:[],month:new Date(),currentSport:null,currentExercises:[],categories:[]};
 const $=q=>document.querySelector(q),$$=q=>[...document.querySelectorAll(q)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -101,7 +101,15 @@ function openException(scope='school'){$('#exceptionScope').value=scope;$('#exce
 $('#exceptionForm').onsubmit=async e=>{e.preventDefault();const school=$('#exceptionScope').value==='school';let{error}=await db.from('pe_calendar_exceptions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:school?null:$('#exceptionClass').value,exception_date:$('#exceptionStart').value,end_date:$('#exceptionEnd').value,scope:school?'school':'class',exception_type:$('#exceptionType').value,reason:$('#exceptionReason').value||null,all_day:true});if(error)return toast(error.message);$('#exceptionModal').close();toast('Calendario aggiornato');await loadCore();renderCalendar()}
 function renderSettings(){$('#closureList').innerHTML=st.exceptions.filter(x=>x.scope==='school').map(x=>listItem(x.reason||'Chiusura',`${fmt(x.exception_date)}${x.end_date!==x.exception_date?' → '+fmt(x.end_date):''}`,`<span class="chip">${x.exception_type}</span>`)).join('')||listItem('Nessuna chiusura','Inserisci ponti e vacanze')}
 $('#migrateYearBtn').onclick=()=>$('#migrateModal').showModal();$('#migrateForm').onsubmit=async e=>{e.preventDefault();let{error}=await db.rpc('pe_migrate_school_year',{p_new_label:$('#newYearLabel').value,p_start_date:$('#newYearStart').value,p_end_date:$('#newYearEnd').value,p_archive_old:true});if(error)return toast(error.message);$('#migrateModal').close();toast('Nuovo anno scolastico creato');await loadCore()}
-$('#loginForm').onsubmit=async e=>{e.preventDefault();$('#loginMsg').textContent='Accesso…';let{error}=await db.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});$('#loginMsg').textContent=error?error.message:''};$('#logoutBtn').onclick=()=>db.auth.signOut();
-async function enter(user){st.user=user;$('#userMail').textContent=user.email||'';$('#authView').classList.add('hidden');$('#appView').classList.remove('hidden');await loadCore();renderSports();renderCalendar()}
-let{data:{session}}=await db.auth.getSession();if(session)enter(session.user);db.auth.onAuthStateChange((_,se)=>{if(se&&!st.user)enter(se.user);if(!se){st.user=null;$('#appView').classList.add('hidden');$('#authView').classList.remove('hidden')}})
+function setSyncState(kind='ok',label='Sincronizzato'){const el=$('#syncStatus');if(!el)return;el.classList.toggle('syncing',kind==='syncing');el.classList.toggle('error',kind==='error');const t=el.querySelector('span');if(t)t.textContent=label}
+let syncBusy=false,lastSyncAt=0;
+async function syncFromCloud({quiet=false}={}){if(!st.user||syncBusy)return;syncBusy=true;if(!quiet)setSyncState('syncing','Sincronizzo…');try{await loadCore();renderSports();renderCalendar();lastSyncAt=Date.now();setSyncState('ok','Sincronizzato')}catch(err){console.error(err);setSyncState('error','Sync non riuscita')}finally{syncBusy=false}}
+$('#loginForm').onsubmit=async e=>{e.preventDefault();const msg=$('#loginMsg');msg.textContent='Accesso sicuro…';const email=$('#email').value.trim();const password=$('#password').value;let{error}=await db.auth.signInWithPassword({email,password});if(error){msg.textContent='Email o password non corrette.';return}msg.textContent=''};
+$('#logoutBtn').onclick=()=>db.auth.signOut();
+async function enter(user){st.user=user;$('#userMail').textContent=user.email||'';$('#authView').classList.add('hidden');$('#appView').classList.remove('hidden');await syncFromCloud()}
+let{data:{session}}=await db.auth.getSession();if(session)await enter(session.user);
+db.auth.onAuthStateChange((event,se)=>{if(se&&!st.user)setTimeout(()=>enter(se.user),0);if(!se){st.user=null;$('#appView').classList.add('hidden');$('#authView').classList.remove('hidden')}});
+addEventListener('online',()=>syncFromCloud());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastSyncAt>5000)syncFromCloud({quiet:true})});
+setInterval(()=>{if(document.visibilityState==='visible')syncFromCloud({quiet:true})},45000);
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
