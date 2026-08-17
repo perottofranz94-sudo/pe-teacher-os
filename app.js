@@ -2,14 +2,14 @@
 import{createClient}from'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import{SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY}from'./config.js';
 const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const st={user:null,year:null,classes:[],sports:[],sportCounts:{},lessons:[],modules:[],tests:[],exceptions:[],hof:[],month:new Date(),currentSport:null,currentExercises:[],categories:[]};
+const st={user:null,year:null,classes:[],sports:[],sportCounts:{},lessons:[],modules:[],tests:[],exceptions:[],hof:[],month:new Date(),currentSport:null,currentExercises:[],categories:[],primaryDefaults:[],primaryCustom:[],primaryGames:[]};
 const $=q=>document.querySelector(q),$$=q=>[...document.querySelectorAll(q)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const fmt=d=>new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00'));
 const iconMap={'pallacanestro':'🏀','ultimate-frisbee':'🥏','pallamano':'🤾','pallavolo':'🏐','badminton':'🏸','tennis':'🎾','calcio-a-5':'⚽','atletica-leggera':'🏃','rugby':'🏉','orienteering':'🧭','giochi-tradizionali':'🪁','baseball':'⚾','judo':'🥋','giocoleria':'🎪','fitness':'🏋️'};
 const phaseLabel={activation:'ATTIVAZIONE',main:'PARTE CENTRALE',final:'APPLICAZIONE FINALE',closing:'CHIUSURA',warmup:'ATTIVAZIONE',technical:'TECNICA',tactical:'PARTE CENTRALE',game:'PARTITA / SSG',assessment:'VALUTAZIONE',cooldown:'CHIUSURA'};
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2300)}
-function go(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${v}`));$$('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));let m={dashboard:['PANORAMICA','Dashboard'],calendar:['ANNO SCOLASTICO','Calendario'],classes:['GESTIONE','Classi'],planner:['MOTORE DIDATTICO','Programmazione'],sports:['MEGA ARCHIVIO','Archivio sport'],tests:['VALUTAZIONE','Test motori'],settings:['CONFIGURAZIONE','Impostazioni']}[v];$('#pageKicker').textContent=m[0];$('#pageTitle').textContent=m[1];if(v==='sports')renderSports();if(v==='tests')renderTests();if(v==='calendar')renderCalendar();if(v==='settings')renderSettings()}
+function go(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${v}`));$$('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));let m={dashboard:['PANORAMICA','Dashboard'],calendar:['ANNO SCOLASTICO','Calendario'],classes:['GESTIONE','Classi'],planner:['MOTORE DIDATTICO','Programmazione'],sports:['MEGA ARCHIVIO','Archivio sport'],tests:['VALUTAZIONE','Test motori'],primarygames:['SCUOLA PRIMARIA','Giochi scuola primaria'],settings:['CONFIGURAZIONE','Impostazioni']}[v];$('#pageKicker').textContent=m[0];$('#pageTitle').textContent=m[1];if(v==='sports')renderSports();if(v==='primarygames')loadPrimaryGames();if(v==='tests')renderTests();if(v==='calendar')renderCalendar();if(v==='settings')renderSettings()}
 $$('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));$$('[data-jump]').forEach(b=>b.onclick=()=>go(b.dataset.jump));$('#quickPlan').onclick=()=>go('planner');$$('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).close());
 
 async function loadCore(){
@@ -101,9 +101,82 @@ function openException(scope='school'){$('#exceptionScope').value=scope;$('#exce
 $('#exceptionForm').onsubmit=async e=>{e.preventDefault();const school=$('#exceptionScope').value==='school';let{error}=await db.from('pe_calendar_exceptions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:school?null:$('#exceptionClass').value,exception_date:$('#exceptionStart').value,end_date:$('#exceptionEnd').value,scope:school?'school':'class',exception_type:$('#exceptionType').value,reason:$('#exceptionReason').value||null,all_day:true});if(error)return toast(error.message);$('#exceptionModal').close();toast('Calendario aggiornato');await loadCore();renderCalendar()}
 function renderSettings(){$('#closureList').innerHTML=st.exceptions.filter(x=>x.scope==='school').map(x=>listItem(x.reason||'Chiusura',`${fmt(x.exception_date)}${x.end_date!==x.exception_date?' → '+fmt(x.end_date):''}`,`<span class="chip">${x.exception_type}</span>`)).join('')||listItem('Nessuna chiusura','Inserisci ponti e vacanze')}
 $('#migrateYearBtn').onclick=()=>$('#migrateModal').showModal();$('#migrateForm').onsubmit=async e=>{e.preventDefault();let{error}=await db.rpc('pe_migrate_school_year',{p_new_label:$('#newYearLabel').value,p_start_date:$('#newYearStart').value,p_end_date:$('#newYearEnd').value,p_archive_old:true});if(error)return toast(error.message);$('#migrateModal').close();toast('Nuovo anno scolastico creato');await loadCore()}
+
+
+/* --- GIOCHI SCUOLA PRIMARIA --- */
+const PRIMARY_BUCKET='pe-primary-games';
+const primaryEscLines=v=>esc(v).replace(/\n/g,'<br>');
+function diffDots(n){return `<span class="difficulty-dots" title="Difficoltà ${n}/5">${[1,2,3,4,5].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</span>`}
+async function loadPrimaryDefaults(){
+  if(st.primaryDefaults.length)return st.primaryDefaults;
+  const r=await fetch('./primary_games.json');
+  if(!r.ok)throw new Error('Archivio giochi primari non disponibile');
+  st.primaryDefaults=(await r.json()).map(x=>({...x,id:`book-${x.source_page}`,is_custom:false,_imageUrl:'./'+x.image_path}));
+  return st.primaryDefaults;
+}
+async function loadPrimaryCustom(){
+  if(!st.user)return [];
+  const{data,error}=await db.from('pe_primary_games').select('*').order('created_at',{ascending:false});
+  if(error)throw error;
+  const rows=data||[];
+  await Promise.all(rows.map(async g=>{
+    if(g.image_kind==='storage'&&g.image_path){const{data:sig}=await db.storage.from(PRIMARY_BUCKET).createSignedUrl(g.image_path,86400);g._imageUrl=sig?.signedUrl||''}
+  }));
+  st.primaryCustom=rows;return rows;
+}
+async function loadPrimaryGames(){
+  try{await Promise.all([loadPrimaryDefaults(),loadPrimaryCustom()]);st.primaryGames=[...st.primaryCustom,...st.primaryDefaults];renderPrimaryGames()}catch(err){console.error(err);toast('Errore caricamento giochi primaria')}
+}
+function renderPrimaryGames(){
+  const q=($('#primaryGameSearch')?.value||'').trim().toLowerCase(),d=$('#primaryDifficulty')?.value||'';
+  const all=st.primaryGames||[];
+  const rows=all.filter(g=>(!d||String(g.difficulty)===d)&&(!q||[g.title,g.material_spaces,g.description,g.rules,g.variants].join(' ').toLowerCase().includes(q)));
+  $('#primaryGameCount').textContent=all.length;
+  $('#primaryGamesGrid').innerHTML=rows.map(g=>`<article class="primary-game-card" data-primary-game="${esc(g.id)}"><img class="primary-game-thumb" src="${esc(g._imageUrl||('./'+g.image_path))}" alt="${esc(g.title)}" loading="lazy"><div class="primary-game-card-body"><div class="primary-game-card-head"><h4>${esc(g.title)}</h4>${diffDots(g.difficulty)}</div><p>${esc(g.description)}</p><div class="primary-game-meta"><span class="primary-source">${g.is_custom?'Creato da te':`Libro · pagina ${g.source_page}`}</span>${g.is_custom?'<span class="primary-custom-badge">PERSONALE</span>':''}</div></div></article>`).join('')||'<article class="panel glass"><h3>Nessun gioco trovato</h3><p class="muted">Prova a cambiare ricerca o difficoltà.</p></article>';
+  $$('[data-primary-game]').forEach(x=>x.onclick=()=>openPrimaryGame(x.dataset.primaryGame));
+}
+function primaryById(id){return st.primaryGames.find(g=>String(g.id)===String(id))}
+function primaryBox(label,text){return `<div class="primary-detail-box"><b>${label}</b><p>${primaryEscLines(text||'—')}</p></div>`}
+function openPrimaryGame(id){
+  const g=primaryById(id);if(!g)return;
+  $('#primaryGameModalTitle').textContent=g.title;
+  $('#primaryGameModalBody').innerHTML=`<div class="primary-detail-layout"><div><img class="primary-detail-image" src="${esc(g._imageUrl||('./'+g.image_path))}" alt="${esc(g.title)}"><div class="primary-detail-actions"><span class="chip">Difficoltà ${g.difficulty}/5</span>${g.is_custom?`<button class="btn secondary small-btn" id="editPrimaryGame">Modifica</button><button class="btn ghost small-btn" id="deletePrimaryGame">Elimina</button>`:`<span class="chip">Pagina ${g.source_page} · LIBRO GIOCHI</span>`}</div></div><div class="primary-detail-sections">${primaryBox('MATERIALE E SPAZI',g.material_spaces)}${primaryBox('DESCRIZIONE',g.description)}${primaryBox('REGOLE',g.rules)}${primaryBox('VARIANTI',g.variants)}</div></div>`;
+  if(g.is_custom){$('#editPrimaryGame').onclick=()=>{$('#primaryGameModal').close();openPrimaryGameForm(g)};$('#deletePrimaryGame').onclick=()=>deletePrimaryGame(g)}
+  $('#primaryGameModal').showModal();
+}
+function openPrimaryGameForm(g=null){
+  $('#primaryGameForm').reset();$('#primaryGameId').value=g?.id||'';$('#primaryExistingImage').value=g?.image_path||'';$('#primaryGameFormTitle').textContent=g?'Modifica gioco':'Nuovo gioco';$('#primaryFormMsg').textContent='';
+  $('#primaryTitle').value=g?.title||'';$('#primaryDiff').value=g?.difficulty||1;$('#primaryMaterials').value=g?.material_spaces||'';$('#primaryDescription').value=g?.description||'';$('#primaryRules').value=g?.rules||'';$('#primaryVariants').value=g?.variants||'';
+  $('#primaryImagePreview').innerHTML=g?`<img src="${esc(g._imageUrl||'')}" alt="Anteprima">`:'';
+  $('#primaryGameFormModal').showModal();
+}
+$('#newPrimaryGameBtn').onclick=()=>openPrimaryGameForm();
+$('#primaryGameSearch').oninput=renderPrimaryGames;$('#primaryDifficulty').onchange=renderPrimaryGames;
+$('#primaryImage').onchange=e=>{const f=e.target.files?.[0];if(!f){$('#primaryImagePreview').innerHTML='';return}if(f.size>5*1024*1024){toast('Immagine troppo grande: massimo 5 MB');e.target.value='';return}const u=URL.createObjectURL(f);$('#primaryImagePreview').innerHTML=`<img src="${u}" alt="Anteprima nuova immagine">`};
+function primarySlug(v){return v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+$('#primaryGameForm').onsubmit=async e=>{
+  e.preventDefault();const msg=$('#primaryFormMsg');msg.textContent='Salvataggio e sincronizzazione…';
+  const id=$('#primaryGameId').value||null,file=$('#primaryImage').files?.[0];let imagePath=$('#primaryExistingImage').value||null;
+  try{
+    if(!id&&!file){msg.textContent='Carica un’immagine per il nuovo gioco.';return}
+    if(file){
+      const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');const path=`${st.user.id}/${Date.now()}-${primarySlug($('#primaryTitle').value)||'gioco'}.${ext}`;
+      const{error:upErr}=await db.storage.from(PRIMARY_BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});if(upErr)throw upErr;
+      imagePath=path;
+    }
+    const payload={owner_id:st.user.id,title:$('#primaryTitle').value.trim(),slug:(primarySlug($('#primaryTitle').value)||'gioco')+'-'+(id?String(id).slice(0,8):Date.now()),difficulty:+$('#primaryDiff').value,material_spaces:$('#primaryMaterials').value.trim(),description:$('#primaryDescription').value.trim(),rules:$('#primaryRules').value.trim(),variants:$('#primaryVariants').value.trim(),image_kind:'storage',image_path:imagePath,is_custom:true,source_book:null,source_page:null,updated_at:new Date().toISOString()};
+    let error;if(id){({error}=await db.from('pe_primary_games').update(payload).eq('id',id))}else{({error}=await db.from('pe_primary_games').insert(payload))}if(error)throw error;
+    $('#primaryGameFormModal').close();toast(id?'Gioco aggiornato':'Nuovo gioco creato');await loadPrimaryCustom();st.primaryGames=[...st.primaryCustom,...st.primaryDefaults];renderPrimaryGames();
+  }catch(err){console.error(err);msg.textContent='Errore: '+(err.message||'salvataggio non riuscito')}
+};
+async function deletePrimaryGame(g){
+  if(!confirm(`Eliminare definitivamente “${g.title}”?`))return;
+  try{if(g.image_kind==='storage'&&g.image_path)await db.storage.from(PRIMARY_BUCKET).remove([g.image_path]);const{error}=await db.from('pe_primary_games').delete().eq('id',g.id);if(error)throw error;$('#primaryGameModal').close();toast('Gioco eliminato');await loadPrimaryCustom();st.primaryGames=[...st.primaryCustom,...st.primaryDefaults];renderPrimaryGames()}catch(err){toast('Impossibile eliminare il gioco');console.error(err)}
+}
+
 function setSyncState(kind='ok',label='Sincronizzato'){const el=$('#syncStatus');if(!el)return;el.classList.toggle('syncing',kind==='syncing');el.classList.toggle('error',kind==='error');const t=el.querySelector('span');if(t)t.textContent=label}
 let syncBusy=false,lastSyncAt=0;
-async function syncFromCloud({quiet=false}={}){if(!st.user||syncBusy)return;syncBusy=true;if(!quiet)setSyncState('syncing','Sincronizzo…');try{await loadCore();renderSports();renderCalendar();lastSyncAt=Date.now();setSyncState('ok','Sincronizzato')}catch(err){console.error(err);setSyncState('error','Sync non riuscita')}finally{syncBusy=false}}
+async function syncFromCloud({quiet=false}={}){if(!st.user||syncBusy)return;syncBusy=true;if(!quiet)setSyncState('syncing','Sincronizzo…');try{await loadCore();if(st.primaryDefaults.length){await loadPrimaryCustom();st.primaryGames=[...st.primaryCustom,...st.primaryDefaults];if($('#view-primarygames').classList.contains('active'))renderPrimaryGames()}renderSports();renderCalendar();lastSyncAt=Date.now();setSyncState('ok','Sincronizzato')}catch(err){console.error(err);setSyncState('error','Sync non riuscita')}finally{syncBusy=false}}
 $('#loginForm').onsubmit=async e=>{e.preventDefault();const msg=$('#loginMsg');msg.textContent='Accesso sicuro…';const email=$('#email').value.trim();const password=$('#password').value;let{error}=await db.auth.signInWithPassword({email,password});if(error){msg.textContent='Email o password non corrette.';return}msg.textContent=''};
 $('#logoutBtn').onclick=()=>db.auth.signOut();
 async function enter(user){st.user=user;$('#userMail').textContent=user.email||'';$('#authView').classList.add('hidden');$('#appView').classList.remove('hidden');await syncFromCloud()}

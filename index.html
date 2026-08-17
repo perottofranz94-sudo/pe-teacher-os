@@ -41,6 +41,7 @@
     <button data-view="classes" class="nav-btn"><span>◎</span>Classi</button>
     <button data-view="planner" class="nav-btn"><span>✦</span>Programmazione</button>
     <button data-view="sports" class="nav-btn"><span>◈</span>Archivio sport</button>
+    <button data-view="primarygames" class="nav-btn"><span>✹</span>Giochi scuola primaria</button>
     <button data-view="tests" class="nav-btn"><span>⌁</span>Test motori</button>
     <button data-view="settings" class="nav-btn"><span>⚙</span>Impostazioni</button>
   </nav>
@@ -54,14 +55,13 @@
 </header>
 
 <section id="view-dashboard" class="view active">
-  <div class="hero-card">
-    <div class="hero-copy">
-      <span class="hero-chip">ATTIVAMENTE · V2</span>
-      <h3>La regia completa delle tue lezioni.</h3>
-      <p>1.390 attività verificate, programmazione progressiva, calendario reale, test motori e Hall of Fame.</p>
+  <div class="hero-card dashboard-brand-hero">
+    <div class="dashboard-brand-inner">
+      <img class="dashboard-brand-image" src="assets/attivamente-brand.png" alt="AttivaMente · Giochi motori & mente attiva">
+      <p class="dashboard-brand-claim">Più di mille attività verificate</p>
+      <div class="dashboard-brand-count"><b id="heroExerciseCount">1390</b><span>attività disponibili nell’archivio</span></div>
       <div class="hero-actions"><button class="btn white" data-jump="planner">Genera una programmazione</button><button class="btn glass-btn" data-jump="sports">Esplora gli sport</button></div>
     </div>
-    <div class="hero-stat"><b id="heroExerciseCount">1390</b><span>attività verificate</span></div>
   </div>
 
   <div class="stat-grid">
@@ -120,6 +120,16 @@
   </div>
 </section>
 
+
+<section id="view-primarygames" class="view">
+  <div class="primary-hero">
+    <div><span class="kicker">GIOCHI SCUOLA PRIMARIA</span><h3>Il tuo libro dei giochi, sempre con te.</h3><p>I 75 giochi originali del tuo libro, con immagine, difficoltà, materiali, descrizione, regole e varianti. I nuovi giochi che aggiungi vengono sincronizzati tra i tuoi dispositivi.</p></div>
+    <div class="primary-hero-actions"><div class="primary-count"><b id="primaryGameCount">75</b><span>giochi</span></div><button id="newPrimaryGameBtn" class="btn white">+ Crea nuovo gioco</button></div>
+  </div>
+  <div class="primary-toolbar glass"><div class="searchbar primary-search"><span>⌕</span><input id="primaryGameSearch" placeholder="Cerca un gioco…"></div><select id="primaryDifficulty"><option value="">Tutte le difficoltà</option><option value="1">Difficoltà 1</option><option value="2">Difficoltà 2</option><option value="3">Difficoltà 3</option><option value="4">Difficoltà 4</option><option value="5">Difficoltà 5</option></select></div>
+  <div id="primaryGamesGrid" class="primary-games-grid"></div>
+</section>
+
 <section id="view-tests" class="view">
   <div class="tests-hero">
     <div><span class="kicker">TEST MOTORI</span><h3>Misura. Confronta. Segui la crescita.</h3><p>Risultati individuali, classifiche separate per sesso e record storici.</p></div>
@@ -149,9 +159,15 @@
   <button data-view="dashboard" class="active">⌂<span>Home</span></button>
   <button data-view="planner">✦<span>Pianifica</span></button>
   <button data-view="sports">◈<span>Sport</span></button>
+  <button data-view="primarygames">✹<span>Primaria</span></button>
   <button data-view="tests">⌁<span>Test</span></button>
 </nav>
 </div>
+
+<dialog id="primaryGameModal" class="modal wide"><div class="modal-head"><div><span class="kicker">GIOCO SCUOLA PRIMARIA</span><h3 id="primaryGameModalTitle"></h3></div><button data-close="primaryGameModal">×</button></div><div id="primaryGameModalBody"></div></dialog>
+
+<dialog id="primaryGameFormModal" class="modal wide"><div class="modal-head"><div><span class="kicker">ARCHIVIO PERSONALE</span><h3 id="primaryGameFormTitle">Nuovo gioco</h3></div><button data-close="primaryGameFormModal">×</button></div>
+<form id="primaryGameForm"><input id="primaryGameId" type="hidden"><input id="primaryExistingImage" type="hidden"><div class="form-row"><label>Nome del gioco<input id="primaryTitle" required placeholder="Es. Il drago colorato"></label><label>Difficoltà<select id="primaryDiff" required><option value="1">1 · Facile</option><option value="2">2</option><option value="3">3 · Media</option><option value="4">4</option><option value="5">5 · Alta</option></select></label></div><label>Materiale e spazi<textarea id="primaryMaterials" rows="3" required placeholder="Campo, materiali, disposizione…"></textarea></label><label>Descrizione<textarea id="primaryDescription" rows="6" required placeholder="Spiega passo passo come si gioca…"></textarea></label><label>Regole<textarea id="primaryRules" rows="5" required placeholder="1) …&#10;2) …"></textarea></label><label>Varianti<textarea id="primaryVariants" rows="5" placeholder="1) …&#10;2) …"></textarea></label><label>Immagine del gioco<input id="primaryImage" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG o WebP · massimo 5 MB. Se modifichi un gioco e non scegli una nuova immagine, resta quella precedente.</small></label><div id="primaryImagePreview" class="primary-image-preview"></div><button class="btn primary" type="submit">Salva gioco</button><small id="primaryFormMsg"></small></form></dialog>
 
 <dialog id="exerciseModal" class="modal wide"><div class="modal-head"><div><span class="kicker">SCHEDA ESERCIZIO</span><h3 id="exerciseModalTitle"></h3></div><button data-close="exerciseModal">×</button></div><div id="exerciseModalBody"></div></dialog>
 <dialog id="lessonModal" class="modal wide"><div class="modal-head"><div><span class="kicker">LEZIONE</span><h3 id="lessonModalTitle"></h3></div><button data-close="lessonModal">×</button></div><div id="lessonBody"></div></dialog>

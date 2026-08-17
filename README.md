@@ -23,3 +23,11 @@ GitHub Pages si aggiornerà automaticamente.
 - I dati rimangono nel progetto Supabase remoto e sono quindi condivisi tra PC e iPhone quando si usa lo stesso account.
 - L'interfaccia non offre registrazione pubblica: l'accesso avviene esclusivamente tramite Supabase Auth con email e password già abilitate nel progetto.
 - Le tabelle personali `pe_*` sono protette dalle policy RLS basate su `auth.uid() = owner_id`; questo pacchetto non contiene migrazioni, DROP, TRUNCATE o script che cancellano i dati esistenti.
+
+## v3.2 - Giochi scuola primaria
+- Nuova sezione "Giochi scuola primaria".
+- 75 schede importate da LIBRO GIOCHI.pdf, una per pagina, con immagine originale, difficolta, materiale e spazi, descrizione, regole e varianti.
+- Ricerca e filtro per difficolta.
+- Creazione/modifica/eliminazione di giochi personali sincronizzati su Supabase.
+- Upload immagini personali su bucket privato Supabase `pe-primary-games` (max 5 MB, JPG/PNG/WebP).
+- Nuova tabella dedicata `pe_primary_games` protetta da RLS; nessuna modifica alle tabelle esistenti.
