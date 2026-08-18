@@ -77,3 +77,9 @@ Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le cla
 ## v4.6
 - Corretto embed PostgREST tra pe_lesson_exercises e pe_exercises specificando la FK exercise_id.
 - Evita ambiguità introdotta dalla seconda FK replaced_from_exercise_id.
+
+
+## v4.7
+- Lezione extra: singola attività archivio / lezione automatica completa / attività manuali.
+- Nuovo pulsante Lezione Manuale con builder misto archivio + attività scritte dal docente.
+- Durate controllate e dettaglio attività cliccabile tramite pe_lesson_exercises.
