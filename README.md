@@ -43,3 +43,12 @@ GitHub Pages si aggiornerà automaticamente.
 - Creazione e modifica classi accessibile da iPhone.
 - Calendario mensile scorrevole orizzontalmente su schermi piccoli.
 - Nessuna modifica dati o schema Supabase.
+
+
+## v3.9
+- Sincronizzazione livelli sportivi senza upsert, più robusta su iPhone/Safari.
+- Pulsante Elimina classe con archiviazione sicura dello storico.
+- Nuovo anno: 5ª primaria, 3ª media e 5ª superiore vengono archiviate e non migrate al ciclo successivo.
+
+## v4.0 — promozione classi
+Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le classi?”. Con Sì: primaria 1→2→3→4→5 e archivia la 5ª; medie 1→2→3 e archivia la 3ª; superiori 1→2→3→4→5 e archivia la 5ª. Con No: crea il nuovo anno senza migrare le classi.

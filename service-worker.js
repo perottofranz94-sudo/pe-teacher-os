@@ -1,4 +1,4 @@
-const C='attivamente-v3-7-stabile-20260818';
+const C='attivamente-v4.0-7-stabile-20260818';
 const A=['./','./index.html','./styles.css','./app.js','./config.js','./manifest.webmanifest','./primary_games.json','./assets/attivamente-brand.png','./assets/icon-180.png','./assets/icon-192.png','./assets/icon-512.png'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(A)))});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))),self.clients.claim()]))});

@@ -13,7 +13,7 @@ const schoolLevelLabels={primary:'Scuola primaria',lower_secondary:'Secondaria d
 const schoolGradeOptions={primary:[['1','Prima primaria'],['2','Seconda primaria'],['3','Terza primaria'],['4','Quarta primaria'],['5','Quinta primaria']],lower_secondary:[['1','Prima media'],['2','Seconda media'],['3','Terza media']],upper_secondary:[['1','Prima superiore'],['2','Seconda superiore'],['3','Terza superiore'],['4','Quarta superiore'],['5','Quinta superiore']]};
 let classOriginalStudentIds=[];
 function currentSchoolYearDefaults(){const now=new Date(),startYear=now.getMonth()>=6?now.getFullYear():now.getFullYear()-1;return{label:`${startYear}/${startYear+1}`,start:`${startYear}-09-01`,end:`${startYear+1}-06-30`}}
-function openSchoolYearDialog(initial=!st.year){const d=currentSchoolYearDefaults();$('#migrateModalTitle').textContent=initial?'Crea il primo anno scolastico':'Crea nuovo anno scolastico';$('#migrateSubmitBtn').textContent=initial?'Crea anno scolastico':'Crea e migra classi';if(initial||!$('#newYearLabel').value){$('#newYearLabel').value=d.label;$('#newYearStart').value=d.start;$('#newYearEnd').value=d.end}$('#migrateModal').showModal()}
+function openSchoolYearDialog(initial=!st.year){const d=currentSchoolYearDefaults();$('#migrateModalTitle').textContent=initial?'Crea il primo anno scolastico':'Crea nuovo anno scolastico';$('#promoteClassesWrap').classList.toggle('hidden',initial);$('#migrateSubmitBtn').textContent=initial?'Crea anno scolastico':'Crea nuovo anno scolastico';const yes=document.querySelector('input[name=\"promoteClasses\"][value=\"yes\"]');if(yes)yes.checked=true;if(initial||!$('#newYearLabel').value){$('#newYearLabel').value=d.label;$('#newYearStart').value=d.start;$('#newYearEnd').value=d.end}$('#migrateModal').showModal()}
 function requireSchoolYear(message='Prima devi creare un anno scolastico.'){if(st.year)return true;toast(message);openSchoolYearDialog(true);return false}
 function updateGradeOptions(selected=''){const level=$('#classSchoolLevel').value,opts=schoolGradeOptions[level]||[];$('#classGrade').innerHTML=opts.length?opts.map(([v,l])=>`<option value="${v}" ${String(selected)===v?'selected':''}>${l}</option>`).join(''):'<option value="">Seleziona prima il grado scolastico</option>';$('#schoolLevelHelp').textContent=level?`Percorso: ${schoolLevelLabels[level]}. Potrai cambiare questa impostazione anche in seguito.`:'Seleziona prima il grado scolastico.'}
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2300)}
@@ -68,6 +68,7 @@ $('#newClassBtn').onclick=()=>openClass(null);
 async function openClass(id){
   if(!id&&!requireSchoolYear('Per creare una classe devi prima impostare l’anno scolastico.'))return;
   $('#classId').value=id||'';$('#studentRows').innerHTML='';$('#classMsg').textContent='';classOriginalStudentIds=[];
+  $('#deleteClassBtn').classList.toggle('hidden',!id);
   if(id){
     const c=st.classes.find(x=>x.id===id);if(!c)return toast('Classe non trovata');$('#classModalTitle').textContent=c.name;$('#className').value=c.name;$('#classSchoolLevel').value=c.school_level||'';updateGradeOptions(c.grade);$('#femaleCount').value=c.female_count??0;$('#maleCount').value=c.male_count??0;
     const{data:en,error}=await db.from('pe_student_enrollments').select('*,pe_students(*)').eq('class_id',id).eq('active',true);if(error)return toast(error.message);
@@ -82,6 +83,19 @@ async function renderLevelGrid(classId){
   $('#sportLevelGrid').innerHTML=st.sports.map(s=>`<div class="level-item"><span>${iconMap[s.slug]||'●'} ${esc(s.name)}</span><select data-sport-level="${s.id}"><option value="">Non impostato</option>${[1,2,3,4,5].map(n=>`<option value="${n}" ${levels[s.id]==n?'selected':''}>${n} · ${['','Principiante','Base','Intermedio','Avanzato','Molto avanzato'][n]}</option>`).join('')}</select></div>`).join('');
 }
 $('#classSchoolLevel').onchange=()=>updateGradeOptions('');
+
+$('#deleteClassBtn').onclick=async()=>{
+  const id=$('#classId').value;if(!id)return;
+  const c=st.classes.find(x=>x.id===id);if(!c)return;
+  if(!confirm(`Eliminare la classe “${c.name}” dall'anno scolastico corrente?\n\nLa classe verrà archiviata: non comparirà più nell'app, ma lo storico rimarrà conservato.`))return;
+  const btn=$('#deleteClassBtn'),msg=$('#classMsg');btn.disabled=true;msg.textContent='Archivio la classe…';
+  try{
+    const{error:enErr}=await db.from('pe_student_enrollments').update({active:false,updated_at:new Date().toISOString()}).eq('class_id',id);if(enErr)throw enErr;
+    const{error}=await db.from('pe_classes').update({archived:true,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;
+    $('#classModal').close();await loadCore();toast('Classe eliminata dall’anno corrente');
+  }catch(err){console.error(err);msg.textContent='Errore eliminazione: '+(err.message||'operazione non riuscita');toast('Impossibile eliminare la classe')}
+  finally{btn.disabled=false}
+};
 $('#classForm').onsubmit=async e=>{
   e.preventDefault();
   const form=e.currentTarget,saveBtn=$('#classSaveBtn'),msg=$('#classMsg');
@@ -104,8 +118,10 @@ $('#classForm').onsubmit=async e=>{
 
     msg.textContent='Salvo i livelli sportivi…';
     const levelRows=$$('[data-sport-level]').filter(x=>x.value).map(sel=>({owner_id:st.user.id,class_id:cid,sport_id:sel.dataset.sportLevel,level:Number(sel.value)}));
-    if(levelRows.length){const{error}=await db.from('pe_class_sport_levels').upsert(levelRows,{onConflict:'class_id,sport_id'});if(error)throw error}
-    const unsetSports=$$('[data-sport-level]').filter(x=>!x.value).map(x=>x.dataset.sportLevel);if(id&&unsetSports.length){const{error}=await db.from('pe_class_sport_levels').delete().eq('class_id',cid).in('sport_id',unsetSports);if(error)throw error}
+    // Sincronizzazione volutamente semplice: niente UPSERT. Su Safari/iOS questa strada è più robusta
+    // e rispecchia il significato dei livelli, che sono impostazioni correnti della classe.
+    const{error:clearLevelsErr}=await db.from('pe_class_sport_levels').delete().eq('class_id',cid);if(clearLevelsErr)throw clearLevelsErr;
+    if(levelRows.length){const{error:insertLevelsErr}=await db.from('pe_class_sport_levels').insert(levelRows);if(insertLevelsErr)throw insertLevelsErr}
 
     msg.textContent='Aggiorno l’app…';await loadCore();$('#classModal').close();toast('Classe salvata e sincronizzata');
   }catch(err){console.error(err);msg.textContent='Errore: '+(err.message||'salvataggio non riuscito');toast('Salvataggio non riuscito')}
@@ -154,12 +170,31 @@ function renderSettings(){
 $('#migrateYearBtn').onclick=()=>openSchoolYearDialog(!st.year);
 $('#migrateForm').onsubmit=async e=>{
   e.preventDefault();const btn=$('#migrateSubmitBtn');btn.disabled=true;btn.textContent='Salvataggio…';
-  try{const label=$('#newYearLabel').value.trim(),start=$('#newYearStart').value,end=$('#newYearEnd').value;if(!label||!start||!end)throw new Error('Completa tutti i dati dell’anno scolastico.');if(end<=start)throw new Error('La data di fine deve essere successiva alla data di inizio.');
-    if(!st.year){const{error}=await db.from('pe_school_years').insert({owner_id:st.user.id,label,start_date:start,end_date:end,is_active:true});if(error)throw error;toast('Anno scolastico creato')}
-    else{const{error}=await db.rpc('pe_migrate_school_year',{p_new_label:label,p_start_date:start,p_end_date:end,p_archive_old:true});if(error)throw error;toast('Nuovo anno creato e classi migrate')}
-    $('#migrateModal').close();await loadCore();
+  try{
+    const label=$('#newYearLabel').value.trim(),start=$('#newYearStart').value,end=$('#newYearEnd').value;
+    if(!label||!start||!end)throw new Error('Completa tutti i dati dell’anno scolastico.');
+    if(end<=start)throw new Error('La data di fine deve essere successiva alla data di inizio.');
+    if(!st.year){
+      const{error}=await db.from('pe_school_years').insert({owner_id:st.user.id,label,start_date:start,end_date:end,is_active:true});
+      if(error)throw error;toast('Anno scolastico creato');
+    }else{
+      const promote=(document.querySelector('input[name=\"promoteClasses\"]:checked')?.value||'yes')==='yes';
+      if(promote){
+        const{data,error}=await db.rpc('pe_migrate_school_year',{p_new_label:label,p_start_date:start,p_end_date:end,p_archive_old:true});
+        if(error)throw error;
+        const migrated=data?.migrated_classes??0,archived=data?.archived_final_cycle_classes??0;
+        toast(`Nuovo anno creato: ${migrated} classi promosse, ${archived} classi terminali archiviate`);
+      }else{
+        const{error:offErr}=await db.from('pe_school_years').update({is_active:false,updated_at:new Date().toISOString()}).eq('owner_id',st.user.id).eq('is_active',true);
+        if(offErr)throw offErr;
+        const{error:newErr}=await db.from('pe_school_years').insert({owner_id:st.user.id,label,start_date:start,end_date:end,is_active:true});
+        if(newErr)throw newErr;
+        toast('Nuovo anno creato senza promuovere le classi');
+      }
+    }
+    $('#migrateModal').close();await loadCore();renderAll();
   }catch(err){console.error(err);toast(err.message||'Impossibile creare l’anno scolastico')}
-  finally{btn.disabled=false;btn.textContent=st.year?'Crea e migra classi':'Crea anno scolastico'}
+  finally{btn.disabled=false;btn.textContent=st.year?'Crea nuovo anno scolastico':'Crea anno scolastico'}
 }
 
 

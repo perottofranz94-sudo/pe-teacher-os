@@ -173,3 +173,13 @@ button:disabled{opacity:.58;cursor:wait;transform:none!important}
 .active-year-status{display:grid;gap:5px;padding:14px 0}.active-year-status strong{font-size:1.15rem}.active-year-status small{color:var(--muted)}
 .chip.warn{background:rgba(255,165,0,.14);color:#ffbd66;border-color:rgba(255,165,0,.28)}
 @media(max-width:720px){#classModal form>.btn.primary,#migrateModal form>.btn.primary{width:100%;min-height:54px;font-size:1rem}.form-message{font-size:.9rem;line-height:1.35}}
+
+
+/* v3.9 — azioni classe */
+.class-form-actions{display:grid;grid-template-columns:minmax(170px,.65fr) minmax(220px,1.35fr);gap:14px;margin-top:18px}
+.btn.danger{background:rgba(255,108,108,.12);border:1px solid rgba(255,108,108,.5);color:#ffd1d1}
+.btn.danger:hover{background:rgba(255,108,108,.2)}
+@media(max-width:720px){.class-form-actions{grid-template-columns:1fr}.class-form-actions .btn{min-height:62px;font-size:1.05rem}.class-form-actions #classSaveBtn{order:1}.class-form-actions #deleteClassBtn{order:2}}
+
+/* v4.0 — scelta promozione classi */
+.choice-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}.choice-card{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(255,255,255,.045);cursor:pointer}.choice-card input{margin-top:3px;transform:scale(1.2)}.choice-card span{display:grid;gap:4px}.choice-card small{color:var(--muted);line-height:1.35}@media(max-width:720px){.choice-row{grid-template-columns:1fr}.choice-card{padding:16px}.choice-card b{font-size:1rem}}
