@@ -83,3 +83,9 @@ Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le cla
 - Lezione extra: singola attività archivio / lezione automatica completa / attività manuali.
 - Nuovo pulsante Lezione Manuale con builder misto archivio + attività scritte dal docente.
 - Durate controllate e dettaglio attività cliccabile tramite pe_lesson_exercises.
+
+
+## v4.8
+- Chiusure scuola/classe: slittamento automatico delle lezioni programmate, mantenendo la sequenza.
+- Generatore iPhone: pulsante esplicito e gestione robusta degli errori.
+- Classifiche: filtri Classe + Test + Generale/Femmine/Maschi.

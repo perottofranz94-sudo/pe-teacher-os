@@ -1,4 +1,4 @@
-const C='attivamente-v4.7-manual-extra-builder';
+const C='attivamente-v4.8-manual-extra-builder';
 const A=['./','./index.html','./styles.css?v=4.7','./app.js?v=4.7','./config.js','./manifest.webmanifest?v=4.7','./primary_games.json','./assets/attivamente-brand.png','./assets/icon-180.png','./assets/icon-192.png','./assets/icon-512.png'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(A)))});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))),self.clients.claim()]))});
