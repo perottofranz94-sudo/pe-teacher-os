@@ -59,3 +59,16 @@ Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le cla
 - Elenco anni scolastici nelle Impostazioni.
 - Eliminazione sicura di un anno scolastico tramite RPC dedicata e doppia conferma.
 - Indicatore versione visibile per verificare che la PWA sia aggiornata.
+
+
+## v4.3
+- Orario settimanale obbligatorio per ogni classe (più giorni supportati).
+- Il generatore automatico usa l’orario della classe e assegna l’orario alle lezioni create.
+- L’orario viene copiato automaticamente quando una classe viene promossa al nuovo anno.
+- Nuovo pulsante Calendario → Lezione extra, con data, ora e classe.
+
+
+## v4.4
+- Classifiche test premium con KPI, podio e confronto con media.
+- Trend della media classe rispetto alla rilevazione precedente dello stesso test.
+- Hall of Fame ridisegnata con bacheca record, statistiche e atleta con più presenze.

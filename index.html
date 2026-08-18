@@ -79,7 +79,7 @@
 </section>
 
 <section id="view-calendar" class="view">
-  <div class="toolbar glass"><div class="month-switch"><button id="prevMonth">‹</button><b id="monthTitle"></b><button id="nextMonth">›</button></div><button id="addException" class="btn secondary">+ Chiusura / gita</button></div>
+  <div class="toolbar glass"><div class="month-switch"><button id="prevMonth">‹</button><b id="monthTitle"></b><button id="nextMonth">›</button></div><div class="calendar-actions"><button id="addExtraLesson" class="btn primary">+ Lezione extra</button><button id="addException" class="btn secondary">+ Chiusura / gita</button></div></div>
   <div class="calendar-scroll"><div id="calendarGrid" class="calendar glass"></div></div>
 </section>
 
@@ -145,14 +145,27 @@
   </div>
   <div id="testtab-library" class="testtab active"><div id="testsGrid" class="tests-grid"></div></div>
   <div id="testtab-sessions" class="testtab"><div class="panel glass"><div class="panel-head"><div><span class="kicker">SESSIONE</span><h3>Nuovo rilevamento</h3></div></div><form id="sessionForm"><div class="form-row"><label>Classe<select id="sessionClass"></select></label><label>Test<select id="sessionTest"></select></label></div><label>Data<input id="sessionDate" type="date"></label><button class="btn primary" type="submit">Apri inserimento risultati</button></form></div><div id="sessionResultsArea"></div></div>
-  <div id="testtab-rankings" class="testtab"><div class="toolbar glass"><select id="rankingClass"></select><select id="rankingSex"><option value="F">Femmine</option><option value="M">Maschi</option></select></div><div class="cols"><div class="panel glass"><span class="kicker">GENERALE</span><h3>Classifica totale</h3><div id="totalRanking"></div></div><div class="panel glass"><span class="kicker">ULTIMO TEST</span><h3>Classifica test</h3><div id="singleRanking"></div></div></div></div>
-  <div id="testtab-hof" class="testtab"><div class="toolbar glass"><select id="hofTest"></select><select id="hofSex"><option value="">Tutti</option><option value="F">Femmine</option><option value="M">Maschi</option></select></div><div id="hofGrid" class="hof-grid"></div></div>
+  <div id="testtab-rankings" class="testtab">
+    <div class="toolbar glass ranking-toolbar"><div><span class="kicker">CLASSIFICHE LIVE</span><strong>Prestazioni della classe</strong></div><div class="ranking-filters"><select id="rankingClass"></select><select id="rankingSex"><option value="F">Femmine</option><option value="M">Maschi</option></select></div></div>
+    <div id="rankingOverview" class="performance-strip"></div>
+    <div id="rankingPodium" class="ranking-podium"></div>
+    <div class="ranking-layout">
+      <div class="panel glass ranking-panel"><div class="panel-head"><div><span class="kicker">CAMPIONATO ANNUALE</span><h3>Classifica generale</h3></div><span id="totalRankingMeta" class="chip"></span></div><div id="totalRanking" class="premium-ranking"></div></div>
+      <div class="panel glass ranking-panel"><div class="panel-head"><div><span class="kicker">ULTIMA RILEVAZIONE</span><h3 id="singleRankingTitle">Classifica test</h3></div><span id="singleRankingMeta" class="chip gold"></span></div><div id="singleRanking" class="premium-ranking"></div></div>
+    </div>
+  </div>
+  <div id="testtab-hof" class="testtab">
+    <div class="hof-hero glass"><div><span class="kicker">ATTIVAMENTE LEGENDS</span><h3>Hall of Fame</h3><p>I migliori risultati assoluti registrati nel tempo. Ogni record conserva classe, anno e data della prestazione.</p></div><div class="hof-crown">♛</div></div>
+    <div class="toolbar glass ranking-toolbar"><div><span class="kicker">FILTRA I RECORD</span><strong>La tua bacheca dei primati</strong></div><div class="ranking-filters"><select id="hofTest"></select><select id="hofSex"><option value="">Tutti</option><option value="F">Femmine</option><option value="M">Maschi</option></select></div></div>
+    <div id="hofSummary" class="performance-strip hof-summary"></div>
+    <div id="hofGrid" class="hof-grid premium-hof"></div>
+  </div>
 </section>
 
 <section id="view-settings" class="view">
   <div class="cols">
     <article class="panel glass"><span class="kicker">ANNO SCOLASTICO</span><h3>Chiusure e festività</h3><button id="schoolClosureBtn" class="btn secondary">+ Aggiungi chiusura</button><div id="closureList" class="stack-list"></div></article>
-    <article class="panel glass"><span class="kicker">ANNO SCOLASTICO ATTIVO</span><h3>Gestione anno e migrazione</h3><div id="activeYearStatus" class="active-year-status"></div><p class="muted">Se scegli di promuovere le classi: Primaria 1ª→2ª→3ª→4ª→5ª, poi la 5ª viene archiviata. Medie 1ª→2ª→3ª, poi la 3ª viene archiviata. Superiori 1ª→2ª→3ª→4ª→5ª, poi la 5ª viene archiviata.</p><button id="migrateYearBtn" class="btn primary">Crea nuovo anno scolastico</button><div class="settings-divider"></div><span class="kicker">ANNI PRESENTI</span><div id="schoolYearList" class="stack-list"></div><div class="build-version" id="buildVersion">Versione 4.2</div></article>
+    <article class="panel glass"><span class="kicker">ANNO SCOLASTICO ATTIVO</span><h3>Gestione anno e migrazione</h3><div id="activeYearStatus" class="active-year-status"></div><p class="muted">Se scegli di promuovere le classi: Primaria 1ª→2ª→3ª→4ª→5ª, poi la 5ª viene archiviata. Medie 1ª→2ª→3ª, poi la 3ª viene archiviata. Superiori 1ª→2ª→3ª→4ª→5ª, poi la 5ª viene archiviata.</p><button id="migrateYearBtn" class="btn primary">Crea nuovo anno scolastico</button><div class="settings-divider"></div><span class="kicker">ANNI PRESENTI</span><div id="schoolYearList" class="stack-list"></div><div class="build-version" id="buildVersion">Versione 4.4</div></article>
   </div>
 </section>
 </main>
@@ -202,6 +215,7 @@
 <div class="form-row"><label>Nome classe<input id="className" required placeholder="Es. Prima A"></label><label>Grado scolastico<select id="classSchoolLevel" required><option value="">Seleziona…</option><option value="primary">Scuola primaria</option><option value="lower_secondary">Secondaria di primo grado</option><option value="upper_secondary">Secondaria di secondo grado</option></select></label></div>
 <div class="form-row"><label>Classe / anno<select id="classGrade" required></select></label><div class="school-level-help" id="schoolLevelHelp">Seleziona prima il grado scolastico.</div></div>
 <div class="form-row"><label>Femmine<input id="femaleCount" type="number" min="0" required></label><label>Maschi<input id="maleCount" type="number" min="0" required></label></div>
+<div class="modal-section timetable-section"><div class="section-title-row compact"><div><span class="kicker">ORARIO SETTIMANALE</span><h4>Quando hai lezione con questa classe?</h4><p>Inserisci uno o più giorni con ora di inizio e fine. Il generatore automatico userà questi dati per inserire le lezioni nel calendario.</p></div><button id="addTimetableRow" type="button" class="btn secondary small-btn">+ Aggiungi giorno</button></div><div id="timetableRows" class="timetable-rows"></div><small class="field-help">È necessario almeno un giorno/orario per utilizzare la programmazione automatica.</small></div>
 <div class="modal-section"><div class="section-title-row compact"><div><span class="kicker">ALUNNI</span><h4>Nomi e cognomi</h4></div><button id="addStudentRow" type="button" class="btn secondary small-btn">+ Aggiungi alunno</button></div><div id="studentRows"></div></div>
 <div class="modal-section"><span class="kicker">LIVELLI SPORTIVI</span><div id="sportLevelGrid" class="level-grid"></div></div>
 <div class="class-form-actions"><button id="deleteClassBtn" class="btn danger hidden" type="button">Elimina classe</button><button id="classSaveBtn" class="btn primary" type="submit">Salva classe</button></div><small id="classMsg" class="form-message"></small>
@@ -212,9 +226,11 @@
 
 <dialog id="exceptionModal" class="modal"><div class="modal-head"><div><span class="kicker">CALENDARIO</span><h3>Nuova eccezione</h3></div><button data-close="exceptionModal">×</button></div><form id="exceptionForm"><label>Ambito<select id="exceptionScope"><option value="school">Tutta la scuola</option><option value="class">Solo una classe</option></select></label><label id="exceptionClassWrap" class="hidden">Classe<select id="exceptionClass"></select></label><label>Tipo<select id="exceptionType"><option value="holiday">Vacanza / chiusura</option><option value="school_event">Gita / uscita</option><option value="no_lesson">Lezione annullata</option><option value="other">Altro</option></select></label><div class="form-row"><label>Dal<input id="exceptionStart" type="date"></label><label>Al<input id="exceptionEnd" type="date"></label></div><label>Motivo<input id="exceptionReason"></label><button class="btn primary">Salva</button></form></dialog>
 
+
+<dialog id="extraLessonModal" class="modal"><div class="modal-head"><div><span class="kicker">CALENDARIO</span><h3>Nuova lezione extra</h3></div><button data-close="extraLessonModal">×</button></div><form id="extraLessonForm"><label>Classe<select id="extraClass" required></select></label><label>Data<input id="extraDate" type="date" required></label><div class="form-row"><label>Ora inizio<input id="extraStart" type="time" required></label><label>Ora fine<input id="extraEnd" type="time" required></label></div><label>Motivo / titolo<input id="extraTitle" placeholder="Es. Supplenza, recupero, ora aggiuntiva"></label><label>Note<textarea id="extraNotes" rows="3" placeholder="Facoltativo"></textarea></label><button class="btn primary" type="submit">Inserisci nel calendario</button><small id="extraLessonMsg" class="form-message"></small></form></dialog>
 <dialog id="migrateModal" class="modal"><div class="modal-head"><div><span class="kicker">ANNO SCOLASTICO</span><h3 id="migrateModalTitle">Nuovo anno scolastico</h3></div><button data-close="migrateModal">×</button></div><form id="migrateForm"><label>Etichetta anno<input id="newYearLabel" required placeholder="2027/2028"></label><div class="form-row"><label>Inizio<input id="newYearStart" type="date" required></label><label>Fine<input id="newYearEnd" type="date" required></label></div><div id="promoteClassesWrap" class="modal-section"><span class="kicker">PROMOZIONE CLASSI</span><h4>Promuovi tutte le classi?</h4><div class="choice-row"><label class="choice-card"><input type="radio" name="promoteClasses" value="yes" checked><span><b>Sì, promuovi tutte</b><small>Le classi non terminali passano all’anno successivo. 5ª primaria, 3ª media e 5ª superiore vengono archiviate.</small></span></label><label class="choice-card"><input type="radio" name="promoteClasses" value="no"><span><b>No</b><small>Crea soltanto il nuovo anno scolastico. Le classi del vecchio anno restano nello storico e non vengono migrate.</small></span></label></div></div><button id="migrateSubmitBtn" class="btn primary">Crea nuovo anno scolastico</button></form></dialog>
 
 <div id="toast" class="toast"></div>
-<script type="module" src="app.js?v=4.2"></script>
+<script type="module" src="app.js?v=4.3"></script>
 </body>
 </html>
