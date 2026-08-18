@@ -74,9 +74,6 @@ Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le cla
 - Hall of Fame ridisegnata con bacheca record, statistiche e atleta con più presenze.
 
 
-## v4.5
-- Corretto calendario locale iPhone/Italia: niente spostamento lunedì→martedì.
-- Il generatore interpreta il numero richiesto come numero di lezioni e usa le prime date utili dell’orario.
-- Generazione completa da pe_exercises VERIFIED con progressione base-1 → base → base+1.
-- Anti-ripetizione su tutto il modulo finché esistono alternative.
-- Lezione cliccabile con schede esercizio complete, livello, campo, gruppi e motivazione della scelta.
+## v4.6
+- Corretto embed PostgREST tra pe_lesson_exercises e pe_exercises specificando la FK exercise_id.
+- Evita ambiguità introdotta dalla seconda FK replaced_from_exercise_id.
