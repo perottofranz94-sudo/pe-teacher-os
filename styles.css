@@ -166,3 +166,10 @@ input,select{background:#082b4d;border-color:rgba(255,255,255,.11)}input:focus,s
   .mobile-drawer-nav{grid-template-columns:1fr}.mobile-drawer-nav button{min-height:64px}
   .topbar{grid-template-columns:48px minmax(0,1fr) auto}.mobile-menu-btn{width:46px;height:46px}
 }
+
+/* v3.7 stabilità e feedback */
+.form-message{display:block;margin-top:10px;min-height:20px;color:#ffd5bf;font-weight:700}
+button:disabled{opacity:.58;cursor:wait;transform:none!important}
+.active-year-status{display:grid;gap:5px;padding:14px 0}.active-year-status strong{font-size:1.15rem}.active-year-status small{color:var(--muted)}
+.chip.warn{background:rgba(255,165,0,.14);color:#ffbd66;border-color:rgba(255,165,0,.28)}
+@media(max-width:720px){#classModal form>.btn.primary,#migrateModal form>.btn.primary{width:100%;min-height:54px;font-size:1rem}.form-message{font-size:.9rem;line-height:1.35}}

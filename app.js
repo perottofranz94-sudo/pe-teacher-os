@@ -11,6 +11,10 @@ const phaseLabel={activation:'ATTIVAZIONE',main:'PARTE CENTRALE',final:'APPLICAZ
 
 const schoolLevelLabels={primary:'Scuola primaria',lower_secondary:'Secondaria di primo grado',upper_secondary:'Secondaria di secondo grado'};
 const schoolGradeOptions={primary:[['1','Prima primaria'],['2','Seconda primaria'],['3','Terza primaria'],['4','Quarta primaria'],['5','Quinta primaria']],lower_secondary:[['1','Prima media'],['2','Seconda media'],['3','Terza media']],upper_secondary:[['1','Prima superiore'],['2','Seconda superiore'],['3','Terza superiore'],['4','Quarta superiore'],['5','Quinta superiore']]};
+let classOriginalStudentIds=[];
+function currentSchoolYearDefaults(){const now=new Date(),startYear=now.getMonth()>=6?now.getFullYear():now.getFullYear()-1;return{label:`${startYear}/${startYear+1}`,start:`${startYear}-09-01`,end:`${startYear+1}-06-30`}}
+function openSchoolYearDialog(initial=!st.year){const d=currentSchoolYearDefaults();$('#migrateModalTitle').textContent=initial?'Crea il primo anno scolastico':'Crea nuovo anno scolastico';$('#migrateSubmitBtn').textContent=initial?'Crea anno scolastico':'Crea e migra classi';if(initial||!$('#newYearLabel').value){$('#newYearLabel').value=d.label;$('#newYearStart').value=d.start;$('#newYearEnd').value=d.end}$('#migrateModal').showModal()}
+function requireSchoolYear(message='Prima devi creare un anno scolastico.'){if(st.year)return true;toast(message);openSchoolYearDialog(true);return false}
 function updateGradeOptions(selected=''){const level=$('#classSchoolLevel').value,opts=schoolGradeOptions[level]||[];$('#classGrade').innerHTML=opts.length?opts.map(([v,l])=>`<option value="${v}" ${String(selected)===v?'selected':''}>${l}</option>`).join(''):'<option value="">Seleziona prima il grado scolastico</option>';$('#schoolLevelHelp').textContent=level?`Percorso: ${schoolLevelLabels[level]}. Potrai cambiare questa impostazione anche in seguito.`:'Seleziona prima il grado scolastico.'}
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2300)}
 function openMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');b?.classList.remove('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','true');document.body.classList.add('menu-open')}
@@ -20,9 +24,9 @@ $$('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));$$('[data-jump]')
 $('#mobileMenuBtn').onclick=openMobileMenu;$('#mobileMoreBtn').onclick=openMobileMenu;$('#mobileMenuClose').onclick=closeMobileMenu;$('#mobileMenuBackdrop').onclick=closeMobileMenu;$('#mobileLogoutBtn').onclick=()=>db.auth.signOut();document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu()});
 
 async function loadCore(){
-  let [y,c,s,l,m,t,e,h]=await Promise.all([
+  const results=await Promise.all([
     db.from('pe_school_years').select('*').eq('is_active',true).maybeSingle(),
-    db.from('pe_classes').select('*').eq('archived',false).order('grade'),
+    db.from('pe_classes').select('*').eq('archived',false).order('school_level').order('grade').order('name'),
     db.from('pe_sports').select('*').eq('active',true).order('name'),
     db.from('pe_lessons').select('*,pe_classes(name),pe_sports(name)').order('lesson_date').limit(200),
     db.from('pe_sport_modules').select('*,pe_classes(name),pe_sports(name)').order('start_date',{ascending:false}).limit(100),
@@ -30,10 +34,13 @@ async function loadCore(){
     db.from('pe_calendar_exceptions').select('*').order('exception_date'),
     db.from('pe_motor_test_hall_of_fame').select('*').limit(40)
   ]);
-  st.year=y.data;st.classes=c.data||[];st.sports=s.data||[];st.lessons=l.data||[];st.modules=m.data||[];st.tests=t.data||[];st.exceptions=e.data||[];st.hof=h.data||[];
-  const counts=await Promise.all(st.sports.map(async sp=>{let{count}=await db.from('pe_exercises').select('*',{count:'exact',head:true}).eq('sport_id',sp.id).eq('active',true).eq('audit_status','VERIFIED');return[sp.id,count||0]}));
+  const firstError=results.find(r=>r.error)?.error;if(firstError)throw firstError;
+  const [y,c,s,l,m,t,e,h]=results;
+  st.year=y.data||null;st.classes=c.data||[];st.sports=s.data||[];st.lessons=l.data||[];st.modules=m.data||[];st.tests=t.data||[];st.exceptions=e.data||[];st.hof=h.data||[];
+  const counts=await Promise.all(st.sports.map(async sp=>{const{count,error}=await db.from('pe_exercises').select('*',{count:'exact',head:true}).eq('sport_id',sp.id).eq('active',true).eq('audit_status','VERIFIED');if(error)throw error;return[sp.id,count||0]}));
   st.sportCounts=Object.fromEntries(counts);populateSelects();renderDashboard();renderClasses();renderModules();renderTests();renderSettings();
 }
+
 function populateSelects(){
   const co='<option value="">Seleziona classe</option>'+st.classes.map(c=>`<option value="${c.id}">${esc(c.name)} · ${c.student_count} alunni</option>`).join('');
   ['planClass','sessionClass','rankingClass','exceptionClass'].forEach(id=>$( '#'+id).innerHTML=co);
@@ -59,30 +66,52 @@ function renderClasses(){
 }
 $('#newClassBtn').onclick=()=>openClass(null);
 async function openClass(id){
-  $('#classId').value=id||'';$('#studentRows').innerHTML='';$('#classMsg').textContent='';
+  if(!id&&!requireSchoolYear('Per creare una classe devi prima impostare l’anno scolastico.'))return;
+  $('#classId').value=id||'';$('#studentRows').innerHTML='';$('#classMsg').textContent='';classOriginalStudentIds=[];
   if(id){
-    const c=st.classes.find(x=>x.id===id);$('#classModalTitle').textContent=c.name;$('#className').value=c.name;$('#classSchoolLevel').value=c.school_level||'';updateGradeOptions(c.grade);$('#femaleCount').value=c.female_count??0;$('#maleCount').value=c.male_count??0;
-    const{data:en}=await db.from('pe_student_enrollments').select('*,pe_students(*)').eq('class_id',id).eq('active',true);
-    (en||[]).forEach(x=>addStudentRow(x.pe_students?.first_name,x.pe_students?.last_name,x.pe_students?.sex,x.pe_students?.id));
+    const c=st.classes.find(x=>x.id===id);if(!c)return toast('Classe non trovata');$('#classModalTitle').textContent=c.name;$('#className').value=c.name;$('#classSchoolLevel').value=c.school_level||'';updateGradeOptions(c.grade);$('#femaleCount').value=c.female_count??0;$('#maleCount').value=c.male_count??0;
+    const{data:en,error}=await db.from('pe_student_enrollments').select('*,pe_students(*)').eq('class_id',id).eq('active',true);if(error)return toast(error.message);
+    classOriginalStudentIds=(en||[]).map(x=>x.student_id);(en||[]).forEach(x=>addStudentRow(x.pe_students?.first_name,x.pe_students?.last_name,x.pe_students?.sex,x.pe_students?.id));
   }else{$('#classModalTitle').textContent='Nuova classe';$('#className').value='';$('#classSchoolLevel').value='';updateGradeOptions('');$('#femaleCount').value=0;$('#maleCount').value=0}
   await renderLevelGrid(id);$('#classModal').showModal();
 }
 function addStudentRow(first='',last='',sex='F',id=''){let d=document.createElement('div');d.className='student-row';d.dataset.studentId=id;d.innerHTML=`<input class="s-first" placeholder="Nome" value="${esc(first)}"><input class="s-last" placeholder="Cognome" value="${esc(last)}"><select class="s-sex"><option value="F" ${sex==='F'?'selected':''}>F</option><option value="M" ${sex==='M'?'selected':''}>M</option></select><button type="button">×</button>`;d.querySelector('button').onclick=()=>d.remove();$('#studentRows').appendChild(d)}
 $('#addStudentRow').onclick=()=>addStudentRow();
 async function renderLevelGrid(classId){
-  let levels={};if(classId){let{data}=await db.from('pe_class_sport_levels').select('*').eq('class_id',classId);(data||[]).forEach(x=>levels[x.sport_id]=x.level)}
+  let levels={};if(classId){const{data,error}=await db.from('pe_class_sport_levels').select('*').eq('class_id',classId);if(error)throw error;(data||[]).forEach(x=>levels[x.sport_id]=x.level)}
   $('#sportLevelGrid').innerHTML=st.sports.map(s=>`<div class="level-item"><span>${iconMap[s.slug]||'●'} ${esc(s.name)}</span><select data-sport-level="${s.id}"><option value="">Non impostato</option>${[1,2,3,4,5].map(n=>`<option value="${n}" ${levels[s.id]==n?'selected':''}>${n} · ${['','Principiante','Base','Intermedio','Avanzato','Molto avanzato'][n]}</option>`).join('')}</select></div>`).join('');
 }
 $('#classSchoolLevel').onchange=()=>updateGradeOptions('');
 $('#classForm').onsubmit=async e=>{
-  e.preventDefault();const id=$('#classId').value||null,f=+$('#femaleCount').value,m=+$('#maleCount').value,total=f+m;$('#classMsg').textContent='Salvataggio…';
-  let cid=id;
-  if(id){let{error}=await db.from('pe_classes').update({name:$('#className').value,school_level:$('#classSchoolLevel').value,grade:+$('#classGrade').value,female_count:f,male_count:m,student_count:total}).eq('id',id);if(error)return $('#classMsg').textContent=error.message}
-  else{let{data,error}=await db.from('pe_classes').insert({owner_id:st.user.id,school_year_id:st.year.id,name:$('#className').value,school_level:$('#classSchoolLevel').value,grade:+$('#classGrade').value,female_count:f,male_count:m,student_count:total}).select().single();if(error)return $('#classMsg').textContent=error.message;cid=data.id}
-  for(const row of $$('.student-row')){let sid=row.dataset.studentId,first=row.querySelector('.s-first').value.trim(),last=row.querySelector('.s-last').value.trim(),sex=row.querySelector('.s-sex').value;if(!first||!last)continue;if(sid){await db.from('pe_students').update({first_name:first,last_name:last,sex}).eq('id',sid)}else{let{data}=await db.from('pe_students').insert({owner_id:st.user.id,first_name:first,last_name:last,sex}).select().single();if(data){sid=data.id;await db.from('pe_student_enrollments').insert({owner_id:st.user.id,student_id:sid,class_id:cid,school_year_id:st.year.id,active:true})}}}
-  for(const sel of $$('[data-sport-level]'))if(sel.value)await db.from('pe_class_sport_levels').upsert({owner_id:st.user.id,class_id:cid,sport_id:sel.dataset.sportLevel,level:+sel.value},{onConflict:'owner_id,class_id,sport_id'});
-  $('#classModal').close();toast('Classe salvata');await loadCore();
+  e.preventDefault();
+  const form=e.currentTarget,saveBtn=$('#classSaveBtn'),msg=$('#classMsg');
+  if(!requireSchoolYear('Manca l’anno scolastico: crealo prima di salvare la classe.')){msg.textContent='Crea prima l’anno scolastico.';return}
+  const id=$('#classId').value||null,name=$('#className').value.trim(),level=$('#classSchoolLevel').value,grade=Number($('#classGrade').value),f=Number($('#femaleCount').value),m=Number($('#maleCount').value),total=f+m;
+  if(!name||!level||!Number.isInteger(grade)){msg.textContent='Completa nome, grado scolastico e classe/anno.';return}
+  if(f<0||m<0||!Number.isFinite(total)){msg.textContent='Controlla il numero di alunni.';return}
+  saveBtn.disabled=true;saveBtn.textContent='Salvataggio…';msg.textContent='Salvataggio della classe…';
+  try{
+    let cid=id;
+    const classPayload={name,school_level:level,grade,female_count:f,male_count:m,student_count:total,updated_at:new Date().toISOString()};
+    if(id){const{error}=await db.from('pe_classes').update(classPayload).eq('id',id);if(error)throw error}
+    else{const{data,error}=await db.from('pe_classes').insert({owner_id:st.user.id,school_year_id:st.year.id,...classPayload}).select().single();if(error)throw error;cid=data.id}
+
+    msg.textContent='Sincronizzo gli alunni…';
+    const rows=$$('.student-row');const keptIds=[];const newStudents=[];
+    for(const row of rows){const sid=row.dataset.studentId,first=row.querySelector('.s-first').value.trim(),last=row.querySelector('.s-last').value.trim(),sex=row.querySelector('.s-sex').value;if(!first&&!last)continue;if(!first||!last)throw new Error('Completa nome e cognome di ogni alunno oppure lascia entrambe le caselle vuote.');if(sid){const{error}=await db.from('pe_students').update({first_name:first,last_name:last,sex,updated_at:new Date().toISOString()}).eq('id',sid);if(error)throw error;keptIds.push(sid)}else newStudents.push({owner_id:st.user.id,first_name:first,last_name:last,sex})}
+    if(newStudents.length){const{data,error}=await db.from('pe_students').insert(newStudents).select('id');if(error)throw error;const enrollments=(data||[]).map(x=>({owner_id:st.user.id,student_id:x.id,class_id:cid,school_year_id:st.year.id,active:true}));if(enrollments.length){const{error:enErr}=await db.from('pe_student_enrollments').insert(enrollments);if(enErr)throw enErr}}
+    const removed=classOriginalStudentIds.filter(sid=>!keptIds.includes(sid));if(id&&removed.length){const{error}=await db.from('pe_student_enrollments').update({active:false,updated_at:new Date().toISOString()}).eq('class_id',cid).in('student_id',removed);if(error)throw error}
+
+    msg.textContent='Salvo i livelli sportivi…';
+    const levelRows=$$('[data-sport-level]').filter(x=>x.value).map(sel=>({owner_id:st.user.id,class_id:cid,sport_id:sel.dataset.sportLevel,level:Number(sel.value)}));
+    if(levelRows.length){const{error}=await db.from('pe_class_sport_levels').upsert(levelRows,{onConflict:'owner_id,class_id,sport_id'});if(error)throw error}
+    const unsetSports=$$('[data-sport-level]').filter(x=>!x.value).map(x=>x.dataset.sportLevel);if(id&&unsetSports.length){const{error}=await db.from('pe_class_sport_levels').delete().eq('class_id',cid).in('sport_id',unsetSports);if(error)throw error}
+
+    msg.textContent='Aggiorno l’app…';await loadCore();$('#classModal').close();toast('Classe salvata e sincronizzata');
+  }catch(err){console.error(err);msg.textContent='Errore: '+(err.message||'salvataggio non riuscito');toast('Salvataggio non riuscito')}
+  finally{saveBtn.disabled=false;saveBtn.textContent='Salva classe'}
 }
+
 function renderModules(){$('#moduleList').innerHTML=st.modules.slice(0,18).map(x=>listItem(x.title,`${x.pe_classes?.name||''} · ${x.planned_weeks} settimane`, `<span class="chip">${x.status}</span>`)).join('')||listItem('Nessun modulo','Creane uno dal generatore')}
 $('#plannerForm').onsubmit=async e=>{e.preventDefault();const cid=$('#planClass').value,sid=$('#planSport').value;if(!cid||!sid)return;const sp=st.sports.find(x=>x.id===sid),cl=st.classes.find(x=>x.id===cid);$('#plannerMsg').textContent='Genero la progressione…';let{data:m,error}=await db.from('pe_sport_modules').insert({owner_id:st.user.id,class_id:cid,sport_id:sid,module_type:'automatic',title:`${sp.name} · ${cl.name}`,start_date:$('#planStart').value,planned_weeks:+$('#planWeeks').value,lesson_duration_min:+$('#planMinutes').value,level_override:$('#planLevel').value?+$('#planLevel').value:null,progression_mode:'progressive',status:'planned'}).select().single();if(error)return $('#plannerMsg').textContent=error.message;let{error:er}=await db.rpc('pe_generate_module_plan',{p_module_id:m.id,p_regenerate:false});if(er)return $('#plannerMsg').textContent=er.message;$('#plannerMsg').textContent='Programmazione generata.';toast('Modulo generato');await loadCore()}
 let replaceCtx=null;
@@ -107,7 +136,7 @@ function renderTests(){$('#testsGrid').innerHTML=st.tests.map(t=>`<article class
 $('#newTestBtn').onclick=()=>$('#testModal').showModal();
 $('#testForm').onsubmit=async e=>{e.preventDefault();const slug=$('#testName').value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Date.now();let{error}=await db.from('pe_motor_tests').insert({owner_id:st.user.id,name:$('#testName').value,slug,unit:$('#testUnit').value,result_direction:$('#testDirection').value,is_default:false,active:true});if(error)return toast(error.message);$('#testModal').close();toast('Test creato');await loadCore()}
 $$('[data-testtab]').forEach(b=>b.onclick=()=>{$$('[data-testtab]').forEach(x=>x.classList.toggle('active',x===b));$$('.testtab').forEach(x=>x.classList.toggle('active',x.id===`testtab-${b.dataset.testtab}`));if(b.dataset.testtab==='rankings')loadRankings();if(b.dataset.testtab==='hof')loadHof()});
-$('#sessionForm').onsubmit=async e=>{e.preventDefault();const cid=$('#sessionClass').value,tid=$('#sessionTest').value,date=$('#sessionDate').value;if(!cid||!tid)return;let test=st.tests.find(x=>x.id===tid);let{data:ses,error}=await db.from('pe_motor_test_sessions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:cid,test_id:tid,session_date:date,title:test.name}).select().single();if(error)return toast(error.message);renderResultEntry(ses,test,cid)}
+$('#sessionForm').onsubmit=async e=>{e.preventDefault();if(!requireSchoolYear('Crea prima l’anno scolastico per registrare i test.'))return;const cid=$('#sessionClass').value,tid=$('#sessionTest').value,date=$('#sessionDate').value;if(!cid||!tid)return;let test=st.tests.find(x=>x.id===tid);let{data:ses,error}=await db.from('pe_motor_test_sessions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:cid,test_id:tid,session_date:date,title:test.name}).select().single();if(error)return toast(error.message);renderResultEntry(ses,test,cid)}
 async function renderResultEntry(session,test,cid){let{data:en}=await db.from('pe_student_enrollments').select('student_id,pe_students(*)').eq('class_id',cid).eq('active',true);$('#sessionResultsArea').innerHTML=`<div class="panel glass" style="margin-top:14px"><span class="kicker">${esc(test.name)}</span><h3>Inserisci risultati</h3><div id="resultRows">${(en||[]).map(x=>`<div class="ranking-row"><div>${x.pe_students.sex==='F'?'♀':'♂'}</div><div><strong>${esc(x.pe_students.first_name)} ${esc(x.pe_students.last_name)}</strong></div><input style="max-width:120px" type="number" step="0.01" data-result-student="${x.student_id}" placeholder="${esc(test.unit)}"></div>`).join('')}</div><button id="saveResults" class="btn primary" style="margin-top:12px">Salva risultati</button></div>`;$('#saveResults').onclick=async()=>{const rows=[];$$('[data-result-student]').forEach(i=>{if(i.value!=='')rows.push({owner_id:st.user.id,session_id:session.id,student_id:i.dataset.resultStudent,result_value:+i.value})});if(rows.length){let{error}=await db.from('pe_motor_test_results').insert(rows);if(error)return toast(error.message)}toast('Risultati salvati');await loadCore();loadRankings()}}
 async function loadRankings(){const cid=$('#rankingClass').value||st.classes[0]?.id,sex=$('#rankingSex').value;if(!cid)return;let{data:t}=await db.from('pe_motor_test_total_rankings').select('*').eq('class_id',cid).eq('sex',sex).order('total_place');$('#totalRanking').innerHTML=(t||[]).map(x=>`<div class="ranking-row"><div class="rank-pos">${x.total_place}</div><div><strong>${esc(x.first_name)} ${esc(x.last_name)}</strong><small>${x.scored_results} risultati a punti</small></div><div class="rank-points">${x.total_points} pt</div></div>`).join('')||'<p class="muted">Nessun risultato.</p>';let{data:sess}=await db.from('pe_motor_test_sessions').select('id').eq('class_id',cid).order('session_date',{ascending:false}).limit(1);if(sess?.length){let{data:r}=await db.from('pe_motor_test_rankings').select('*').eq('session_id',sess[0].id).eq('sex',sex).order('place');$('#singleRanking').innerHTML=(r||[]).map(x=>`<div class="ranking-row"><div class="rank-pos">${x.place}</div><div><strong>${esc(x.first_name)} ${esc(x.last_name)}</strong><small>${x.result_value} ${esc(x.unit)}</small></div><div class="rank-points">${x.points} pt</div></div>`).join('')}else $('#singleRanking').innerHTML='<p class="muted">Nessun test registrato.</p>'}
 $('#rankingClass').onchange=loadRankings;$('#rankingSex').onchange=loadRankings;
@@ -116,9 +145,22 @@ $('#hofTest').onchange=loadHof;$('#hofSex').onchange=loadHof;
 function renderCalendar(){let d=st.month,y=d.getFullYear(),m=d.getMonth();$('#monthTitle').textContent=new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(d);let first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7)),html=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<div class="cal-head">${x}</div>`).join('');for(let i=0;i<42;i++){let day=new Date(start);day.setDate(start.getDate()+i);let iso=day.toISOString().slice(0,10),ev=st.lessons.filter(x=>x.lesson_date===iso).map(x=>`<div class="cal-event" data-lesson="${x.id}">${esc(x.title)}</div>`).join(''),ex=st.exceptions.filter(x=>iso>=x.exception_date&&iso<=(x.end_date||x.exception_date)).map(x=>`<div class="cal-event exception">${esc(x.reason||x.exception_type)}</div>`).join('');html+=`<div class="cal-day ${day.getMonth()!==m?'off':''}"><div class="cal-num">${day.getDate()}</div>${ex}${ev}</div>`}$('#calendarGrid').innerHTML=html;$$('#calendarGrid [data-lesson]').forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson))}
 $('#prevMonth').onclick=()=>{st.month=new Date(st.month.getFullYear(),st.month.getMonth()-1,1);renderCalendar()};$('#nextMonth').onclick=()=>{st.month=new Date(st.month.getFullYear(),st.month.getMonth()+1,1);renderCalendar()};
 function openException(scope='school'){$('#exceptionScope').value=scope;$('#exceptionClassWrap').classList.toggle('hidden',scope==='school');$('#exceptionModal').showModal()}$('#addException').onclick=()=>openException();$('#schoolClosureBtn').onclick=()=>openException();$('#exceptionScope').onchange=()=>$('#exceptionClassWrap').classList.toggle('hidden',$('#exceptionScope').value==='school');
-$('#exceptionForm').onsubmit=async e=>{e.preventDefault();const school=$('#exceptionScope').value==='school';let{error}=await db.from('pe_calendar_exceptions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:school?null:$('#exceptionClass').value,exception_date:$('#exceptionStart').value,end_date:$('#exceptionEnd').value,scope:school?'school':'class',exception_type:$('#exceptionType').value,reason:$('#exceptionReason').value||null,all_day:true});if(error)return toast(error.message);$('#exceptionModal').close();toast('Calendario aggiornato');await loadCore();renderCalendar()}
-function renderSettings(){$('#closureList').innerHTML=st.exceptions.filter(x=>x.scope==='school').map(x=>listItem(x.reason||'Chiusura',`${fmt(x.exception_date)}${x.end_date!==x.exception_date?' → '+fmt(x.end_date):''}`,`<span class="chip">${x.exception_type}</span>`)).join('')||listItem('Nessuna chiusura','Inserisci ponti e vacanze')}
-$('#migrateYearBtn').onclick=()=>$('#migrateModal').showModal();$('#migrateForm').onsubmit=async e=>{e.preventDefault();let{error}=await db.rpc('pe_migrate_school_year',{p_new_label:$('#newYearLabel').value,p_start_date:$('#newYearStart').value,p_end_date:$('#newYearEnd').value,p_archive_old:true});if(error)return toast(error.message);$('#migrateModal').close();toast('Nuovo anno scolastico creato');await loadCore()}
+$('#exceptionForm').onsubmit=async e=>{e.preventDefault();if(!requireSchoolYear('Crea prima l’anno scolastico per inserire chiusure e gite.'))return;const school=$('#exceptionScope').value==='school';let{error}=await db.from('pe_calendar_exceptions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:school?null:$('#exceptionClass').value,exception_date:$('#exceptionStart').value,end_date:$('#exceptionEnd').value,scope:school?'school':'class',exception_type:$('#exceptionType').value,reason:$('#exceptionReason').value||null,all_day:true});if(error)return toast(error.message);$('#exceptionModal').close();toast('Calendario aggiornato');await loadCore();renderCalendar()}
+function renderSettings(){
+  $('#closureList').innerHTML=st.exceptions.filter(x=>x.scope==='school').map(x=>listItem(x.reason||'Chiusura',`${fmt(x.exception_date)}${x.end_date!==x.exception_date?' → '+fmt(x.end_date):''}`,`<span class="chip">${x.exception_type}</span>`)).join('')||listItem('Nessuna chiusura','Inserisci ponti e vacanze');
+  $('#activeYearStatus').innerHTML=st.year?`<span class="chip good">Attivo</span><strong>${esc(st.year.label)}</strong><small>${fmt(st.year.start_date)} → ${fmt(st.year.end_date)}</small>`:`<span class="chip warn">Da configurare</span><strong>Nessun anno scolastico attivo</strong><small>Crealo prima di classi, calendario e test.</small>`;
+  $('#migrateYearBtn').textContent=st.year?'Crea nuovo anno scolastico':'Crea il primo anno scolastico';
+}
+$('#migrateYearBtn').onclick=()=>openSchoolYearDialog(!st.year);
+$('#migrateForm').onsubmit=async e=>{
+  e.preventDefault();const btn=$('#migrateSubmitBtn');btn.disabled=true;btn.textContent='Salvataggio…';
+  try{const label=$('#newYearLabel').value.trim(),start=$('#newYearStart').value,end=$('#newYearEnd').value;if(!label||!start||!end)throw new Error('Completa tutti i dati dell’anno scolastico.');if(end<=start)throw new Error('La data di fine deve essere successiva alla data di inizio.');
+    if(!st.year){const{error}=await db.from('pe_school_years').insert({owner_id:st.user.id,label,start_date:start,end_date:end,is_active:true});if(error)throw error;toast('Anno scolastico creato')}
+    else{const{error}=await db.rpc('pe_migrate_school_year',{p_new_label:label,p_start_date:start,p_end_date:end,p_archive_old:true});if(error)throw error;toast('Nuovo anno creato e classi migrate')}
+    $('#migrateModal').close();await loadCore();
+  }catch(err){console.error(err);toast(err.message||'Impossibile creare l’anno scolastico')}
+  finally{btn.disabled=false;btn.textContent=st.year?'Crea e migra classi':'Crea anno scolastico'}
+}
 
 
 $('#backPrimaryToSports').onclick=()=>go('sports');

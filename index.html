@@ -152,7 +152,7 @@
 <section id="view-settings" class="view">
   <div class="cols">
     <article class="panel glass"><span class="kicker">ANNO SCOLASTICO</span><h3>Chiusure e festività</h3><button id="schoolClosureBtn" class="btn secondary">+ Aggiungi chiusura</button><div id="closureList" class="stack-list"></div></article>
-    <article class="panel glass"><span class="kicker">NUOVO ANNO</span><h3>Migrazione classi</h3><p class="muted">Prima → Seconda, Seconda → Terza, Terza → archivio.</p><button id="migrateYearBtn" class="btn primary">Crea nuovo anno scolastico</button></article>
+    <article class="panel glass"><span class="kicker">ANNO SCOLASTICO ATTIVO</span><h3>Gestione anno e migrazione</h3><div id="activeYearStatus" class="active-year-status"></div><p class="muted">Primaria: 1ª→2ª→3ª→4ª→5ª→1ª media. Medie: 1ª→2ª→3ª→1ª superiore. Superiori: fino alla 5ª, poi archivio.</p><button id="migrateYearBtn" class="btn primary">Crea nuovo anno scolastico</button></article>
   </div>
 </section>
 </main>
@@ -204,7 +204,7 @@
 <div class="form-row"><label>Femmine<input id="femaleCount" type="number" min="0" required></label><label>Maschi<input id="maleCount" type="number" min="0" required></label></div>
 <div class="modal-section"><div class="section-title-row compact"><div><span class="kicker">ALUNNI</span><h4>Nomi e cognomi</h4></div><button id="addStudentRow" type="button" class="btn secondary small-btn">+ Aggiungi alunno</button></div><div id="studentRows"></div></div>
 <div class="modal-section"><span class="kicker">LIVELLI SPORTIVI</span><div id="sportLevelGrid" class="level-grid"></div></div>
-<button class="btn primary" type="submit">Salva classe</button><small id="classMsg"></small>
+<button id="classSaveBtn" class="btn primary" type="submit">Salva classe</button><small id="classMsg" class="form-message"></small>
 </form></dialog>
 
 <dialog id="testModal" class="modal"><div class="modal-head"><div><span class="kicker">TEST MOTORE</span><h3>Nuovo test</h3></div><button data-close="testModal">×</button></div>
@@ -212,7 +212,7 @@
 
 <dialog id="exceptionModal" class="modal"><div class="modal-head"><div><span class="kicker">CALENDARIO</span><h3>Nuova eccezione</h3></div><button data-close="exceptionModal">×</button></div><form id="exceptionForm"><label>Ambito<select id="exceptionScope"><option value="school">Tutta la scuola</option><option value="class">Solo una classe</option></select></label><label id="exceptionClassWrap" class="hidden">Classe<select id="exceptionClass"></select></label><label>Tipo<select id="exceptionType"><option value="holiday">Vacanza / chiusura</option><option value="school_event">Gita / uscita</option><option value="no_lesson">Lezione annullata</option><option value="other">Altro</option></select></label><div class="form-row"><label>Dal<input id="exceptionStart" type="date"></label><label>Al<input id="exceptionEnd" type="date"></label></div><label>Motivo<input id="exceptionReason"></label><button class="btn primary">Salva</button></form></dialog>
 
-<dialog id="migrateModal" class="modal"><div class="modal-head"><div><span class="kicker">NUOVO ANNO</span><h3>Migrazione scolastica</h3></div><button data-close="migrateModal">×</button></div><form id="migrateForm"><label>Etichetta anno<input id="newYearLabel" required placeholder="2027/2028"></label><div class="form-row"><label>Inizio<input id="newYearStart" type="date" required></label><label>Fine<input id="newYearEnd" type="date" required></label></div><button class="btn primary">Crea e migra classi</button></form></dialog>
+<dialog id="migrateModal" class="modal"><div class="modal-head"><div><span class="kicker">ANNO SCOLASTICO</span><h3 id="migrateModalTitle">Nuovo anno scolastico</h3></div><button data-close="migrateModal">×</button></div><form id="migrateForm"><label>Etichetta anno<input id="newYearLabel" required placeholder="2027/2028"></label><div class="form-row"><label>Inizio<input id="newYearStart" type="date" required></label><label>Fine<input id="newYearEnd" type="date" required></label></div><button id="migrateSubmitBtn" class="btn primary">Crea e migra classi</button></form></dialog>
 
 <div id="toast" class="toast"></div>
 <script type="module" src="app.js"></script>
