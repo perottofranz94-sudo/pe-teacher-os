@@ -104,7 +104,7 @@ $('#classForm').onsubmit=async e=>{
 
     msg.textContent='Salvo i livelli sportivi…';
     const levelRows=$$('[data-sport-level]').filter(x=>x.value).map(sel=>({owner_id:st.user.id,class_id:cid,sport_id:sel.dataset.sportLevel,level:Number(sel.value)}));
-    if(levelRows.length){const{error}=await db.from('pe_class_sport_levels').upsert(levelRows,{onConflict:'owner_id,class_id,sport_id'});if(error)throw error}
+    if(levelRows.length){const{error}=await db.from('pe_class_sport_levels').upsert(levelRows,{onConflict:'class_id,sport_id'});if(error)throw error}
     const unsetSports=$$('[data-sport-level]').filter(x=>!x.value).map(x=>x.dataset.sportLevel);if(id&&unsetSports.length){const{error}=await db.from('pe_class_sport_levels').delete().eq('class_id',cid).in('sport_id',unsetSports);if(error)throw error}
 
     msg.textContent='Aggiorno l’app…';await loadCore();$('#classModal').close();toast('Classe salvata e sincronizzata');
