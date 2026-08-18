@@ -35,3 +35,11 @@ GitHub Pages si aggiornerà automaticamente.
 - Creazione/modifica/eliminazione di giochi personali sincronizzati su Supabase.
 - Upload immagini personali su bucket privato Supabase `pe-primary-games` (max 5 MB, JPG/PNG/WebP).
 - Nuova tabella dedicata `pe_primary_games` protetta da RLS; nessuna modifica alle tabelle esistenti.
+
+
+## v3.6 — iPhone full navigation
+- Menu mobile completo equivalente alla sidebar desktop.
+- Barra rapida Home / Calendario / Classi / Menu.
+- Creazione e modifica classi accessibile da iPhone.
+- Calendario mensile scorrevole orizzontalmente su schermi piccoli.
+- Nessuna modifica dati o schema Supabase.

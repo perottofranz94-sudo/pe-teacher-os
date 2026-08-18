@@ -50,7 +50,8 @@
 
 <main class="content">
 <header class="topbar">
-  <div><span id="pageKicker" class="kicker">PANORAMICA</span><h2 id="pageTitle">Dashboard</h2></div>
+  <button id="mobileMenuBtn" class="mobile-menu-btn" type="button" aria-label="Apri menu" aria-expanded="false">☰</button>
+  <div class="topbar-title"><span id="pageKicker" class="kicker">PANORAMICA</span><h2 id="pageTitle">Dashboard</h2></div>
   <div class="topbar-actions"><span id="syncStatus" class="sync-status" title="Sincronizzazione Supabase"><i></i><span>Sincronizzato</span></span><button id="quickPlan" class="btn primary">+ Nuovo modulo</button></div>
 </header>
 
@@ -79,7 +80,7 @@
 
 <section id="view-calendar" class="view">
   <div class="toolbar glass"><div class="month-switch"><button id="prevMonth">‹</button><b id="monthTitle"></b><button id="nextMonth">›</button></div><button id="addException" class="btn secondary">+ Chiusura / gita</button></div>
-  <div id="calendarGrid" class="calendar glass"></div>
+  <div class="calendar-scroll"><div id="calendarGrid" class="calendar glass"></div></div>
 </section>
 
 <section id="view-classes" class="view">
@@ -156,12 +157,30 @@
 </section>
 </main>
 
-<nav class="bottom-nav glass">
+<nav class="bottom-nav glass" aria-label="Navigazione rapida">
   <button data-view="dashboard" class="active">⌂<span>Home</span></button>
-  <button data-view="planner">✦<span>Pianifica</span></button>
-  <button data-view="sports">◈<span>Sport</span></button>
-  <button data-view="tests">⌁<span>Test</span></button>
+  <button data-view="calendar">▦<span>Calendario</span></button>
+  <button data-view="classes">◎<span>Classi</span></button>
+  <button id="mobileMoreBtn" type="button">☰<span>Menu</span></button>
 </nav>
+<div id="mobileMenuBackdrop" class="mobile-menu-backdrop hidden"></div>
+<aside id="mobileMenu" class="mobile-drawer" aria-hidden="true">
+  <div class="mobile-drawer-head">
+    <div class="brand-row"><img class="sidebar-logo" src="assets/icon-192.png" alt=""><div><strong><span class="brand-white">Attiva</span><span class="brand-orange">Mente</span></strong><span>Menu completo</span></div></div>
+    <button id="mobileMenuClose" type="button" aria-label="Chiudi menu">×</button>
+  </div>
+  <nav class="mobile-drawer-nav">
+    <button data-view="dashboard"><span>⌂</span><div><b>Dashboard</b><small>Panoramica dell’app</small></div></button>
+    <button data-view="calendar"><span>▦</span><div><b>Calendario</b><small>Lezioni, chiusure e gite</small></div></button>
+    <button data-view="classes"><span>◎</span><div><b>Classi</b><small>Crea e modifica le classi</small></div></button>
+    <button data-view="planner"><span>✦</span><div><b>Programmazione</b><small>Genera i moduli didattici</small></div></button>
+    <button data-view="sports"><span>◈</span><div><b>Archivio sport</b><small>Tutti gli sport e gli esercizi</small></div></button>
+    <button data-view="primarygames"><span>✹</span><div><b>Giochi scuola primaria</b><small>Libro e giochi personali</small></div></button>
+    <button data-view="tests"><span>⌁</span><div><b>Test motori</b><small>Risultati e classifiche</small></div></button>
+    <button data-view="settings"><span>⚙</span><div><b>Impostazioni</b><small>Anno scolastico e chiusure</small></div></button>
+  </nav>
+  <button id="mobileLogoutBtn" class="btn ghost mobile-logout" type="button">Esci dall’app</button>
+</aside>
 </div>
 
 <dialog id="primaryGameModal" class="modal wide"><div class="modal-head"><div><span class="kicker">GIOCO SCUOLA PRIMARIA</span><h3 id="primaryGameModalTitle"></h3></div><button data-close="primaryGameModal">×</button></div><div id="primaryGameModalBody"></div></dialog>

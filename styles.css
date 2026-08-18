@@ -117,3 +117,52 @@ input,select{background:#082b4d;border-color:rgba(255,255,255,.11)}input:focus,s
 .primary-sport-card{background:linear-gradient(145deg,#0f4e7c,#8a3500)!important}.primary-sport-card .sport-icon{font-size:35px}.primary-sport-card .sport-count{color:#ffd0ad}
 .replace-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.replace-mode-card{appearance:none;border:1px solid var(--line);background:#0a3158;color:#fff;border-radius:20px;padding:22px;text-align:left;cursor:pointer;transition:.18s transform,.18s border-color}.replace-mode-card:hover{transform:translateY(-2px);border-color:rgba(255,126,0,.55)}.replace-mode-card b{display:block;font-size:18px;margin-bottom:7px}.replace-mode-card span{display:block;color:#b8cbda;font-size:12px;line-height:1.55}.lesson-actions{display:flex;flex-direction:column;gap:7px;justify-content:center}.replace-picker-sports{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.replace-picker-sport{padding:18px;border-radius:18px;background:#0a3158;border:1px solid var(--line);cursor:pointer;color:#fff;text-align:left}.replace-picker-sport b{display:block;font-size:16px;margin:5px 0}.replace-picker-sport span{font-size:11px;color:#a9bfd0}.replace-exercise-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.replace-exercise-card{padding:14px;border-radius:16px;background:#0a3158;border:1px solid var(--line)}.replace-exercise-card h4{margin:0 0 7px;font-size:15px}.replace-exercise-card p{font-size:11px;color:#b9ccda;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.replace-exercise-card .btn{margin-top:8px}.replace-primary-thumb{width:72px;height:52px;border-radius:9px;object-fit:cover;float:right;margin-left:9px}
 @media(max-width:780px){.bottom-nav{grid-template-columns:repeat(4,1fr)!important}.replace-mode-grid,.replace-picker-sports,.replace-exercise-grid{grid-template-columns:1fr}.replace-mode-card{padding:18px}.lesson-actions{flex-direction:row;justify-content:flex-start;margin-top:10px}.lesson-row{align-items:flex-start}.school-level-help{min-height:44px}.replace-picker-sport{padding:16px}}
+
+
+/* AttivaMente v3.6 — iPhone: funzioni complete come desktop */
+.mobile-menu-btn,.mobile-drawer,.mobile-menu-backdrop{display:none}
+.calendar-scroll{width:100%;overflow:visible}
+@media(max-width:780px){
+  body.menu-open{overflow:hidden}
+  .topbar{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:16px}
+  .topbar-title{min-width:0}.topbar-title h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mobile-menu-btn{display:grid;place-items:center;width:50px;height:50px;border:1px solid var(--line);border-radius:16px;background:#0a3158;color:#fff;font-size:25px;font-weight:900;box-shadow:0 10px 24px rgba(0,0,0,.2)}
+  .topbar-actions{justify-self:end}.topbar-actions .sync-status{min-width:42px;height:42px;display:grid;place-items:center;padding:0}
+  .content{padding:14px 12px 132px}
+
+  .bottom-nav{grid-template-columns:repeat(4,1fr)!important;min-height:82px;padding:7px!important}
+  .bottom-nav button{min-height:66px!important;font-size:23px!important;padding:8px 2px!important}
+  .bottom-nav span{font-size:10px!important;font-weight:900!important;margin-top:5px!important;line-height:1.05}
+
+  .mobile-menu-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.58);backdrop-filter:blur(5px);z-index:79}
+  .mobile-menu-backdrop.hidden{display:none}
+  .mobile-drawer{display:flex;position:fixed;z-index:80;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-height:calc(100dvh - 28px);flex-direction:column;background:#071a2d;border:1px solid rgba(255,255,255,.12);border-radius:28px;box-shadow:0 30px 90px rgba(0,0,0,.58);padding:14px;transform:translateY(calc(100% + 30px));opacity:0;pointer-events:none;transition:transform .24s ease,opacity .2s ease;overflow:hidden}
+  .mobile-drawer.open{transform:translateY(0);opacity:1;pointer-events:auto}
+  .mobile-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:5px 4px 13px;border-bottom:1px solid var(--line)}
+  .mobile-drawer-head .brand-row{padding:0;gap:10px}.mobile-drawer-head .brand-row strong{font-size:19px}.mobile-drawer-head .brand-row span{font-size:10px}
+  .mobile-drawer-head button{width:44px;height:44px;border:0;border-radius:14px;background:#143858;color:#fff;font-size:28px}
+  .mobile-drawer-nav{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:13px 0;overflow-y:auto}
+  .mobile-drawer-nav button{display:grid;grid-template-columns:39px 1fr;align-items:center;gap:9px;min-height:72px;padding:11px;border:1px solid var(--line);border-radius:17px;background:#0a2a49;color:#fff;text-align:left}
+  .mobile-drawer-nav button>span{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#123e68;color:#ff8a00;font-size:20px}
+  .mobile-drawer-nav b{display:block;font-size:13px}.mobile-drawer-nav small{display:block;margin-top:3px;color:#9eb5c8;font-size:9px;line-height:1.3}
+  .mobile-drawer-nav button.active{border-color:rgba(255,138,0,.45);background:linear-gradient(135deg,rgba(255,106,0,.18),#0a2a49)}
+  .mobile-logout{width:100%;min-height:48px;margin-top:2px;flex:0 0 auto}
+
+  #view-classes .section-title-row{align-items:stretch;flex-direction:column;gap:13px}
+  #view-classes #newClassBtn{width:100%;min-height:54px;font-size:15px;border-radius:17px}
+  #view-classes .class-grid{margin-top:12px}
+
+  #view-calendar .toolbar{align-items:stretch;flex-direction:column;gap:9px}
+  #view-calendar .month-switch{width:100%;justify-content:space-between;margin:0}
+  #view-calendar #addException{width:100%;min-height:50px}
+  .calendar-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:23px;padding-bottom:4px}
+  .calendar{width:720px;min-width:720px;overflow:hidden}
+  .cal-head{font-size:11px;padding:9px 5px}.cal-day{min-height:94px;padding:6px}.cal-event{font-size:9px;padding:5px}
+
+  dialog.modal{max-height:calc(100dvh - 24px);overflow-y:auto}
+  .modal-head{position:sticky;top:-18px;z-index:3;background:#091522;padding-top:18px}
+}
+@media(max-width:390px){
+  .mobile-drawer-nav{grid-template-columns:1fr}.mobile-drawer-nav button{min-height:64px}
+  .topbar{grid-template-columns:48px minmax(0,1fr) auto}.mobile-menu-btn{width:46px;height:46px}
+}
