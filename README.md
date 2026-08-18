@@ -52,3 +52,10 @@ GitHub Pages si aggiornerà automaticamente.
 
 ## v4.0 — promozione classi
 Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le classi?”. Con Sì: primaria 1→2→3→4→5 e archivia la 5ª; medie 1→2→3 e archivia la 3ª; superiori 1→2→3→4→5 e archivia la 5ª. Con No: crea il nuovo anno senza migrare le classi.
+
+
+## v4.2
+- Correzione gestione duplicati classi e cache iPhone.
+- Elenco anni scolastici nelle Impostazioni.
+- Eliminazione sicura di un anno scolastico tramite RPC dedicata e doppia conferma.
+- Indicatore versione visibile per verificare che la PWA sia aggiornata.

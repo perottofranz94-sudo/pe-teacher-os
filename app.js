@@ -2,7 +2,7 @@
 import{createClient}from'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import{SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY}from'./config.js';
 const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const st={user:null,year:null,classes:[],sports:[],sportCounts:{},lessons:[],modules:[],tests:[],exceptions:[],hof:[],month:new Date(),currentSport:null,currentExercises:[],categories:[],primaryDefaults:[],primaryCustom:[],primaryGames:[]};
+const st={user:null,year:null,schoolYears:[],classes:[],sports:[],sportCounts:{},lessons:[],modules:[],tests:[],exceptions:[],hof:[],month:new Date(),currentSport:null,currentExercises:[],categories:[],primaryDefaults:[],primaryCustom:[],primaryGames:[]};
 const $=q=>document.querySelector(q),$$=q=>[...document.querySelectorAll(q)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const fmt=d=>new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00'));
@@ -26,6 +26,7 @@ $('#mobileMenuBtn').onclick=openMobileMenu;$('#mobileMoreBtn').onclick=openMobil
 async function loadCore(){
   const results=await Promise.all([
     db.from('pe_school_years').select('*').eq('is_active',true).maybeSingle(),
+    db.from('pe_school_years').select('*').order('start_date',{ascending:false}),
     db.from('pe_classes').select('*').eq('archived',false).order('school_level').order('grade').order('name'),
     db.from('pe_sports').select('*').eq('active',true).order('name'),
     db.from('pe_lessons').select('*,pe_classes(name),pe_sports(name)').order('lesson_date').limit(200),
@@ -35,8 +36,8 @@ async function loadCore(){
     db.from('pe_motor_test_hall_of_fame').select('*').limit(40)
   ]);
   const firstError=results.find(r=>r.error)?.error;if(firstError)throw firstError;
-  const [y,c,s,l,m,t,e,h]=results;
-  st.year=y.data||null;st.classes=c.data||[];st.sports=s.data||[];st.lessons=l.data||[];st.modules=m.data||[];st.tests=t.data||[];st.exceptions=e.data||[];st.hof=h.data||[];
+  const [y,ys,c,s,l,m,t,e,h]=results;
+  st.year=y.data||null;st.schoolYears=ys.data||[];st.classes=c.data||[];st.sports=s.data||[];st.lessons=l.data||[];st.modules=m.data||[];st.tests=t.data||[];st.exceptions=e.data||[];st.hof=h.data||[];
   const counts=await Promise.all(st.sports.map(async sp=>{const{count,error}=await db.from('pe_exercises').select('*',{count:'exact',head:true}).eq('sport_id',sp.id).eq('active',true).eq('audit_status','VERIFIED');if(error)throw error;return[sp.id,count||0]}));
   st.sportCounts=Object.fromEntries(counts);populateSelects();renderDashboard();renderClasses();renderModules();renderTests();renderSettings();
 }
@@ -107,8 +108,38 @@ $('#classForm').onsubmit=async e=>{
   try{
     let cid=id;
     const classPayload={name,school_level:level,grade,female_count:f,male_count:m,student_count:total,updated_at:new Date().toISOString()};
-    if(id){const{error}=await db.from('pe_classes').update(classPayload).eq('id',id);if(error)throw error}
-    else{const{data,error}=await db.from('pe_classes').insert({owner_id:st.user.id,school_year_id:st.year.id,...classPayload}).select().single();if(error)throw error;cid=data.id}
+    if(id){
+      const{error}=await db.from('pe_classes').update(classPayload).eq('id',id);if(error)throw error
+    }else{
+      // Prima verifica se un precedente tentativo ha già creato la classe ma si è fermato dopo.
+      // In quel caso recuperiamo la classe esistente e completiamo il salvataggio in modo idempotente.
+      const{data:existing,error:existingErr}=await db.from('pe_classes')
+        .select('id,name,archived')
+        .eq('school_year_id',st.year.id)
+        .eq('name',name)
+        .eq('archived',false)
+        .maybeSingle();
+      if(existingErr)throw existingErr;
+      if(existing?.id){
+        cid=existing.id;
+        msg.textContent='Classe già presente da un tentativo precedente: completo il salvataggio…';
+        const{error:updateExistingErr}=await db.from('pe_classes').update(classPayload).eq('id',cid);
+        if(updateExistingErr)throw updateExistingErr;
+      }else{
+        const{data,error}=await db.from('pe_classes').insert({owner_id:st.user.id,school_year_id:st.year.id,...classPayload}).select().single();
+        if(error){
+          if(error.code==='23505'){
+            const{data:dup,error:dupErr}=await db.from('pe_classes').select('id').eq('school_year_id',st.year.id).eq('name',name).eq('archived',false).maybeSingle();
+            if(dupErr)throw dupErr;
+            if(!dup?.id)throw new Error('Esiste già una classe con questo nome nello stesso anno scolastico. Aprila dalla sezione Classi e modificala.');
+            cid=dup.id;
+            msg.textContent='Classe già esistente: completo il salvataggio su quella classe…';
+            const{error:updateDupErr}=await db.from('pe_classes').update(classPayload).eq('id',cid);
+            if(updateDupErr)throw updateDupErr;
+          }else throw error;
+        }else cid=data.id;
+      }
+    }
 
     msg.textContent='Sincronizzo gli alunni…';
     const rows=$$('.student-row');const keptIds=[];const newStudents=[];
@@ -166,6 +197,24 @@ function renderSettings(){
   $('#closureList').innerHTML=st.exceptions.filter(x=>x.scope==='school').map(x=>listItem(x.reason||'Chiusura',`${fmt(x.exception_date)}${x.end_date!==x.exception_date?' → '+fmt(x.end_date):''}`,`<span class="chip">${x.exception_type}</span>`)).join('')||listItem('Nessuna chiusura','Inserisci ponti e vacanze');
   $('#activeYearStatus').innerHTML=st.year?`<span class="chip good">Attivo</span><strong>${esc(st.year.label)}</strong><small>${fmt(st.year.start_date)} → ${fmt(st.year.end_date)}</small>`:`<span class="chip warn">Da configurare</span><strong>Nessun anno scolastico attivo</strong><small>Crealo prima di classi, calendario e test.</small>`;
   $('#migrateYearBtn').textContent=st.year?'Crea nuovo anno scolastico':'Crea il primo anno scolastico';
+  const yl=$('#schoolYearList');
+  if(yl){
+    yl.innerHTML=(st.schoolYears||[]).map(y=>`<div class="list-item school-year-row"><div><strong>${esc(y.label)}</strong><small>${fmt(y.start_date)} → ${fmt(y.end_date)} ${y.is_active?'· ATTIVO':''}</small></div><button type="button" class="btn danger small-btn" data-delete-year="${y.id}">Elimina</button></div>`).join('')||listItem('Nessun anno scolastico','Crea il primo anno per iniziare');
+    $$('[data-delete-year]').forEach(b=>b.onclick=()=>deleteSchoolYear(b.dataset.deleteYear));
+  }
+  const build=$('#buildVersion');if(build)build.textContent='Versione 4.2';
+}
+async function deleteSchoolYear(id){
+  const y=(st.schoolYears||[]).find(x=>x.id===id);if(!y)return;
+  const classes=st.classes.filter(c=>c.school_year_id===id).length;
+  const warning=`Eliminare definitivamente l’anno scolastico “${y.label}”?\n\nVerranno eliminati i dati collegati a quell’anno (classi, calendario, sessioni test e relativo storico). Gli altri anni, gli sport e l’archivio esercizi non verranno toccati.\n\nQuesta operazione non può essere annullata.`;
+  if(!confirm(warning))return;
+  if(!confirm(`Conferma definitiva: elimina “${y.label}”?`))return;
+  try{
+    toast('Elimino l’anno scolastico…');
+    const{data,error}=await db.rpc('pe_delete_school_year',{p_school_year_id:id});if(error)throw error;
+    await loadCore();renderAll();toast(`Anno ${y.label} eliminato`);
+  }catch(err){console.error(err);toast(err.message||'Impossibile eliminare l’anno scolastico')}
 }
 $('#migrateYearBtn').onclick=()=>openSchoolYearDialog(!st.year);
 $('#migrateForm').onsubmit=async e=>{
@@ -282,4 +331,4 @@ db.auth.onAuthStateChange((event,se)=>{if(se&&!st.user)setTimeout(()=>enter(se.u
 addEventListener('online',()=>syncFromCloud());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastSyncAt>5000)syncFromCloud({quiet:true})});
 setInterval(()=>{if(document.visibilityState==='visible')syncFromCloud({quiet:true})},45000);
-if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+if('serviceWorker'in navigator)addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('./service-worker.js?v=4.2',{updateViaCache:'none'});await r.update();}catch(e){console.warn('SW update',e)}});
