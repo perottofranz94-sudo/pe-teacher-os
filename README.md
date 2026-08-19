@@ -89,3 +89,15 @@ Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le cla
 - Chiusure scuola/classe: slittamento automatico delle lezioni programmate, mantenendo la sequenza.
 - Generatore iPhone: pulsante esplicito e gestione robusta degli errori.
 - Classifiche: filtri Classe + Test + Generale/Femmine/Maschi.
+
+
+## Versione 5.0
+- Eliminazione di una singola lezione dal calendario con compattazione automatica del modulo.
+- Spostamento di una lezione a una data scelta.
+- Slittamento della lezione selezionata e di tutte le successive per N occasioni utili, rispettando orario e chiusure.
+- Eliminazione completa di un blocco/modulo dalla sezione Programmazione.
+
+
+## Versione 5.0
+- Conferma dettagliata prima di eliminare un intero blocco: sport, classe, numero lezioni e rimozione dal calendario.
+- Classifiche ridisegnate in stile più semplice e sportivo, con emoji automatiche in base al test, podio compatto, media classe e miglior prestazione.
