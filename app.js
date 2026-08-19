@@ -316,7 +316,40 @@ async function loadHof(){let q=db.from('pe_motor_test_hall_of_fame').select('*')
   $('#hofGrid').innerHTML=data.length?data.map((x,i)=>`<article class="hof-card ${counts[x.student_id||`${x.first_name}-${x.last_name}`]===max&&max>1?'hof-legend':''}"><div class="hof-top"><div class="medal">${i<3?'🏆':'✦'}</div><span class="hof-record-badge">RECORD ${x.sex==='F'?'F':'M'}</span></div><div class="hof-test">${esc(x.test_name)}</div><h4>${esc(x.first_name)} ${esc(x.last_name)}</h4><div class="hof-value">${fmtNum(x.result_value)} ${esc(x.unit)}</div><div class="hof-meta"><div>CLASSE<b>${esc(x.class_name||'—')}</b></div><div>ANNO<b>${esc(x.school_year_label||'—')}</b></div><div>DATA<b>${x.session_date?fmt(x.session_date):'—'}</b></div><div>PRESENZE HOF<b>${counts[x.student_id||`${x.first_name}-${x.last_name}`]||1}</b></div></div></article>`).join(''):emptyPremium('La Hall of Fame aspetta il primo record');
 }
 $('#hofTest').onchange=loadHof;$('#hofSex').onchange=loadHof;
-function renderCalendar(){let d=st.month,y=d.getFullYear(),m=d.getMonth();$('#monthTitle').textContent=new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(d);let first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7)),html=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<div class="cal-head">${x}</div>`).join('');for(let i=0;i<42;i++){let day=new Date(start);day.setDate(start.getDate()+i);let iso=localISODate(day),ev=st.lessons.filter(x=>x.lesson_date===iso).map(x=>`<div class="cal-event ${x.is_extra?'extra':''}" data-lesson="${x.id}">${x.start_time?`<span class="cal-time">${String(x.start_time).slice(0,5)}</span>`:''}${x.is_extra?'<span class="cal-extra-badge">EXTRA</span>':''}${esc(x.title)}</div>`).join(''),ex=st.exceptions.filter(x=>iso>=x.exception_date&&iso<=(x.end_date||x.exception_date)).map(x=>`<div class="cal-event exception">${esc(x.reason||x.exception_type)}</div>`).join('');html+=`<div class="cal-day ${day.getMonth()!==m?'off':''}"><div class="cal-num">${day.getDate()}</div>${ex}${ev}</div>`}$('#calendarGrid').innerHTML=html;$$('#calendarGrid [data-lesson]').forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson))}
+
+function closureEmoji(reason='',type=''){
+  const s=String(reason||'').toLowerCase();
+  if(/natale|christmas/.test(s)) return '🎄';
+  if(/pasqua|pasquale|easter/.test(s)) return '🐣';
+  if(/carnevale/.test(s)) return '🎭';
+  if(/ognissanti|tutti i santi/.test(s)) return '🕯️';
+  if(/immacolata/.test(s)) return '✨';
+  if(/lavorator|1 maggio|primo maggio/.test(s)) return '🛠️';
+  if(/liberazione|25 aprile/.test(s)) return '🕊️';
+  if(/repubblica|2 giugno/.test(s)) return '🇮🇹';
+  if(/capodanno|1 gennaio|primo gennaio/.test(s)) return '🎆';
+  if(/epifania|befana|6 gennaio/.test(s)) return '⭐';
+  if(/ferragosto|15 agosto/.test(s)) return '☀️';
+  if(/ponte/.test(s)) return '🌉';
+  return '❌';
+}
+function classLabelForException(x){
+  const c=st.classes.find(c=>String(c.id)===String(x.class_id));
+  return c?.name||'Classe';
+}
+
+function renderCalendar(){let d=st.month,y=d.getFullYear(),m=d.getMonth();$('#monthTitle').textContent=new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(d);let first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7)),html=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<div class="cal-head">${x}</div>`).join('');for(let i=0;i<42;i++){let day=new Date(start);day.setDate(start.getDate()+i);let iso=localISODate(day),ev=st.lessons.filter(x=>x.lesson_date===iso).map(x=>`<div class="cal-event ${x.is_extra?'extra':''}" data-lesson="${x.id}">${x.start_time?`<span class="cal-time">${String(x.start_time).slice(0,5)}</span>`:''}${x.is_extra?'<span class="cal-extra-badge">EXTRA</span>':''}${esc(x.title)}</div>`).join(''),
+dayExceptions=st.exceptions.filter(x=>iso>=x.exception_date&&iso<=(x.end_date||x.exception_date)),
+schoolClosures=dayExceptions.filter(x=>x.scope==='school'&&x.exception_type!=='school_event'),
+classTrips=dayExceptions.filter(x=>x.scope==='class'&&x.exception_type==='school_event'),
+otherExceptions=dayExceptions.filter(x=>!(x.scope==='school'&&x.exception_type!=='school_event')&&!(x.scope==='class'&&x.exception_type==='school_event')),
+isSchoolClosed=schoolClosures.length>0,
+schoolEx=schoolClosures.map(x=>`<button type="button" class="cal-event exception school-closure-event cal-exception-btn" data-exception-id="${x.id}" data-exception-day="${iso}">${esc(x.reason||'Scuola chiusa')}</button>`).join(''),
+tripEx=classTrips.map(x=>`<button type="button" class="cal-event class-trip-event cal-exception-btn" data-exception-id="${x.id}" data-exception-day="${iso}"><span class="trip-bus">🚌</span><span>${esc(classLabelForException(x))} · ${esc(x.reason||'Uscita / gita')}</span></button>`).join(''),
+otherEx=otherExceptions.map(x=>`<button type="button" class="cal-event exception cal-exception-btn" data-exception-id="${x.id}" data-exception-day="${iso}">${esc(x.reason||x.exception_type)}</button>`).join(''),
+closureDecor=isSchoolClosed?`<div class="school-closure-decor" aria-hidden="true">${closureEmoji(schoolClosures[0]?.reason,schoolClosures[0]?.exception_type)}</div>`:'',
+ex=schoolEx+tripEx+otherEx;
+html+=`<div class="cal-day ${day.getMonth()!==m?'off':''} ${isSchoolClosed?'school-closed-day':''}"><div class="cal-num">${day.getDate()}</div>${ex}${ev}${closureDecor}</div>`}$('#calendarGrid').innerHTML=html;$$('#calendarGrid [data-lesson]').forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));$$('#calendarGrid [data-exception-id]').forEach(b=>b.onclick=()=>openCalendarException(b.dataset.exceptionId,b.dataset.exceptionDay))}
 $('#prevMonth').onclick=()=>{st.month=new Date(st.month.getFullYear(),st.month.getMonth()-1,1);renderCalendar()};$('#nextMonth').onclick=()=>{st.month=new Date(st.month.getFullYear(),st.month.getMonth()+1,1);renderCalendar()};
 function openException(scope='school'){$('#exceptionScope').value=scope;$('#exceptionClassWrap').classList.toggle('hidden',scope==='school');$('#exceptionModal').showModal()}$('#addException').onclick=()=>openException();$('#schoolClosureBtn').onclick=()=>openException();$('#exceptionScope').onchange=()=>$('#exceptionClassWrap').classList.toggle('hidden',$('#exceptionScope').value==='school');
 $('#exceptionForm').onsubmit=async e=>{e.preventDefault();if(!requireSchoolYear('Crea prima l’anno scolastico per inserire chiusure e gite.'))return;const school=$('#exceptionScope').value==='school';const submit=e.submitter;try{if(submit)submit.disabled=true;let{error}=await db.from('pe_calendar_exceptions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:school?null:$('#exceptionClass').value,exception_date:$('#exceptionStart').value,end_date:$('#exceptionEnd').value,scope:school?'school':'class',exception_type:$('#exceptionType').value,reason:$('#exceptionReason').value||null,all_day:true});if(error)throw error;$('#exceptionModal').close();toast('Chiusura salvata · lezioni automatiche slittate');await loadCore();renderCalendar();renderModules()}catch(err){toast(err.message||'Errore calendario')}finally{if(submit)submit.disabled=false}}
@@ -342,6 +375,42 @@ $$('input[name="extraMode"]').forEach(r=>r.onchange=refreshExtraPanels);['#extra
 $('#addManualLesson').onclick=()=>{if(!requireSchoolYear('Crea prima l’anno scolastico.'))return;manualLessonItems=[];$('#manualLessonForm').reset();$('#manualDate').value=localISODate(new Date());$('#manualLessonMsg').textContent='';renderBuilder(manualLessonItems,'#manualLessonBuilder','#manualLessonBalance',0);$('#manualLessonModal').showModal()};['#manualStart','#manualEnd'].forEach(id=>$(id).addEventListener('change',()=>renderBuilder(manualLessonItems,'#manualLessonBuilder','#manualLessonBalance',manualDuration())));$('#manualPickArchive').onclick=()=>openArchivePicker('manual');$('#manualAddCustom').onclick=()=>openCustomActivity('manual');
 $('#extraLessonForm').onsubmit=async e=>{e.preventDefault();const msg=$('#extraLessonMsg'),cid=$('#extraClass').value,date=$('#extraDate').value,start=$('#extraStart').value,end=$('#extraEnd').value,mode=document.querySelector('input[name="extraMode"]:checked')?.value||'single',mins=minutesBetween(start,end);if(!cid||!date||mins<=0){msg.textContent='Completa classe, data e un orario valido.';return}if(mode==='single'&&!extraSelectedActivity){msg.textContent='Scegli un’attività dall’archivio.';return}if(mode==='auto'&&!$('#extraAutoSport').value){msg.textContent='Scegli lo sport.';return}if(mode==='manual'&&!extraManualItems.length){msg.textContent='Inserisci almeno un’attività manuale.';return}if(mode==='manual'&&builderTotal(extraManualItems)>mins){msg.textContent='La somma delle attività supera la durata della lezione.';return}const cl=st.classes.find(x=>x.id===cid),title=$('#extraTitle').value.trim()||`Lezione extra · ${cl?.name||'Classe'}`;msg.textContent='Creo la lezione…';const sportId=mode==='auto'?$('#extraAutoSport').value:(mode==='single'&&extraSelectedActivity?.kind==='exercise'?(await db.from('pe_exercises').select('sport_id').eq('id',extraSelectedActivity.exercise_id).single()).data?.sport_id:null);const{data:lesson,error}=await db.from('pe_lessons').insert({owner_id:st.user.id,module_id:null,class_id:cid,sport_id:sportId||null,lesson_date:date,sequence_no:1,title,duration_min:mins,generation_mode:'manual',status:'planned',teacher_notes:$('#extraNotes').value.trim()||null,start_time:start,end_time:end,is_extra:true,learning_goal:mode==='auto'?'Lezione extra generata automaticamente dall’archivio verificato.':'Lezione extra costruita dal docente.'}).select().single();if(error){msg.textContent='Errore: '+error.message;return}try{if(mode==='auto')await generateSingleAutomaticLesson(lesson.id,cid,$('#extraAutoSport').value,mins);else if(mode==='single'){const x={...extraSelectedActivity,duration:mins};await insertLessonItems(lesson.id,[x],mins)}else await insertLessonItems(lesson.id,extraManualItems,mins)}catch(err){await db.from('pe_lessons').delete().eq('id',lesson.id);msg.textContent='Errore: '+err.message;return}$('#extraLessonModal').close();toast('Lezione extra inserita');await loadCore();renderCalendar()};
 $('#manualLessonForm').onsubmit=async e=>{e.preventDefault();const msg=$('#manualLessonMsg'),cid=$('#manualClass').value,date=$('#manualDate').value,start=$('#manualStart').value,end=$('#manualEnd').value,mins=minutesBetween(start,end);if(!cid||!date||mins<=0){msg.textContent='Completa classe, data e un orario valido.';return}if(!manualLessonItems.length){msg.textContent='Inserisci almeno un’attività.';return}if(builderTotal(manualLessonItems)>mins){msg.textContent='La somma delle attività supera la durata della lezione.';return}const cl=st.classes.find(x=>x.id===cid),title=$('#manualTitle').value.trim()||`Lezione manuale · ${cl?.name||'Classe'}`;msg.textContent='Salvataggio…';const{data:lesson,error}=await db.from('pe_lessons').insert({owner_id:st.user.id,module_id:null,class_id:cid,sport_id:null,lesson_date:date,sequence_no:1,title,duration_min:mins,generation_mode:'manual',status:'planned',teacher_notes:$('#manualNotes').value.trim()||null,start_time:start,end_time:end,is_extra:false,learning_goal:'Lezione costruita manualmente dal docente.'}).select().single();if(error){msg.textContent='Errore: '+error.message;return}try{await insertLessonItems(lesson.id,manualLessonItems,mins)}catch(err){await db.from('pe_lessons').delete().eq('id',lesson.id);msg.textContent='Errore: '+err.message;return}$('#manualLessonModal').close();toast('Lezione manuale inserita');await loadCore();renderCalendar()};
+
+
+function openCalendarException(id,day){
+  const closure=st.exceptions.find(x=>String(x.id)===String(id));
+  if(!closure||!day)return;
+  const kind={
+    holiday:'Vacanza / chiusura',
+    school_event:'Gita / uscita',
+    no_lesson:'Lezione annullata',
+    other:'Altro'
+  }[closure.exception_type]||closure.exception_type||'Chiusura';
+  const scope=closure.scope==='class'
+    ? `Solo classe: ${st.classes.find(c=>String(c.id)===String(closure.class_id))?.name||'classe selezionata'}`
+    : 'Tutta la scuola';
+  const blockEnd=closure.end_date||closure.exception_date;
+  const isBlock=blockEnd!==closure.exception_date;
+  const ok=confirm(`${closure.reason||kind}\n${fmt(day)}\n${scope}\n\nVuoi rendere disponibile SOLO questa giornata?${isBlock?'\n\nIl resto del blocco di chiusura rimarrà invariato.':''}\nLe lezioni già slittate non verranno riportate automaticamente indietro.`);
+  if(ok)deleteSingleClosureDay(id,day);
+}
+
+async function deleteSingleClosureDay(id,day){
+  try{
+    const {error}=await db.rpc('pe_remove_calendar_exception_day',{
+      p_exception_id:id,
+      p_day:day
+    });
+    if(error)throw error;
+    toast(`Chiusura rimossa solo per ${fmt(day)}`);
+    await loadCore();
+    renderCalendar();
+    renderModules();
+    renderSettings();
+  }catch(err){
+    toast(err.message||'Errore durante eliminazione della giornata');
+  }
+}
 
 async function deleteSchoolClosure(id){
   const closure=st.exceptions.find(x=>String(x.id)===String(id));
@@ -379,7 +448,7 @@ function renderSettings(){
     yl.innerHTML=(st.schoolYears||[]).map(y=>`<div class="list-item school-year-row"><div><strong>${esc(y.label)}</strong><small>${fmt(y.start_date)} → ${fmt(y.end_date)} ${y.is_active?'· ATTIVO':''}</small></div><button type="button" class="btn danger small-btn" data-delete-year="${y.id}">Elimina</button></div>`).join('')||listItem('Nessun anno scolastico','Crea il primo anno per iniziare');
     $$('[data-delete-year]').forEach(b=>b.onclick=()=>deleteSchoolYear(b.dataset.deleteYear));
   }
-  const build=$('#buildVersion');if(build)build.textContent='Versione 5.1';
+  const build=$('#buildVersion');if(build)build.textContent='Versione 5.4';
 }
 async function deleteSchoolYear(id){
   const y=(st.schoolYears||[]).find(x=>x.id===id);if(!y)return;

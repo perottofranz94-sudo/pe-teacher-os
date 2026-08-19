@@ -101,3 +101,14 @@ Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le cla
 ## Versione 5.0
 - Conferma dettagliata prima di eliminare un intero blocco: sport, classe, numero lezioni e rimozione dal calendario.
 - Classifiche ridisegnate in stile più semplice e sportivo, con emoji automatiche in base al test, podio compatto, media classe e miglior prestazione.
+
+
+## v5.3
+- Da Impostazioni: Elimina rimuove l'intero blocco di chiusura.
+- Dal Calendario: toccando una chiusura si rende disponibile solo la singola giornata selezionata; gli altri giorni del blocco restano chiusi.
+
+
+## v5.4
+- Le chiusure dell'intera scuola colorano in rosso tutta la casella del calendario.
+- Emoji automatica per Natale, Pasqua, Carnevale, Ognissanti, Immacolata, 1 maggio, 25 aprile, 2 giugno e altre ricorrenze; ❌ per motivi manuali non riconosciuti.
+- Le gite/uscite di classe non colorano la giornata: vengono mostrate con 🚌, nome classe e motivo.
