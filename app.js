@@ -347,6 +347,32 @@ function classLabelForException(x){
   return c?.name||'Classe';
 }
 
+
+function schoolYearCalendarBounds(){
+  const y=st.year;
+  if(y?.start_date&&y?.end_date){
+    const sy=Number(String(y.start_date).slice(0,4));
+    const ey=Number(String(y.end_date).slice(0,4));
+    return {
+      min:new Date(sy,8,1),
+      max:new Date(ey,5,1)
+    };
+  }
+  const now=new Date(), startY=now.getMonth()>=8?now.getFullYear():now.getFullYear()-1;
+  return {min:new Date(startY,8,1),max:new Date(startY+1,5,1)};
+}
+function clampCalendarMonth(d){
+  const {min,max}=schoolYearCalendarBounds();
+  const month=new Date(d.getFullYear(),d.getMonth(),1);
+  if(month<min)return new Date(min);
+  if(month>max)return new Date(max);
+  return month;
+}
+function todayIsoLocal(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function renderCalendar(){let d=st.month,y=d.getFullYear(),m=d.getMonth();$('#monthTitle').textContent=new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(d);let first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7)),html=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<div class="cal-head">${x}</div>`).join('');for(let i=0;i<42;i++){let day=new Date(start);day.setDate(start.getDate()+i);let iso=localISODate(day),ev=st.lessons.filter(x=>x.lesson_date===iso).map(x=>`<div class="cal-event ${x.is_extra?'extra':''}" data-lesson="${x.id}">${x.start_time?`<span class="cal-time">${String(x.start_time).slice(0,5)}</span>`:''}${x.is_extra?'<span class="cal-extra-badge">EXTRA</span>':''}${esc(x.title)}</div>`).join(''),
 dayExceptions=st.exceptions.filter(x=>iso>=x.exception_date&&iso<=(x.end_date||x.exception_date)),
 schoolClosures=dayExceptions.filter(x=>x.scope==='school'&&x.exception_type!=='school_event'),
@@ -359,8 +385,8 @@ otherEx=otherExceptions.map(x=>`<button type="button" class="cal-event exception
 closureDecor=isSchoolClosed?`<div class="school-closure-decor" aria-hidden="true">${closureEmoji(schoolClosures[0]?.reason,schoolClosures[0]?.exception_type)}</div>`:'',
 fixedEmoji=fixedCalendarEmoji(iso),fixedDecor=fixedEmoji&&!isSchoolClosed?`<div class="fixed-holiday-emoji" aria-label="Ricorrenza">${fixedEmoji}</div>`:'',
 ex=schoolEx+tripEx+otherEx;
-html+=`<div class="cal-day ${day.getMonth()!==m?'off':''} ${isSchoolClosed?'school-closed-day':''}"><div class="cal-num">${day.getDate()}</div>${ex}${ev}${closureDecor}${fixedDecor}</div>`}$('#calendarGrid').innerHTML=html;$$('#calendarGrid [data-lesson]').forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));$$('#calendarGrid [data-exception-id]').forEach(b=>b.onclick=()=>openCalendarException(b.dataset.exceptionId,b.dataset.exceptionDay))}
-$('#prevMonth').onclick=()=>{st.month=new Date(st.month.getFullYear(),st.month.getMonth()-1,1);renderCalendar()};$('#nextMonth').onclick=()=>{st.month=new Date(st.month.getFullYear(),st.month.getMonth()+1,1);renderCalendar()};
+html+=`<div class="cal-day ${day.getMonth()!==m?'off':''} ${isSchoolClosed?'school-closed-day':''} ${iso===todayIso?'today-day':''}"><div class="cal-num">${day.getDate()}</div>${ex}${ev}${closureDecor}${fixedDecor}</div>`}$('#calendarGrid').innerHTML=html;$$('#calendarGrid [data-lesson]').forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));$$('#calendarGrid [data-exception-id]').forEach(b=>b.onclick=()=>openCalendarException(b.dataset.exceptionId,b.dataset.exceptionDay))}
+$('#prevMonth').onclick=()=>{const {min}=schoolYearCalendarBounds(),next=new Date(st.month.getFullYear(),st.month.getMonth()-1,1);if(next<min){toast('Il calendario scolastico parte da settembre');return}st.month=next;renderCalendar()};$('#nextMonth').onclick=()=>{const {max}=schoolYearCalendarBounds(),next=new Date(st.month.getFullYear(),st.month.getMonth()+1,1);if(next>max){toast('Il calendario scolastico termina a giugno');return}st.month=next;renderCalendar()};
 function syncExceptionReasonUI(){
   const school=$('#exceptionScope').value==='school';
   const holiday=$('#exceptionType').value==='holiday';
@@ -483,7 +509,7 @@ function renderSettings(){
     yl.innerHTML=(st.schoolYears||[]).map(y=>`<div class="list-item school-year-row"><div><strong>${esc(y.label)}</strong><small>${fmt(y.start_date)} → ${fmt(y.end_date)} ${y.is_active?'· ATTIVO':''}</small></div><button type="button" class="btn danger small-btn" data-delete-year="${y.id}">Elimina</button></div>`).join('')||listItem('Nessun anno scolastico','Crea il primo anno per iniziare');
     $$('[data-delete-year]').forEach(b=>b.onclick=()=>deleteSchoolYear(b.dataset.deleteYear));
   }
-  const build=$('#buildVersion');if(build)build.textContent='Versione 5.5';
+  const build=$('#buildVersion');if(build)build.textContent='Versione 5.7';
 }
 async function deleteSchoolYear(id){
   const y=(st.schoolYears||[]).find(x=>x.id===id);if(!y)return;

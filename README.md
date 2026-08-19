@@ -112,3 +112,15 @@ Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le cla
 - Le chiusure dell'intera scuola colorano in rosso tutta la casella del calendario.
 - Emoji automatica per Natale, Pasqua, Carnevale, Ognissanti, Immacolata, 1 maggio, 25 aprile, 2 giugno e altre ricorrenze; ❌ per motivi manuali non riconosciuti.
 - Le gite/uscite di classe non colorano la giornata: vengono mostrate con 🚌, nome classe e motivo.
+
+
+## v5.6
+- Calendario mobile ridimensionato su 7 colonne visibili contemporaneamente.
+- Eliminato lo scorrimento orizzontale del mese su iPhone.
+- Celle, testi, eventi ed emoji adattivi per schermi piccoli.
+
+
+## v5.7
+- Calendario limitato ai mesi scolastici settembre-giugno.
+- Luglio e agosto esclusi dalla navigazione.
+- Giorno corrente evidenziato con bordo/glow blu-arancio coerente con AttivaMente.

@@ -324,3 +324,118 @@ button:disabled{opacity:.58;cursor:wait;transform:none!important}
   .exception-detail-card{grid-template-columns:1fr;text-align:center}
   .exception-detail-icon{margin:auto}
 }
+
+
+/* v5.6 — calendario iPhone compatto: mese intero senza scroll orizzontale */
+@media (max-width: 640px){
+  #calendarGrid{
+    width:100%;
+    min-width:0 !important;
+    grid-template-columns:repeat(7,minmax(0,1fr)) !important;
+    overflow:visible !important;
+  }
+  .calendar-shell,
+  .calendar-wrap,
+  .calendar-grid-wrap{
+    overflow-x:hidden !important;
+    width:100%;
+    max-width:100%;
+  }
+  .cal-head{
+    min-width:0 !important;
+    padding:8px 1px !important;
+    font-size:.72rem !important;
+    text-align:center;
+  }
+  .cal-day{
+    min-width:0 !important;
+    height:clamp(68px,18.3vw,84px) !important;
+    min-height:0 !important;
+    padding:5px 3px !important;
+    border-radius:0 !important;
+  }
+  .cal-num{
+    font-size:.78rem !important;
+    line-height:1 !important;
+    margin-bottom:3px !important;
+  }
+  .cal-event{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    padding:3px 3px !important;
+    margin:2px 0 !important;
+    border-radius:5px !important;
+    font-size:.55rem !important;
+    line-height:1.12 !important;
+    white-space:normal !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis;
+  }
+  .cal-time{
+    display:block;
+    font-size:.58rem !important;
+    line-height:1 !important;
+    margin-bottom:1px;
+  }
+  .cal-extra-badge{font-size:.45rem !important;padding:1px 2px !important}
+  .class-trip-event{gap:2px !important;font-size:.52rem !important}
+  .class-trip-event .trip-bus{font-size:.68rem !important}
+  .school-closure-decor{
+    font-size:1rem !important;
+    bottom:3px !important;
+  }
+  .fixed-holiday-emoji{
+    font-size:.9rem !important;
+    right:3px !important;
+    bottom:3px !important;
+  }
+  .cal-day.school-closed-day .cal-event:last-of-type{margin-bottom:19px !important}
+}
+@media (max-width: 390px){
+  .cal-day{height:70px !important;padding:4px 2px !important}
+  .cal-head{font-size:.66rem !important}
+  .cal-num{font-size:.72rem !important}
+  .cal-event{font-size:.49rem !important;padding:2px !important}
+  .cal-time{font-size:.52rem !important}
+}
+
+
+/* v5.7 — mese scolastico settembre→giugno + evidenza oggi */
+.cal-day.today-day{
+  position:relative;
+  z-index:3;
+  border:2px solid #ff8a00 !important;
+  box-shadow:
+    0 0 0 2px rgba(34,146,214,.34),
+    0 0 13px rgba(255,138,0,.66),
+    0 0 25px rgba(26,124,196,.35),
+    inset 0 0 16px rgba(255,138,0,.08);
+}
+.cal-day.today-day .cal-num{
+  display:inline-grid;
+  place-items:center;
+  min-width:25px;
+  min-height:25px;
+  padding:2px 6px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#ff9f1a,#ff6500);
+  color:white !important;
+  font-weight:950 !important;
+  box-shadow:0 0 11px rgba(255,128,0,.55);
+}
+.cal-day.today-day.school-closed-day{
+  border-color:#ffb23f !important;
+}
+@media(max-width:640px){
+  .cal-day.today-day{
+    border-width:2px !important;
+    box-shadow:
+      0 0 0 1px rgba(34,146,214,.4),
+      0 0 9px rgba(255,138,0,.7),
+      inset 0 0 10px rgba(255,138,0,.08);
+  }
+  .cal-day.today-day .cal-num{
+    min-width:20px;min-height:20px;padding:1px 4px;
+  }
+}
