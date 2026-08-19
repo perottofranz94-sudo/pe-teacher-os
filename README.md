@@ -124,3 +124,9 @@ Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le cla
 - Calendario limitato ai mesi scolastici settembre-giugno.
 - Luglio e agosto esclusi dalla navigazione.
 - Giorno corrente evidenziato con bordo/glow blu-arancio coerente con AttivaMente.
+
+
+## v5.8
+- Corretto il bug che impediva il rendering del calendario nella v5.7.
+- `todayIso` ora viene inizializzato correttamente prima del rendering.
+- Il mese viene realmente limitato/clampato tra settembre e giugno.
