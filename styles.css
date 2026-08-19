@@ -301,3 +301,26 @@ button:disabled{opacity:.58;cursor:wait;transform:none!important}
   .cal-day.school-closed-day .cal-event:last-of-type{margin-bottom:30px}
   .class-trip-event{gap:5px;font-size:.76rem}
 }
+
+/* v5.5 — dettaglio chiusure e ricorrenze fisse */
+.fixed-holiday-emoji{
+  position:absolute;right:8px;bottom:7px;z-index:1;
+  font-size:1.45rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.18));
+  pointer-events:none;
+}
+.exception-detail-card{
+  display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;
+  padding:20px;border-radius:22px;background:rgba(21,80,126,.16);
+  border:1px solid rgba(107,179,232,.18);margin-bottom:18px;
+}
+.exception-detail-icon{
+  width:70px;height:70px;border-radius:20px;display:grid;place-items:center;
+  font-size:2.3rem;background:rgba(255,255,255,.07);
+}
+.exception-detail-card h4{margin:4px 0 8px;font-size:1.3rem}
+.exception-detail-card p{margin:4px 0}
+@media(max-width:640px){
+  .fixed-holiday-emoji{font-size:1.2rem;right:5px;bottom:5px}
+  .exception-detail-card{grid-template-columns:1fr;text-align:center}
+  .exception-detail-icon{margin:auto}
+}

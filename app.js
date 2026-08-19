@@ -319,19 +319,28 @@ $('#hofTest').onchange=loadHof;$('#hofSex').onchange=loadHof;
 
 function closureEmoji(reason='',type=''){
   const s=String(reason||'').toLowerCase();
-  if(/natale|christmas/.test(s)) return '🎄';
-  if(/pasqua|pasquale|easter/.test(s)) return '🐣';
+  if(/natale/.test(s)) return '🎄';
+  if(/pasqua/.test(s)) return '🐣';
   if(/carnevale/.test(s)) return '🎭';
   if(/ognissanti|tutti i santi/.test(s)) return '🕯️';
-  if(/immacolata/.test(s)) return '✨';
+  if(/immacolata/.test(s)) return '🙏';
   if(/lavorator|1 maggio|primo maggio/.test(s)) return '🛠️';
-  if(/liberazione|25 aprile/.test(s)) return '🕊️';
+  if(/liberazione|25 aprile/.test(s)) return '🇮🇹';
   if(/repubblica|2 giugno/.test(s)) return '🇮🇹';
-  if(/capodanno|1 gennaio|primo gennaio/.test(s)) return '🎆';
-  if(/epifania|befana|6 gennaio/.test(s)) return '⭐';
-  if(/ferragosto|15 agosto/.test(s)) return '☀️';
-  if(/ponte/.test(s)) return '🌉';
   return '❌';
+}
+function fixedCalendarEmoji(iso){
+  const md=String(iso||'').slice(5);
+  return {
+    '12-25':'🎅',
+    '01-06':'🧙‍♀️',
+    '01-01':'🎆',
+    '11-01':'🕯️',
+    '04-25':'🇮🇹',
+    '06-02':'🇮🇹',
+    '05-01':'🛠️',
+    '12-08':'🙏'
+  }[md]||'';
 }
 function classLabelForException(x){
   const c=st.classes.find(c=>String(c.id)===String(x.class_id));
@@ -348,11 +357,34 @@ schoolEx=schoolClosures.map(x=>`<button type="button" class="cal-event exception
 tripEx=classTrips.map(x=>`<button type="button" class="cal-event class-trip-event cal-exception-btn" data-exception-id="${x.id}" data-exception-day="${iso}"><span class="trip-bus">🚌</span><span>${esc(classLabelForException(x))} · ${esc(x.reason||'Uscita / gita')}</span></button>`).join(''),
 otherEx=otherExceptions.map(x=>`<button type="button" class="cal-event exception cal-exception-btn" data-exception-id="${x.id}" data-exception-day="${iso}">${esc(x.reason||x.exception_type)}</button>`).join(''),
 closureDecor=isSchoolClosed?`<div class="school-closure-decor" aria-hidden="true">${closureEmoji(schoolClosures[0]?.reason,schoolClosures[0]?.exception_type)}</div>`:'',
+fixedEmoji=fixedCalendarEmoji(iso),fixedDecor=fixedEmoji&&!isSchoolClosed?`<div class="fixed-holiday-emoji" aria-label="Ricorrenza">${fixedEmoji}</div>`:'',
 ex=schoolEx+tripEx+otherEx;
-html+=`<div class="cal-day ${day.getMonth()!==m?'off':''} ${isSchoolClosed?'school-closed-day':''}"><div class="cal-num">${day.getDate()}</div>${ex}${ev}${closureDecor}</div>`}$('#calendarGrid').innerHTML=html;$$('#calendarGrid [data-lesson]').forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));$$('#calendarGrid [data-exception-id]').forEach(b=>b.onclick=()=>openCalendarException(b.dataset.exceptionId,b.dataset.exceptionDay))}
+html+=`<div class="cal-day ${day.getMonth()!==m?'off':''} ${isSchoolClosed?'school-closed-day':''}"><div class="cal-num">${day.getDate()}</div>${ex}${ev}${closureDecor}${fixedDecor}</div>`}$('#calendarGrid').innerHTML=html;$$('#calendarGrid [data-lesson]').forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));$$('#calendarGrid [data-exception-id]').forEach(b=>b.onclick=()=>openCalendarException(b.dataset.exceptionId,b.dataset.exceptionDay))}
 $('#prevMonth').onclick=()=>{st.month=new Date(st.month.getFullYear(),st.month.getMonth()-1,1);renderCalendar()};$('#nextMonth').onclick=()=>{st.month=new Date(st.month.getFullYear(),st.month.getMonth()+1,1);renderCalendar()};
-function openException(scope='school'){$('#exceptionScope').value=scope;$('#exceptionClassWrap').classList.toggle('hidden',scope==='school');$('#exceptionModal').showModal()}$('#addException').onclick=()=>openException();$('#schoolClosureBtn').onclick=()=>openException();$('#exceptionScope').onchange=()=>$('#exceptionClassWrap').classList.toggle('hidden',$('#exceptionScope').value==='school');
-$('#exceptionForm').onsubmit=async e=>{e.preventDefault();if(!requireSchoolYear('Crea prima l’anno scolastico per inserire chiusure e gite.'))return;const school=$('#exceptionScope').value==='school';const submit=e.submitter;try{if(submit)submit.disabled=true;let{error}=await db.from('pe_calendar_exceptions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:school?null:$('#exceptionClass').value,exception_date:$('#exceptionStart').value,end_date:$('#exceptionEnd').value,scope:school?'school':'class',exception_type:$('#exceptionType').value,reason:$('#exceptionReason').value||null,all_day:true});if(error)throw error;$('#exceptionModal').close();toast('Chiusura salvata · lezioni automatiche slittate');await loadCore();renderCalendar();renderModules()}catch(err){toast(err.message||'Errore calendario')}finally{if(submit)submit.disabled=false}}
+function syncExceptionReasonUI(){
+  const school=$('#exceptionScope').value==='school';
+  const holiday=$('#exceptionType').value==='holiday';
+  const usePreset=school&&holiday;
+  $('#closurePresetWrap').classList.toggle('hidden',!usePreset);
+  $('#exceptionReasonWrap').classList.toggle('hidden',usePreset&&$('#closurePreset').value!=='ALTRO');
+  $('#exceptionReasonWrap').querySelector('span');
+  if(!usePreset)$('#exceptionReasonWrap').classList.remove('hidden');
+}
+function openException(scope='school'){
+  $('#exceptionScope').value=scope;
+  $('#exceptionClassWrap').classList.toggle('hidden',scope==='school');
+  if(scope==='school')$('#exceptionType').value='holiday';
+  $('#closurePreset').value='VACANZE DI NATALE';
+  $('#exceptionReason').value='';
+  syncExceptionReasonUI();
+  $('#exceptionModal').showModal()
+}
+$('#addException').onclick=()=>openException();
+$('#schoolClosureBtn').onclick=()=>openException();
+$('#exceptionScope').onchange=()=>{$('#exceptionClassWrap').classList.toggle('hidden',$('#exceptionScope').value==='school');syncExceptionReasonUI()};
+$('#exceptionType').onchange=syncExceptionReasonUI;
+$('#closurePreset').onchange=syncExceptionReasonUI;
+$('#exceptionForm').onsubmit=async e=>{e.preventDefault();if(!requireSchoolYear('Crea prima l’anno scolastico per inserire chiusure e gite.'))return;const school=$('#exceptionScope').value==='school';const submit=e.submitter;try{if(submit)submit.disabled=true;let{error}=await db.from('pe_calendar_exceptions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:school?null:$('#exceptionClass').value,exception_date:$('#exceptionStart').value,end_date:$('#exceptionEnd').value,scope:school?'school':'class',exception_type:$('#exceptionType').value,reason:(school&&$('#exceptionType').value==='holiday'&&$('#closurePreset').value!=='ALTRO'?$('#closurePreset').value:$('#exceptionReason').value.trim())||null,all_day:true});if(error)throw error;$('#exceptionModal').close();toast('Chiusura salvata · lezioni automatiche slittate');await loadCore();renderCalendar();renderModules()}catch(err){toast(err.message||'Errore calendario')}finally{if(submit)submit.disabled=false}}
 let lessonBuildTarget=null,extraSelectedActivity=null,extraManualItems=[],manualLessonItems=[];
 function builderTotal(items){return items.reduce((s,x)=>s+(Number(x.duration)||0),0)}
 function renderBuilder(items,containerId,balanceId,totalMinutes){const c=$(containerId),bal=$(balanceId);if(!c||!bal)return;c.innerHTML=items.length?items.map((x,i)=>`<div class="builder-item"><div class="builder-order">${i+1}</div><div><strong>${esc(x.title)}</strong><small>${esc(x.sourceLabel||'Attività manuale')}</small></div><input type="number" min="1" max="240" value="${Number(x.duration)||15}" data-build-duration="${i}"><button type="button" class="builder-remove" data-build-remove="${i}">×</button></div>`).join(''):'<div class="builder-empty">Nessuna attività inserita.</div>';const used=builderTotal(items),rem=totalMinutes-used;bal.textContent=totalMinutes>0?`${used} min utilizzati · ${rem>=0?rem+' min rimanenti':Math.abs(rem)+' min oltre la durata'}`:`Imposta l’orario per calcolare la durata.`;bal.classList.toggle('over',rem<0);c.querySelectorAll('[data-build-duration]').forEach(inp=>inp.oninput=()=>{items[+inp.dataset.buildDuration].duration=Math.max(1,+inp.value||1);renderBuilder(items,containerId,balanceId,totalMinutes)});c.querySelectorAll('[data-build-remove]').forEach(b=>b.onclick=()=>{items.splice(+b.dataset.buildRemove,1);renderBuilder(items,containerId,balanceId,totalMinutes)})}
@@ -386,13 +418,16 @@ function openCalendarException(id,day){
     no_lesson:'Lezione annullata',
     other:'Altro'
   }[closure.exception_type]||closure.exception_type||'Chiusura';
-  const scope=closure.scope==='class'
-    ? `Solo classe: ${st.classes.find(c=>String(c.id)===String(closure.class_id))?.name||'classe selezionata'}`
-    : 'Tutta la scuola';
-  const blockEnd=closure.end_date||closure.exception_date;
-  const isBlock=blockEnd!==closure.exception_date;
-  const ok=confirm(`${closure.reason||kind}\n${fmt(day)}\n${scope}\n\nVuoi rendere disponibile SOLO questa giornata?${isBlock?'\n\nIl resto del blocco di chiusura rimarrà invariato.':''}\nLe lezioni già slittate non verranno riportate automaticamente indietro.`);
-  if(ok)deleteSingleClosureDay(id,day);
+  const className=closure.scope==='class'
+    ? (st.classes.find(c=>String(c.id)===String(closure.class_id))?.name||'Classe')
+    : '';
+  const icon=closure.exception_type==='school_event'?'🚌':closureEmoji(closure.reason,closure.exception_type);
+  $('#exceptionDetailTitle').textContent=closure.reason||kind;
+  $('#exceptionDetailBody').innerHTML=`<div class="exception-detail-card"><div class="exception-detail-icon">${icon}</div><div><span class="kicker">${closure.scope==='school'?'TUTTA LA SCUOLA':esc(className)}</span><h4>${esc(closure.reason||kind)}</h4><p><strong>${fmt(day)}</strong></p>${closure.scope==='class'?`<p>🚌 ${esc(className)}</p>`:''}<small>${closure.scope==='school'?'Chiusura generale della scuola':'Eccezione riferita alla classe selezionata'}</small></div></div>`;
+  const del=$('#deleteExceptionDayBtn');
+  del.textContent=closure.scope==='school'?'Elimina questa giornata':'Elimina questa gita / eccezione';
+  del.onclick=async()=>{del.disabled=true;await deleteSingleClosureDay(id,day);del.disabled=false;$('#exceptionDetailModal').close()};
+  $('#exceptionDetailModal').showModal();
 }
 
 async function deleteSingleClosureDay(id,day){
@@ -448,7 +483,7 @@ function renderSettings(){
     yl.innerHTML=(st.schoolYears||[]).map(y=>`<div class="list-item school-year-row"><div><strong>${esc(y.label)}</strong><small>${fmt(y.start_date)} → ${fmt(y.end_date)} ${y.is_active?'· ATTIVO':''}</small></div><button type="button" class="btn danger small-btn" data-delete-year="${y.id}">Elimina</button></div>`).join('')||listItem('Nessun anno scolastico','Crea il primo anno per iniziare');
     $$('[data-delete-year]').forEach(b=>b.onclick=()=>deleteSchoolYear(b.dataset.deleteYear));
   }
-  const build=$('#buildVersion');if(build)build.textContent='Versione 5.4';
+  const build=$('#buildVersion');if(build)build.textContent='Versione 5.5';
 }
 async function deleteSchoolYear(id){
   const y=(st.schoolYears||[]).find(x=>x.id===id);if(!y)return;
