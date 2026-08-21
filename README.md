@@ -127,6 +127,9 @@ Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le cla
 
 
 ## v5.8
-- Corretto il bug che impediva il rendering del calendario nella v5.7.
-- `todayIso` ora viene inizializzato correttamente prima del rendering.
-- Il mese viene realmente limitato/clampato tra settembre e giugno.
+- Podio con 🏆.
+- Generatore coerente per focus/categoria nella singola lezione.
+- Conteggio M/F automatico dai nominativi.
+- Chiusure con scelta Slitta/Cancella se esistono lezioni.
+- Rimosso il pulsante Lezione manuale.
+- Modali iPhone e radio ridisegnati.

@@ -439,3 +439,30 @@ button:disabled{opacity:.58;cursor:wait;transform:none!important}
     min-width:20px;min-height:20px;padding:1px 4px;
   }
 }
+
+/* v5.8 — modali iPhone, radio corretti, classi auto-count, conflitti calendario */
+input[type="radio"],input[type="checkbox"]{width:auto!important;min-width:18px;height:18px;padding:0!important;flex:0 0 18px;accent-color:#ff7a00;box-shadow:none!important}
+.class-auto-counts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:11px 13px;border-radius:15px;background:linear-gradient(135deg,rgba(21,152,212,.10),rgba(255,106,0,.08));border:1px solid rgba(255,255,255,.11)}
+.class-auto-counts span{font-weight:850;font-size:.82rem;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.06)}.class-auto-counts small{width:100%;color:var(--muted)}
+dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),transparent 38%),linear-gradient(155deg,#0b3a64,#092f54 58%,#082744)!important;border-color:rgba(75,167,224,.28)!important}
+.modal-head{background:linear-gradient(180deg,rgba(6,31,55,.98),rgba(8,43,76,.96))!important;border-radius:18px 18px 0 0}
+.modal-section{background:linear-gradient(145deg,rgba(15,67,111,.88),rgba(11,53,91,.88))!important;border-color:rgba(88,170,222,.20)!important}
+.choice-card,.lesson-mode-card{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(19,78,128,.92),rgba(12,55,94,.92))!important;border-color:rgba(105,184,230,.22)!important}
+.choice-card:has(input:checked),.lesson-mode-card:has(input:checked){border-color:rgba(255,138,0,.78)!important;box-shadow:0 0 0 2px rgba(255,120,0,.12),0 10px 28px rgba(2,23,43,.18);background:linear-gradient(145deg,rgba(25,89,143,.96),rgba(15,65,108,.96))!important}
+.choice-card input,.lesson-mode-card input{margin:3px 0 0!important}.choice-card span,.lesson-mode-card span{min-width:0}
+.conflict-summary{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:15px;border-radius:18px;background:rgba(255,177,27,.08);border:1px solid rgba(255,177,27,.22);margin-bottom:12px}
+.conflict-icon{font-size:2rem}.conflict-summary h4{margin:0 0 5px}.conflict-summary p{margin:0;color:var(--muted);line-height:1.45}
+.conflict-lessons{display:grid;gap:8px;max-height:220px;overflow:auto;margin:12px 0}.conflict-class{padding:11px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.conflict-class b,.conflict-class small{display:block}.conflict-class small{color:var(--muted);margin-top:4px}
+.conflict-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}.conflict-action-card{border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px;display:grid;grid-template-columns:auto 1fr;gap:10px;text-align:left;color:#fff;cursor:pointer}
+.conflict-action-card span{font-size:1.7rem}.conflict-action-card b,.conflict-action-card small{display:block}.conflict-action-card small{color:#c1d2e2;margin-top:5px;line-height:1.35}
+.conflict-action-card.shift{background:linear-gradient(145deg,#15557f,#103e69)}.conflict-action-card.cancel{background:linear-gradient(145deg,#713847,#53283a)}
+@media(max-width:720px){
+ dialog.modal,dialog.modal.wide{width:calc(100vw - 14px)!important;max-width:calc(100vw - 14px)!important;max-height:calc(100dvh - 14px)!important;margin:auto!important;padding:14px!important;border-radius:24px!important}
+ .modal-head{top:-14px!important;margin:-14px -14px 14px!important;padding:calc(14px + env(safe-area-inset-top,0px)) 14px 12px!important}
+ .modal-head h3{font-size:1.38rem;line-height:1.15}.modal-head button{flex:0 0 44px;width:44px;height:44px}
+ .choice-row,.lesson-mode-grid{grid-template-columns:1fr!important;gap:9px!important}
+ .choice-card,.lesson-mode-card{display:grid!important;grid-template-columns:22px minmax(0,1fr)!important;align-items:start!important;gap:10px!important;padding:13px!important;min-height:auto!important}
+ .choice-card b,.lesson-mode-card b{font-size:.98rem!important;line-height:1.25}.choice-card small,.lesson-mode-card small{font-size:.78rem!important;line-height:1.38}
+ .conflict-action-grid{grid-template-columns:1fr}.student-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 72px 38px!important}
+}
