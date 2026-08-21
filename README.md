@@ -133,3 +133,11 @@ Alla creazione di un nuovo anno scolastico l'app chiede “Promuovi tutte le cla
 - Chiusure con scelta Slitta/Cancella se esistono lezioni.
 - Rimosso il pulsante Lezione manuale.
 - Modali iPhone e radio ridisegnati.
+
+
+## v5.9
+- Fix calendario invisibile: inizializzazione corretta del giorno corrente e mese scolastico.
+- Aggiunta funzione renderAll centrale per refresh stabile dopo creazione/eliminazione anno.
+- Fix errore `renderAll is not defined`.
+- Tutte le principali conferme di eliminazione ora usano un modale grafico AttivaMente, non i popup del browser.
+- Cache PWA aggiornata a 5.9.

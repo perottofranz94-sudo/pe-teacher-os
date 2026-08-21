@@ -466,3 +466,62 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
  .choice-card b,.lesson-mode-card b{font-size:.98rem!important;line-height:1.25}.choice-card small,.lesson-mode-card small{font-size:.78rem!important;line-height:1.38}
  .conflict-action-grid{grid-template-columns:1fr}.student-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 72px 38px!important}
 }
+
+
+/* v5.9 — conferme AttivaMente + stabilità calendario */
+.app-confirm-modal{
+  width:min(520px,calc(100vw - 28px)) !important;
+  max-width:520px !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+}
+.app-confirm-modal::backdrop{
+  background:rgba(1,12,23,.76);
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+}
+.app-confirm-card{
+  position:relative;
+  padding:30px 28px 24px;
+  border-radius:28px;
+  text-align:center;
+  color:#f7fbff;
+  background:
+    radial-gradient(circle at 50% -10%,rgba(255,133,0,.24),transparent 36%),
+    radial-gradient(circle at 100% 0%,rgba(24,143,213,.25),transparent 36%),
+    linear-gradient(155deg,#0c3c67,#082e50 62%,#072743);
+  border:1px solid rgba(100,186,236,.28);
+  box-shadow:0 30px 80px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.app-confirm-icon{
+  width:78px;height:78px;
+  display:grid;place-items:center;
+  margin:0 auto 14px;
+  border-radius:24px;
+  font-size:2.35rem;
+  background:linear-gradient(145deg,rgba(255,143,20,.18),rgba(26,142,210,.15));
+  border:1px solid rgba(255,170,73,.24);
+  box-shadow:0 12px 32px rgba(0,0,0,.2);
+}
+.app-confirm-card .kicker{display:block;margin-bottom:7px;color:#8eb8d7}
+.app-confirm-card h3{margin:0 0 10px;font-size:1.55rem;line-height:1.15}
+.app-confirm-card>p{margin:0 auto;color:#d2e0eb;line-height:1.55;max-width:430px}
+.app-confirm-details{
+  margin-top:17px;padding:13px 14px;border-radius:15px;
+  color:#bcd0df;font-size:.88rem;line-height:1.48;text-align:left;
+  background:rgba(3,25,45,.44);border:1px solid rgba(255,255,255,.08)
+}
+.app-confirm-actions{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px
+}
+.app-confirm-actions .btn{min-height:50px}
+@media(max-width:600px){
+  .app-confirm-card{padding:24px 18px 18px;border-radius:24px}
+  .app-confirm-icon{width:68px;height:68px;font-size:2rem}
+  .app-confirm-card h3{font-size:1.3rem}
+  .app-confirm-actions{grid-template-columns:1fr}
+  .app-confirm-actions #appConfirmOk{order:-1}
+}

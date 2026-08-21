@@ -24,6 +24,43 @@ function currentSchoolYearDefaults(){const now=new Date(),startYear=now.getMonth
 function openSchoolYearDialog(initial=!st.year){const d=currentSchoolYearDefaults();$('#migrateModalTitle').textContent=initial?'Crea il primo anno scolastico':'Crea nuovo anno scolastico';$('#promoteClassesWrap').classList.toggle('hidden',initial);$('#migrateSubmitBtn').textContent=initial?'Crea anno scolastico':'Crea nuovo anno scolastico';const yes=document.querySelector('input[name=\"promoteClasses\"][value=\"yes\"]');if(yes)yes.checked=true;if(initial||!$('#newYearLabel').value){$('#newYearLabel').value=d.label;$('#newYearStart').value=d.start;$('#newYearEnd').value=d.end}$('#migrateModal').showModal()}
 function requireSchoolYear(message='Prima devi creare un anno scolastico.'){if(st.year)return true;toast(message);openSchoolYearDialog(true);return false}
 function updateGradeOptions(selected=''){const level=$('#classSchoolLevel').value,opts=schoolGradeOptions[level]||[];$('#classGrade').innerHTML=opts.length?opts.map(([v,l])=>`<option value="${v}" ${String(selected)===v?'selected':''}>${l}</option>`).join(''):'<option value="">Seleziona prima il grado scolastico</option>';$('#schoolLevelHelp').textContent=level?`Percorso: ${schoolLevelLabels[level]}. Potrai cambiare questa impostazione anche in seguito.`:'Seleziona prima il grado scolastico.'}
+
+function appConfirm({
+  icon='🗑️',
+  kicker='CONFERMA ELIMINAZIONE',
+  title='Vuoi continuare?',
+  message='Questa operazione modificherà i dati salvati.',
+  details='',
+  confirmText='Elimina',
+  danger=true
+}={}){
+  return new Promise(resolve=>{
+    const modal=$('#appConfirmModal');
+    if(!modal){resolve(false);return}
+    $('#appConfirmIcon').textContent=icon;
+    $('#appConfirmKicker').textContent=kicker;
+    $('#appConfirmTitle').textContent=title;
+    $('#appConfirmMessage').textContent=message;
+    const det=$('#appConfirmDetails');
+    if(details){det.textContent=details;det.classList.remove('hidden')}else{det.textContent='';det.classList.add('hidden')}
+    const ok=$('#appConfirmOk'),cancel=$('#appConfirmCancel');
+    ok.textContent=confirmText;
+    ok.classList.toggle('danger',danger);
+    ok.classList.toggle('primary',!danger);
+    let settled=false;
+    const finish=value=>{
+      if(settled)return;settled=true;
+      ok.onclick=null;cancel.onclick=null;
+      try{modal.close()}catch{}
+      resolve(value);
+    };
+    ok.onclick=()=>finish(true);
+    cancel.onclick=()=>finish(false);
+    modal.oncancel=e=>{e.preventDefault();finish(false)};
+    modal.showModal();
+  });
+}
+
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2300)}
 function openMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');b?.classList.remove('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','true');document.body.classList.add('menu-open')}
 function closeMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.remove('open');m.setAttribute('aria-hidden','true');b?.classList.add('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','false');document.body.classList.remove('menu-open')}
@@ -112,7 +149,14 @@ $('#classSchoolLevel').onchange=()=>updateGradeOptions('');
 $('#deleteClassBtn').onclick=async()=>{
   const id=$('#classId').value;if(!id)return;
   const c=st.classes.find(x=>x.id===id);if(!c)return;
-  if(!confirm(`Eliminare la classe “${c.name}” dall'anno scolastico corrente?\n\nLa classe verrà archiviata: non comparirà più nell'app, ma lo storico rimarrà conservato.`))return;
+  if(!(await appConfirm({
+    icon:'🏫',
+    kicker:'ARCHIVIA CLASSE',
+    title:`Archiviare “${c.name}”?`,
+    message:'La classe non comparirà più nell’anno scolastico corrente, ma lo storico resterà conservato.',
+    details:'Alunni, lezioni e risultati storici non vengono cancellati definitivamente.',
+    confirmText:'Archivia classe'
+  })))return;
   const btn=$('#deleteClassBtn'),msg=$('#classMsg');btn.disabled=true;msg.textContent='Archivio la classe…';
   try{
     const{error:enErr}=await db.from('pe_student_enrollments').update({active:false,updated_at:new Date().toISOString()}).eq('class_id',id);if(enErr)throw enErr;
@@ -199,8 +243,14 @@ async function deleteModuleBlock(moduleId){
   const className=m.pe_classes?.name||'Classe';
   const sportName=m.pe_sports?.name||m.title||'Modulo';
   const lessonCount=(st.lessons||[]).filter(x=>x.module_id===moduleId).length||m.planned_weeks||0;
-  const message=`⚠️ ELIMINA INTERO BLOCCO\n\nStai per eliminare:\n${sportName}\nClasse: ${className}\nLezioni: ${lessonCount}\n\nTutte le lezioni di questo blocco verranno rimosse automaticamente anche dal calendario.\nGli esercizi dell’archivio e le altre classi NON verranno toccati.\n\nContinuare?`;
-  if(!confirm(message))return;
+  if(!(await appConfirm({
+    icon:'🗓️',
+    kicker:'ELIMINA PROGRAMMAZIONE',
+    title:`Eliminare ${sportName}?`,
+    message:`Classe: ${className} · ${lessonCount} ${lessonCount===1?'lezione':'lezioni'}.`,
+    details:'Tutte le lezioni di questo blocco verranno eliminate anche dal calendario. Archivio esercizi e altre classi resteranno intatti.',
+    confirmText:'Elimina blocco'
+  })))return;
   const{error}=await db.from('pe_sport_modules').delete().eq('id',moduleId);
   if(error)return toast('Errore: '+error.message);
   toast(`Blocco ${sportName} eliminato da ${className}`);await loadCore();renderModules();renderCalendar();
@@ -247,8 +297,15 @@ async function openLesson(id){let{data:l,error:lessonErr}=await db.from('pe_less
   $('#lessonModal').showModal()}
 
 async function deleteSingleLesson(lesson){
-  const extra=lesson.module_id?' Le lezioni successive verranno rinumerate automaticamente.':'';
-  if(!confirm(`Eliminare “${lesson.title}”?${extra}`))return;
+  const extra=lesson.module_id?'Le lezioni successive del blocco verranno rinumerate automaticamente.':'La lezione verrà rimossa dal calendario.';
+  if(!(await appConfirm({
+    icon:'🗑️',
+    kicker:'ELIMINA LEZIONE',
+    title:`Eliminare “${lesson.title}”?`,
+    message:`Data: ${fmt(lesson.lesson_date)}`,
+    details:extra,
+    confirmText:'Elimina lezione'
+  })))return;
   const{data,error}=await db.rpc('pe_delete_lesson_and_compact',{p_lesson_id:lesson.id});
   if(error)return toast('Errore: '+error.message);
   $('#lessonModal').close();toast('Lezione eliminata');await loadCore();renderCalendar();renderModules();
@@ -265,7 +322,15 @@ async function shiftLessonChain(lesson){
   const raw=prompt('Di quante occasioni di lezione vuoi slittare questa lezione e tutte le successive?','1');
   if(raw===null)return;const n=parseInt(raw,10);
   if(!Number.isInteger(n)||n<1||n>20){toast('Inserisci un numero da 1 a 20');return}
-  if(!confirm(`Slittare “${lesson.title}” e tutte le lezioni successive di ${n} ${n===1?'occasione utile':'occasioni utili'}?`))return;
+  if(!(await appConfirm({
+    icon:'↪️',
+    kicker:'SPOSTA PROGRAMMAZIONE',
+    title:`Slittare di ${n} ${n===1?'lezione utile':'lezioni utili'}?`,
+    message:`“${lesson.title}” e tutte le lezioni successive verranno spostate in avanti.`,
+    details:'Ordine, esercizi e progressione resteranno invariati.',
+    confirmText:'Slitta lezioni',
+    danger:false
+  })))return;
   const{data,error}=await db.rpc('pe_shift_lesson_chain',{p_lesson_id:lesson.id,p_slots:n});
   if(error)return toast('Errore: '+error.message);
   $('#lessonModal').close();toast('Lezioni slittate mantenendo l’ordine');await loadCore();renderCalendar();renderModules();
@@ -393,7 +458,19 @@ function todayIsoLocal(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function renderCalendar(){let d=st.month,y=d.getFullYear(),m=d.getMonth();$('#monthTitle').textContent=new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(d);let first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7)),html=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<div class="cal-head">${x}</div>`).join('');for(let i=0;i<42;i++){let day=new Date(start);day.setDate(start.getDate()+i);let iso=localISODate(day),ev=st.lessons.filter(x=>x.lesson_date===iso).map(x=>`<div class="cal-event ${x.is_extra?'extra':''}" data-lesson="${x.id}">${x.start_time?`<span class="cal-time">${String(x.start_time).slice(0,5)}</span>`:''}${x.is_extra?'<span class="cal-extra-badge">EXTRA</span>':''}${esc(x.title)}</div>`).join(''),
+
+function renderAll(){
+  renderDashboard();
+  renderClasses();
+  renderModules();
+  renderSports();
+  renderTests();
+  renderSettings();
+  st.month=clampCalendarMonth(st.month||new Date());
+  renderCalendar();
+}
+
+function renderCalendar(){st.month=clampCalendarMonth(st.month||new Date());const todayIso=todayIsoLocal();let d=st.month,y=d.getFullYear(),m=d.getMonth();$('#monthTitle').textContent=new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(d);let first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7)),html=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<div class="cal-head">${x}</div>`).join('');for(let i=0;i<42;i++){let day=new Date(start);day.setDate(start.getDate()+i);let iso=localISODate(day),ev=st.lessons.filter(x=>x.lesson_date===iso).map(x=>`<div class="cal-event ${x.is_extra?'extra':''}" data-lesson="${x.id}">${x.start_time?`<span class="cal-time">${String(x.start_time).slice(0,5)}</span>`:''}${x.is_extra?'<span class="cal-extra-badge">EXTRA</span>':''}${esc(x.title)}</div>`).join(''),
 dayExceptions=st.exceptions.filter(x=>iso>=x.exception_date&&iso<=(x.end_date||x.exception_date)),
 schoolClosures=dayExceptions.filter(x=>x.scope==='school'&&x.exception_type!=='school_event'),
 classTrips=dayExceptions.filter(x=>x.scope==='class'&&x.exception_type==='school_event'),
@@ -554,7 +631,14 @@ async function deleteSchoolClosure(id){
   if(!closure)return;
   const label=closure.reason||'Chiusura';
   const range=`${fmt(closure.exception_date)}${closure.end_date&&closure.end_date!==closure.exception_date?' → '+fmt(closure.end_date):''}`;
-  const ok=confirm(`Eliminare questa chiusura?\n\n${label}\n${range}\n\nIl giorno tornerà disponibile nel calendario. Le lezioni già slittate non verranno riportate automaticamente indietro.`);
+  const ok=await appConfirm({
+    icon:'🚪',
+    kicker:'ELIMINA CHIUSURA',
+    title:label,
+    message:range,
+    details:'Verrà eliminato l’intero blocco di chiusura. Le lezioni già slittate resteranno nelle date attuali.',
+    confirmText:'Elimina chiusura'
+  });
   if(!ok)return;
   try{
     const {error}=await db.from('pe_calendar_exceptions').delete().eq('id',id).eq('owner_id',st.user.id);
@@ -585,18 +669,23 @@ function renderSettings(){
     yl.innerHTML=(st.schoolYears||[]).map(y=>`<div class="list-item school-year-row"><div><strong>${esc(y.label)}</strong><small>${fmt(y.start_date)} → ${fmt(y.end_date)} ${y.is_active?'· ATTIVO':''}</small></div><button type="button" class="btn danger small-btn" data-delete-year="${y.id}">Elimina</button></div>`).join('')||listItem('Nessun anno scolastico','Crea il primo anno per iniziare');
     $$('[data-delete-year]').forEach(b=>b.onclick=()=>deleteSchoolYear(b.dataset.deleteYear));
   }
-  const build=$('#buildVersion');if(build)build.textContent='Versione 5.8';
+  const build=$('#buildVersion');if(build)build.textContent='Versione 5.9';
 }
 async function deleteSchoolYear(id){
   const y=(st.schoolYears||[]).find(x=>x.id===id);if(!y)return;
   const classes=st.classes.filter(c=>c.school_year_id===id).length;
-  const warning=`Eliminare definitivamente l’anno scolastico “${y.label}”?\n\nVerranno eliminati i dati collegati a quell’anno (classi, calendario, sessioni test e relativo storico). Gli altri anni, gli sport e l’archivio esercizi non verranno toccati.\n\nQuesta operazione non può essere annullata.`;
-  if(!confirm(warning))return;
-  if(!confirm(`Conferma definitiva: elimina “${y.label}”?`))return;
+  if(!(await appConfirm({
+    icon:'⚠️',
+    kicker:'ELIMINAZIONE DEFINITIVA',
+    title:`Eliminare l’anno ${y.label}?`,
+    message:`Verranno eliminati i dati collegati a questo anno scolastico${classes?` (${classes} ${classes===1?'classe':'classi'})`:''}.`,
+    details:'Classi dell’anno, calendario, sessioni test e relativo storico verranno rimossi. Gli altri anni, gli sport e l’archivio esercizi non saranno toccati. Questa operazione non può essere annullata.',
+    confirmText:'Elimina definitivamente'
+  })))return;
   try{
     toast('Elimino l’anno scolastico…');
     const{data,error}=await db.rpc('pe_delete_school_year',{p_school_year_id:id});if(error)throw error;
-    await loadCore();renderAll();toast(`Anno ${y.label} eliminato`);
+    await loadCore();st.month=clampCalendarMonth(new Date());renderAll();toast(`Anno ${y.label} eliminato`);
   }catch(err){console.error(err);toast(err.message||'Impossibile eliminare l’anno scolastico')}
 }
 $('#migrateYearBtn').onclick=()=>openSchoolYearDialog(!st.year);
@@ -624,7 +713,7 @@ $('#migrateForm').onsubmit=async e=>{
         toast('Nuovo anno creato senza promuovere le classi');
       }
     }
-    $('#migrateModal').close();await loadCore();renderAll();
+    $('#migrateModal').close();await loadCore();st.month=clampCalendarMonth(new Date());renderAll();
   }catch(err){console.error(err);toast(err.message||'Impossibile creare l’anno scolastico')}
   finally{btn.disabled=false;btn.textContent=st.year?'Crea nuovo anno scolastico':'Crea anno scolastico'}
 }
@@ -699,7 +788,14 @@ $('#primaryGameForm').onsubmit=async e=>{
   }catch(err){console.error(err);msg.textContent='Errore: '+(err.message||'salvataggio non riuscito')}
 };
 async function deletePrimaryGame(g){
-  if(!confirm(`Eliminare definitivamente “${g.title}”?`))return;
+  if(!(await appConfirm({
+    icon:'🎲',
+    kicker:'ELIMINA GIOCO',
+    title:`Eliminare “${g.title}”?`,
+    message:'Il gioco creato da te verrà rimosso dall’archivio.',
+    details:'Questa operazione non può essere annullata.',
+    confirmText:'Elimina gioco'
+  })))return;
   try{if(g.image_kind==='storage'&&g.image_path)await db.storage.from(PRIMARY_BUCKET).remove([g.image_path]);const{error}=await db.from('pe_primary_games').delete().eq('id',g.id);if(error)throw error;$('#primaryGameModal').close();toast('Gioco eliminato');await loadPrimaryCustom();st.primaryGames=[...st.primaryCustom,...st.primaryDefaults];renderPrimaryGames()}catch(err){toast('Impossibile eliminare il gioco');console.error(err)}
 }
 
@@ -714,4 +810,4 @@ db.auth.onAuthStateChange((event,se)=>{if(se&&!st.user)setTimeout(()=>enter(se.u
 addEventListener('online',()=>syncFromCloud());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastSyncAt>5000)syncFromCloud({quiet:true})});
 setInterval(()=>{if(document.visibilityState==='visible')syncFromCloud({quiet:true})},45000);
-if('serviceWorker'in navigator)addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('./service-worker.js?v=4.7',{updateViaCache:'none'});await r.update();}catch(e){console.warn('SW update',e)}});
+if('serviceWorker'in navigator)addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('./service-worker.js?v=5.9',{updateViaCache:'none'});await r.update();}catch(e){console.warn('SW update',e)}});
