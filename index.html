@@ -43,6 +43,7 @@
     <button data-view="sports" class="nav-btn"><span>◈</span>Archivio sport</button>
     <button data-view="primarygames" class="nav-btn"><span>✹</span>Giochi scuola primaria</button>
     <button data-view="tests" class="nav-btn"><span>⌁</span>Test motori</button>
+    <button id="ownerNavBtn" data-view="owner" class="nav-btn hidden"><span>♛</span>Area OWNER</button>
     <button data-view="settings" class="nav-btn"><span>⚙</span>Impostazioni</button>
   </nav>
   <div class="sidebar-foot"><div id="userMail" class="user-mail"></div><button id="logoutBtn" class="btn ghost">Esci</button></div>
@@ -161,7 +162,27 @@
     <div id="hofGrid" class="hof-grid premium-hof"></div>
   </div>
 </section>
+<section id="view-owner" class="view">
+  <div class="section-title-row">
+    <div>
+      <span class="kicker">AREA OWNER</span>
+      <h3>Console proprietario</h3>
+      <p>Gestione riservata dei contenuti globali di AttivaMente.</p>
+    </div>
+  </div>
 
+  <div class="panel glass">
+    <div class="panel-head">
+      <div>
+        <span class="kicker">ACCESSO RISERVATO</span>
+        <h3>Funzioni amministrative</h3>
+      </div>
+    </div>
+
+    <p>Questa area sarà visibile esclusivamente all’account OWNER.</p>
+    <p>Qui gestiremo progressivamente esercizi ufficiali, sport, categorie, fonti e test motori globali.</p>
+  </div>
+</section>
 <section id="view-settings" class="view">
   <div class="cols">
     <article class="panel glass"><span class="kicker">ANNO SCOLASTICO</span><h3>Chiusure e festività</h3><button id="schoolClosureBtn" class="btn secondary">+ Aggiungi chiusura</button><div id="closureList" class="stack-list"></div></article>
