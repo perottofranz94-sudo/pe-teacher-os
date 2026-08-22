@@ -68,16 +68,75 @@
   </div>
 
   <div class="stat-grid">
-    <article class="stat-card glass"><span>Classi attive</span><b id="statClasses">—</b><small>anno corrente</small></article>
-    <article class="stat-card glass"><span>Sport</span><b id="statSports">—</b><small>archivio disponibile</small></article>
-    <article class="stat-card glass"><span>Lezioni</span><b id="statLessons">—</b><small>pianificate</small></article>
-    <article class="stat-card glass"><span>Test motori</span><b id="statTests">—</b><small>disponibili</small></article>
-  </div>
+  <article class="stat-card glass">
+    <div class="stat-icon">👥</div>
+    <div class="stat-copy">
+      <span>Classi attive</span>
+      <b id="statClasses">—</b>
+      <small>anno corrente</small>
+    </div>
+    <div class="stat-arrow">→</div>
+  </article>
+
+  <article class="stat-card glass">
+    <div class="stat-icon">◉</div>
+    <div class="stat-copy">
+      <span>Sport</span>
+      <b id="statSports">—</b>
+      <small>archivio disponibile</small>
+    </div>
+    <div class="stat-arrow">→</div>
+  </article>
+
+  <article class="stat-card glass">
+    <div class="stat-icon">▣</div>
+    <div class="stat-copy">
+      <span>Lezioni</span>
+      <b id="statLessons">—</b>
+      <small>pianificate</small>
+    </div>
+    <div class="stat-arrow">→</div>
+  </article>
+
+  <article class="stat-card glass">
+    <div class="stat-icon">▥</div>
+    <div class="stat-copy">
+      <span>Test motori</span>
+      <b id="statTests">—</b>
+      <small>disponibili</small>
+    </div>
+    <div class="stat-arrow">→</div>
+  </article>
+</div>
 
   <div class="cols">
-    <article class="panel glass"><div class="panel-head"><div><span class="kicker">PROSSIME LEZIONI</span><h3>In arrivo</h3></div></div><div id="upcomingLessons" class="stack-list"></div></article>
-    <article class="panel glass"><div class="panel-head"><div><span class="kicker">HALL OF FAME</span><h3>Record recenti</h3></div><button class="text-btn" data-jump="tests">Apri</button></div><div id="dashboardHof" class="stack-list"></div></article>
-  </div>
+  <article class="panel glass">
+    <div class="panel-head">
+      <div class="panel-title-with-icon">
+        <div class="panel-icon">▣</div>
+        <div>
+          <span class="kicker">PROSSIME LEZIONI</span>
+          <h3>In arrivo</h3>
+        </div>
+      </div>
+    </div>
+    <div id="upcomingLessons" class="stack-list"></div>
+  </article>
+
+  <article class="panel glass">
+    <div class="panel-head">
+      <div class="panel-title-with-icon">
+        <div class="panel-icon">🏆</div>
+        <div>
+          <span class="kicker">HALL OF FAME</span>
+          <h3>Record recenti</h3>
+        </div>
+      </div>
+      <button class="text-btn" data-jump="tests">Apri →</button>
+    </div>
+    <div id="dashboardHof" class="stack-list"></div>
+  </article>
+</div>
 </section>
 
 <section id="view-calendar" class="view">
