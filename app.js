@@ -1036,7 +1036,21 @@ async function enter(user){
   await syncFromCloud();
 }
 let{data:{session}}=await db.auth.getSession();if(session)await enter(session.user);
-db.auth.onAuthStateChange((event,se)=>{if(se&&!st.user)setTimeout(()=>enter(se.user),0);if(!se){st.user=null;$('#appView').classList.add('hidden');$('#authView').classList.remove('hidden')}});
+db.auth.onAuthStateChange((event,session)=>{
+  if(!session){
+    st.user=null;
+    $('#appView').classList.add('hidden');
+    $('#authView').classList.remove('hidden');
+    return;
+  }
+
+  // LOGIN viene già gestito direttamente da signInWithPassword().
+  // Qui entriamo automaticamente solo quando serve davvero:
+  // riapertura app, refresh pagina o ripristino sessione.
+  if(!st.user && event!=='SIGNED_IN'){
+    setTimeout(()=>enter(session.user),0);
+  }
+});
 addEventListener('online',()=>syncFromCloud());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastSyncAt>5000)syncFromCloud({quiet:true})});
 setInterval(()=>{if(document.visibilityState==='visible')syncFromCloud({quiet:true})},45000);
