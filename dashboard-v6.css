@@ -1,7 +1,6 @@
 /* =========================================================
-   AttivaMente · Dashboard v6.2
-   Target: premium blue/teal/orange dashboard
-   Solo grafica: nessuna logica Supabase.
+   AttivaMente · Dashboard v6.5
+   Versione pulita desktop + mobile
    ========================================================= */
 
 :root{
@@ -23,10 +22,10 @@ body{
     linear-gradient(135deg,#021735 0%,#03245a 52%,#03163b 100%);
 }
 
-/* ===== SHELL / SIDEBAR ===== */
+/* ===== SIDEBAR ===== */
+
 .sidebar{
-  background:
-    linear-gradient(180deg,rgba(4,28,69,.98),rgba(3,23,58,.98));
+  background:linear-gradient(180deg,rgba(4,28,69,.98),rgba(3,23,58,.98));
   border:1px solid rgba(72,147,255,.36);
   box-shadow:0 24px 70px rgba(0,0,0,.28);
 }
@@ -50,10 +49,9 @@ body{
 }
 
 .sidebar .nav-btn.active{
-  color:white;
+  color:#fff;
   background:linear-gradient(90deg,rgba(31,96,194,.38),rgba(20,64,126,.28));
   border:1px solid rgba(67,131,230,.35);
-  box-shadow:inset 0 1px rgba(255,255,255,.04);
 }
 
 .sidebar .nav-btn.active::before{
@@ -66,7 +64,6 @@ body{
   border-radius:999px;
   transform:translateY(-50%);
   background:linear-gradient(#ffae29,#ff5a25);
-  box-shadow:0 0 16px rgba(255,119,34,.36);
 }
 
 .sidebar-foot{
@@ -74,6 +71,7 @@ body{
 }
 
 /* ===== TOPBAR ===== */
+
 .topbar{
   min-height:72px;
   align-items:flex-start;
@@ -89,7 +87,7 @@ body{
   font-size:clamp(31px,3vw,43px);
   line-height:1;
   letter-spacing:-.045em;
-  color:white;
+  color:#fff;
   font-weight:950;
 }
 
@@ -104,7 +102,6 @@ body{
   color:#fff;
   background:rgba(9,63,135,.44);
   border:1px solid rgba(81,156,255,.34);
-  box-shadow:inset 0 1px rgba(255,255,255,.04);
 }
 
 .sync-status i{
@@ -126,10 +123,7 @@ body{
   box-shadow:0 14px 35px rgba(255,105,29,.23);
 }
 
-/* ===== DASHBOARD ===== */
-#view-dashboard{
-  --dash-border:rgba(95,167,255,.28);
-}
+/* ===== HERO ===== */
 
 #view-dashboard .dashboard-brand-hero{
   position:relative;
@@ -142,9 +136,7 @@ body{
     radial-gradient(circle at 8% 100%,rgba(22,196,231,.40) 0 14%,transparent 14.3%),
     radial-gradient(circle at 92% 0%,rgba(43,231,193,.20) 0 25%,transparent 25.3%),
     linear-gradient(120deg,#0753c7 0%,#064499 42%,#06729a 73%,#0f8d74 100%);
-  box-shadow:
-    0 28px 60px rgba(0,10,42,.32),
-    inset 0 1px rgba(255,255,255,.08);
+  box-shadow:0 28px 60px rgba(0,10,42,.32);
 }
 
 #view-dashboard .dashboard-brand-hero::before{
@@ -157,9 +149,6 @@ body{
   border-radius:50%;
   border:1px solid rgba(92,255,225,.12);
   background:rgba(22,214,187,.05);
-  box-shadow:
-    -95px 55px 0 58px rgba(33,197,230,.035),
-    -185px 120px 0 88px rgba(28,164,234,.025);
 }
 
 #view-dashboard .dashboard-brand-hero::after{
@@ -178,7 +167,7 @@ body{
   position:relative;
   z-index:2;
   min-height:380px;
-  padding:27px 32px 22px;
+  padding:26px 32px 24px;
   display:flex;
   flex-direction:column;
   justify-content:center;
@@ -190,13 +179,20 @@ body{
   width:min(310px,34%);
   max-height:155px;
   object-fit:contain;
-  filter:drop-shadow(0 12px 20px rgba(0,0,0,.22));
+  filter:drop-shadow(0 12px 20px rgba(0,0,0,.20));
+}
+
+/* IMPORTANTE:
+   nessuna riga CSS sotto il claim.
+   L'unica riga visibile deve essere quella dentro il logo PNG. */
+#view-dashboard .dashboard-brand-claim::after{
+  content:none !important;
+  display:none !important;
 }
 
 #view-dashboard .dashboard-brand-claim{
-  position:relative;
-  max-width:810px;
-  margin:18px auto 0;
+  max-width:850px;
+  margin:28px auto 0;
   color:#fff;
   font-size:clamp(26px,2.5vw,38px);
   line-height:1.08;
@@ -204,18 +200,8 @@ body{
   letter-spacing:-.035em;
 }
 
-#view-dashboard .dashboard-brand-claim::after{
-  content:"";
-  display:block;
-  width:225px;
-  height:4px;
-  margin:9px auto 0;
-  border-radius:99px;
-  background:linear-gradient(90deg,transparent,#ff8d24,#ff6a2a,transparent);
-}
-
 #view-dashboard .hero-actions{
-  margin-top:22px;
+  margin-top:26px;
   display:flex;
   justify-content:center;
   gap:16px;
@@ -245,7 +231,6 @@ body{
   color:#fff;
   border:1px solid rgba(157,205,255,.68);
   background:rgba(2,45,105,.32);
-  box-shadow:inset 0 1px rgba(255,255,255,.04);
   backdrop-filter:blur(12px);
 }
 
@@ -256,6 +241,7 @@ body{
 }
 
 /* ===== KPI CARDS ===== */
+
 #view-dashboard .stat-grid{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
@@ -281,14 +267,17 @@ body{
 #view-dashboard .stat-card:nth-child(1){
   background:linear-gradient(135deg,#174db5 0%,#153e91 100%);
 }
+
 #view-dashboard .stat-card:nth-child(2){
   background:linear-gradient(135deg,#0c8b89 0%,#08656f 100%);
   border-color:rgba(25,222,190,.48);
 }
+
 #view-dashboard .stat-card:nth-child(3){
   background:linear-gradient(135deg,#7436c2 0%,#442592 100%);
   border-color:rgba(170,103,255,.50);
 }
+
 #view-dashboard .stat-card:nth-child(4){
   background:linear-gradient(135deg,#e57611 0%,#9b451f 100%);
   border-color:rgba(255,164,74,.56);
@@ -306,14 +295,23 @@ body{
   place-items:center;
   font-size:29px;
   background:rgba(255,255,255,.16);
-  border:1px solid rgba(255,255,255,.10);
-  box-shadow:inset 0 1px rgba(255,255,255,.12);
 }
 
-#view-dashboard .stat-card:nth-child(1) .stat-icon{background:linear-gradient(145deg,#4b7fff,#3260d6)}
-#view-dashboard .stat-card:nth-child(2) .stat-icon{background:linear-gradient(145deg,#27d9ad,#0eb38f)}
-#view-dashboard .stat-card:nth-child(3) .stat-icon{background:linear-gradient(145deg,#a756ef,#7538d2)}
-#view-dashboard .stat-card:nth-child(4) .stat-icon{background:linear-gradient(145deg,#ffac2c,#ff7d16)}
+#view-dashboard .stat-card:nth-child(1) .stat-icon{
+  background:linear-gradient(145deg,#4b7fff,#3260d6);
+}
+
+#view-dashboard .stat-card:nth-child(2) .stat-icon{
+  background:linear-gradient(145deg,#27d9ad,#0eb38f);
+}
+
+#view-dashboard .stat-card:nth-child(3) .stat-icon{
+  background:linear-gradient(145deg,#a756ef,#7538d2);
+}
+
+#view-dashboard .stat-card:nth-child(4) .stat-icon{
+  background:linear-gradient(145deg,#ffac2c,#ff7d16);
+}
 
 #view-dashboard .stat-copy{
   min-width:0;
@@ -323,8 +321,6 @@ body{
   display:block;
   color:#d7e5ff;
   font-size:15px;
-  text-transform:none;
-  letter-spacing:0;
   font-weight:820;
 }
 
@@ -335,7 +331,6 @@ body{
   font-size:33px;
   line-height:1;
   font-weight:950;
-  letter-spacing:-.04em;
 }
 
 #view-dashboard .stat-copy small{
@@ -347,16 +342,25 @@ body{
 #view-dashboard .stat-arrow{
   width:40px;
   height:40px;
+  border:0;
   border-radius:50%;
   display:grid;
   place-items:center;
   align-self:end;
-  color:white;
+  color:#fff;
   font-size:21px;
   background:rgba(255,255,255,.10);
+  cursor:pointer;
+  transition:.16s ease;
+}
+
+#view-dashboard .stat-arrow:hover{
+  transform:translateX(2px);
+  background:rgba(255,255,255,.16);
 }
 
 /* ===== LOWER PANELS ===== */
+
 #view-dashboard .cols{
   gap:22px;
 }
@@ -369,7 +373,6 @@ body{
   background:
     radial-gradient(circle at 90% 20%,rgba(18,88,180,.15),transparent 30%),
     linear-gradient(145deg,rgba(5,36,84,.94),rgba(4,27,67,.94));
-  box-shadow:0 18px 46px rgba(0,0,0,.17);
 }
 
 #view-dashboard .panel-head{
@@ -391,20 +394,17 @@ body{
   place-items:center;
   font-size:25px;
   background:linear-gradient(145deg,#1095dc,#0764b7);
-  box-shadow:0 12px 26px rgba(7,108,191,.22);
 }
 
 #view-dashboard .panel-head .kicker{
   color:#a8c0e5;
   font-size:13px;
-  letter-spacing:0;
 }
 
 #view-dashboard .panel-head h3{
   margin-top:4px;
   font-size:25px;
   font-weight:950;
-  letter-spacing:-.035em;
 }
 
 #view-dashboard .panel .text-btn{
@@ -428,17 +428,24 @@ body{
   border-radius:14px;
 }
 
-/* ===== MOBILE ===== */
+/* ===== TABLET ===== */
+
 @media (max-width:1000px){
   #view-dashboard .stat-grid{
     grid-template-columns:repeat(2,minmax(0,1fr));
   }
+
   #view-dashboard .dashboard-brand-image{
     width:min(360px,55%);
   }
 }
 
+/* =========================================================
+   MOBILE DEFINITIVO
+   ========================================================= */
+
 @media (max-width:700px){
+
   .topbar{
     min-height:auto;
     align-items:center;
@@ -459,232 +466,147 @@ body{
     border-radius:15px;
   }
 
+  /* HERO più alta per dare respiro verticale */
   #view-dashboard .dashboard-brand-hero{
-    min-height:340px;
+    min-height:730px;
+    height:auto;
     border-radius:25px;
   }
 
   #view-dashboard .dashboard-brand-inner{
-    min-height:340px;
-    padding:25px 18px;
+    min-height:730px;
+    height:auto;
+    padding:32px 20px 28px;
+    justify-content:flex-start;
   }
 
+  /* Logo grande e centrato */
   #view-dashboard .dashboard-brand-image{
-    width:min(300px,76%);
-    max-height:120px;
+    width:78%;
+    max-width:310px;
+    height:auto;
+    max-height:none;
+    margin:0 auto;
   }
 
+  /* Claim ben separato dalla riga contenuta nel PNG */
   #view-dashboard .dashboard-brand-claim{
-    font-size:clamp(24px,7vw,31px);
+    width:100%;
+    max-width:590px;
+    margin:58px auto 0;
+    padding:0 6px;
+    font-size:30px;
+    line-height:1.14;
+    letter-spacing:-.035em;
+    text-align:center;
   }
 
+  #view-dashboard .dashboard-brand-claim::after{
+    content:none !important;
+    display:none !important;
+  }
+
+  /* Pulsanti più in basso */
   #view-dashboard .hero-actions{
     width:100%;
+    margin:48px 0 0;
+    display:flex;
     flex-direction:column;
-    gap:10px;
+    align-items:stretch;
+    gap:14px;
   }
 
   #view-dashboard .hero-actions .btn{
     width:100%;
-    min-height:52px;
+    min-height:70px;
+    margin:0;
+    padding:12px 20px;
+    border-radius:35px;
+    font-size:19px;
+    line-height:1.15;
+    font-weight:900;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    white-space:normal;
+    text-align:center;
   }
 
+  /* Ordine richiesto */
+  #view-dashboard .hero-actions .glass-btn{
+    order:1;
+  }
+
+  #view-dashboard .hero-actions .white{
+    order:2;
+  }
+
+  /* KPI una sotto l'altra */
   #view-dashboard .stat-grid{
     grid-template-columns:1fr;
-    gap:12px;
+    gap:14px;
+    margin-top:20px;
   }
 
   #view-dashboard .stat-card{
-    min-height:118px;
-    grid-template-columns:56px 1fr 38px;
-    padding:17px;
+    min-height:150px;
+    grid-template-columns:82px 1fr 48px;
+    padding:20px 22px;
+    border-radius:26px;
   }
 
   #view-dashboard .stat-icon{
-    width:54px;
-    height:54px;
+    width:74px;
+    height:74px;
+    border-radius:19px;
+  }
+
+  #view-dashboard .stat-copy > span{
+    font-size:17px;
+  }
+
+  #view-dashboard .stat-copy b{
+    font-size:40px;
+  }
+
+  #view-dashboard .stat-copy small{
+    font-size:14px;
+  }
+
+  #view-dashboard .stat-arrow{
+    width:46px;
+    height:46px;
+    font-size:25px;
   }
 
   #view-dashboard .cols{
     grid-template-columns:1fr;
-    gap:12px;
+    gap:14px;
   }
 
   #view-dashboard .panel{
-    min-height:135px;
-    padding:19px;
+    min-height:140px;
+    padding:20px;
   }
 }
 
-@media (prefers-reduced-motion:reduce){
-  *{scroll-behavior:auto!important}
-}
-#view-dashboard .stat-arrow{
-  border:0;
-  cursor:pointer;
-}
-
-#view-dashboard .stat-arrow:hover{
-  transform:translateX(2px);
-  background:rgba(255,255,255,.16);
-}
-#view-dashboard .dashboard-brand-claim::after{
-  display:none !important;
-}
-/* ===== HERO: contenuti più in basso ===== */
-
-#view-dashboard .dashboard-brand-claim{
-  margin-top:32px;
-}
-
-#view-dashboard .hero-actions{
-  margin-top:28px;
-}
-#view-dashboard .dashboard-brand-inner{
-  justify-content:flex-start;
-  padding-top:32px;
-}
-
-#view-dashboard .dashboard-brand-image{
-  margin-bottom:6px;
-}
-@media (max-width:700px){
-
+@media (max-width:390px){
+  #view-dashboard .dashboard-brand-hero,
   #view-dashboard .dashboard-brand-inner{
-    padding-top:28px;
+    min-height:700px;
   }
 
   #view-dashboard .dashboard-brand-claim{
-    margin-top:38px;
+    margin-top:50px;
+    font-size:27px;
   }
 
   #view-dashboard .hero-actions{
-    margin-top:30px;
+    margin-top:40px;
   }
 
-}
-/* =========================================================
-   ATTIVAMENTE — HERO MOBILE DEFINITIVA
-   ========================================================= */
-
-@media (max-width:700px){
-
-  /* HERO */
-  #view-dashboard .dashboard-brand-hero{
-    min-height:730px !important;
-    height:auto !important;
-    border-radius:25px !important;
-  }
-
-  #view-dashboard .dashboard-brand-inner{
-    min-height:730px !important;
-    height:auto !important;
-
-    padding:
-      34px
-      20px
-      28px !important;
-
-    display:flex !important;
-    flex-direction:column !important;
-    justify-content:flex-start !important;
-    align-items:center !important;
-  }
-
-
-  /* LOGO */
-  #view-dashboard .dashboard-brand-image{
-    width:78% !important;
-    max-width:310px !important;
-    height:auto !important;
-    max-height:none !important;
-
-    object-fit:contain !important;
-
-    margin:
-      0
-      auto
-      0 !important;
-  }
-
-
-  /* TESTO PRINCIPALE
-     Lo abbassiamo rispetto al logo/riga */
-  #view-dashboard .dashboard-brand-claim{
-    width:100% !important;
-    max-width:590px !important;
-
-    margin:
-      42px
-      auto
-      0 !important;
-
-    padding:0 6px !important;
-
-    font-size:30px !important;
-    line-height:1.14 !important;
-    letter-spacing:-0.035em !important;
-
-    text-align:center !important;
-  }
-
-
-  /* Elimina eventuale seconda riga generata dal CSS.
-     Rimane soltanto quella eventualmente presente nel logo PNG. */
-  #view-dashboard .dashboard-brand-claim::after{
-    display:none !important;
-    content:none !important;
-  }
-
-
-  /* CONTENITORE PULSANTI */
-  #view-dashboard .hero-actions{
-    width:100% !important;
-
-    margin:
-      48px
-      0
-      0 !important;
-
-    display:flex !important;
-    flex-direction:column !important;
-    align-items:stretch !important;
-    gap:14px !important;
-  }
-
-
-  /* ENTRAMBI I PULSANTI */
   #view-dashboard .hero-actions .btn{
-    width:100% !important;
-    min-height:70px !important;
-
-    margin:0 !important;
-    padding:12px 20px !important;
-
-    border-radius:35px !important;
-
-    font-size:19px !important;
-    line-height:1.15 !important;
-    font-weight:900 !important;
-
-    display:flex !important;
-    align-items:center !important;
-    justify-content:center !important;
-
-    white-space:normal !important;
-    text-align:center !important;
+    min-height:66px;
+    font-size:18px;
   }
-
-
-  /* CREA ANNO */
-  #view-dashboard .hero-actions .glass-btn{
-    order:1 !important;
-  }
-
-
-  /* GENERA PROGRAMMAZIONE */
-  #view-dashboard .hero-actions .white{
-    order:2 !important;
-  }
-
 }
