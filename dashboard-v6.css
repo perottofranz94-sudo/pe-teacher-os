@@ -528,3 +528,6 @@ body{
   transform:translateX(2px);
   background:rgba(255,255,255,.16);
 }
+#view-dashboard .dashboard-brand-claim::after{
+  display:none !important;
+}
