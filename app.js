@@ -1027,7 +1027,33 @@ async function enter(user){
 
   await syncFromCloud();
 }
-let{data:{session}}=await db.auth.getSession();if(session)await enter(session.user);
+async function restoreSessionAtStartup(){
+
+  const {
+    data:{session},
+    error
+  }=await db.auth.getSession();
+
+  if(error || !session) return;
+
+  // Una PWA su iPhone può riaprire una sessione salvata
+  // con access token scaduto o non ancora ripristinato.
+  // Prima di interrogare il database forziamo il rinnovo.
+  const {
+    data:refreshed,
+    error:refreshError
+  }=await db.auth.refreshSession();
+
+  if(refreshError || !refreshed?.session){
+    console.warn('Sessione scaduta: nuovo accesso necessario',refreshError);
+    await db.auth.signOut();
+    return;
+  }
+
+  await enter(refreshed.session.user);
+}
+
+await restoreSessionAtStartup();
 db.auth.onAuthStateChange((event,session)=>{
   if(!session){
     st.user=null;
