@@ -563,3 +563,128 @@ body{
   }
 
 }
+/* =========================================================
+   ATTIVAMENTE — HERO MOBILE DEFINITIVA
+   ========================================================= */
+
+@media (max-width:700px){
+
+  /* HERO */
+  #view-dashboard .dashboard-brand-hero{
+    min-height:730px !important;
+    height:auto !important;
+    border-radius:25px !important;
+  }
+
+  #view-dashboard .dashboard-brand-inner{
+    min-height:730px !important;
+    height:auto !important;
+
+    padding:
+      34px
+      20px
+      28px !important;
+
+    display:flex !important;
+    flex-direction:column !important;
+    justify-content:flex-start !important;
+    align-items:center !important;
+  }
+
+
+  /* LOGO */
+  #view-dashboard .dashboard-brand-image{
+    width:78% !important;
+    max-width:310px !important;
+    height:auto !important;
+    max-height:none !important;
+
+    object-fit:contain !important;
+
+    margin:
+      0
+      auto
+      0 !important;
+  }
+
+
+  /* TESTO PRINCIPALE
+     Lo abbassiamo rispetto al logo/riga */
+  #view-dashboard .dashboard-brand-claim{
+    width:100% !important;
+    max-width:590px !important;
+
+    margin:
+      42px
+      auto
+      0 !important;
+
+    padding:0 6px !important;
+
+    font-size:30px !important;
+    line-height:1.14 !important;
+    letter-spacing:-0.035em !important;
+
+    text-align:center !important;
+  }
+
+
+  /* Elimina eventuale seconda riga generata dal CSS.
+     Rimane soltanto quella eventualmente presente nel logo PNG. */
+  #view-dashboard .dashboard-brand-claim::after{
+    display:none !important;
+    content:none !important;
+  }
+
+
+  /* CONTENITORE PULSANTI */
+  #view-dashboard .hero-actions{
+    width:100% !important;
+
+    margin:
+      48px
+      0
+      0 !important;
+
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:14px !important;
+  }
+
+
+  /* ENTRAMBI I PULSANTI */
+  #view-dashboard .hero-actions .btn{
+    width:100% !important;
+    min-height:70px !important;
+
+    margin:0 !important;
+    padding:12px 20px !important;
+
+    border-radius:35px !important;
+
+    font-size:19px !important;
+    line-height:1.15 !important;
+    font-weight:900 !important;
+
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+
+    white-space:normal !important;
+    text-align:center !important;
+  }
+
+
+  /* CREA ANNO */
+  #view-dashboard .hero-actions .glass-btn{
+    order:1 !important;
+  }
+
+
+  /* GENERA PROGRAMMAZIONE */
+  #view-dashboard .hero-actions .white{
+    order:2 !important;
+  }
+
+}
