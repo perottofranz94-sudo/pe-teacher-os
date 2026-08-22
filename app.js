@@ -833,7 +833,29 @@ async function deletePrimaryGame(g){
 function setSyncState(kind='ok',label='Sincronizzato'){const el=$('#syncStatus');if(!el)return;el.classList.toggle('syncing',kind==='syncing');el.classList.toggle('error',kind==='error');const t=el.querySelector('span');if(t)t.textContent=label}
 let syncBusy=false,lastSyncAt=0;
 async function syncFromCloud({quiet=false}={}){if(!st.user||syncBusy)return;syncBusy=true;if(!quiet)setSyncState('syncing','Sincronizzo…');try{await loadCore();if(st.primaryDefaults.length){await loadPrimaryCustom();st.primaryGames=[...st.primaryCustom,...st.primaryDefaults];if($('#view-primarygames').classList.contains('active'))renderPrimaryGames()}renderSports();renderCalendar();lastSyncAt=Date.now();setSyncState('ok','Sincronizzato')}catch(err){console.error(err);setSyncState('error','Sync non riuscita')}finally{syncBusy=false}}
-$('#loginForm').onsubmit=async e=>{e.preventDefault();const msg=$('#loginMsg');msg.textContent='Accesso sicuro…';const email=$('#email').value.trim();const password=$('#password').value;let{error}=await db.auth.signInWithPassword({email,password});if(error){msg.textContent='Email o password non corrette.';return}msg.textContent=''};
+$('#loginForm').onsubmit=async e=>{
+  e.preventDefault();
+  const msg=$('#loginMsg');
+  msg.textContent='Accesso sicuro…';
+
+  const email=$('#email').value.trim();
+  const password=$('#password').value;
+
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+
+  if(error){
+    msg.textContent='Email o password non corrette.';
+    return;
+  }
+
+  msg.textContent='Sincronizzazione dati…';
+
+  if(data?.user && !st.user){
+    await enter(data.user);
+  }
+
+  msg.textContent='';
+};
 $('#logoutBtn').onclick=()=>db.auth.signOut();
 async function enter(user){
   st.user=user;
