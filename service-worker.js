@@ -1,4 +1,4 @@
-const C='attivamente-v6-owner-2026-08-22-r2';
+const C='attivamente-v6-owner-2026-08-22-r3';
 const A=[
   './',
   './index.html',
@@ -34,13 +34,15 @@ self.addEventListener('fetch',e=>{
   const p=u.pathname;
 
   const alwaysFresh =
-    e.request.mode==='navigate' ||
-    p.endsWith('/index.html') ||
-    p.endsWith('/app.js') ||
-    p.endsWith('/styles.css') ||
-    p.endsWith('/config.js') ||
-    p.endsWith('/manifest.webmanifest') ||
-    p.endsWith('/primary_games.json');
+  e.request.mode==='navigate' ||
+  p.endsWith('/index.html') ||
+  p.endsWith('/app.js') ||
+  p.endsWith('/styles.css') ||
+  p.endsWith('/dashboard-v6.css') ||
+  p.endsWith('/config.js') ||
+  p.endsWith('/manifest.webmanifest') ||
+  p.endsWith('/primary_games.json') ||
+  p.endsWith('/attivamente-brand-hero.png');
 
   if(alwaysFresh){
     e.respondWith(
