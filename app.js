@@ -928,8 +928,63 @@ async function deletePrimaryGame(g){
 }
 
 function setSyncState(kind='ok',label='Sincronizzato'){const el=$('#syncStatus');if(!el)return;el.classList.toggle('syncing',kind==='syncing');el.classList.toggle('error',kind==='error');const t=el.querySelector('span');if(t)t.textContent=label}
-let syncBusy=false,lastSyncAt=0;
-async function syncFromCloud({quiet=false}={}){if(!st.user||syncBusy)return;syncBusy=true;if(!quiet)setSyncState('syncing','Sincronizzo…');try{await loadCore();if(st.primaryDefaults.length){await loadPrimaryCustom();st.primaryGames=[...st.primaryCustom,...st.primaryDefaults];if($('#view-primarygames').classList.contains('active'))renderPrimaryGames()}renderSports();renderCalendar();lastSyncAt=Date.now();setSyncState('ok','Sincronizzato')}catch(err){console.error(err);setSyncState('error','Sync non riuscita')}finally{syncBusy=false}}
+let syncPromise=null,lastSyncAt=0;
+async function syncFromCloud({quiet=false}={}){
+
+  if(!st.user) return;
+
+  // Se un Sync è già in corso, tutti gli altri
+  // utilizzano la stessa sincronizzazione.
+  if(syncPromise){
+    return syncPromise;
+  }
+
+  syncPromise=(async()=>{
+
+    if(!quiet){
+      setSyncState('syncing','Sincronizzo…');
+    }
+
+    try{
+
+      await loadCore();
+
+      if(st.primaryDefaults.length){
+
+        await loadPrimaryCustom();
+
+        st.primaryGames=[
+          ...st.primaryCustom,
+          ...st.primaryDefaults
+        ];
+
+        if($('#view-primarygames')?.classList.contains('active')){
+          renderPrimaryGames();
+        }
+      }
+
+      renderSports();
+      renderCalendar();
+
+      lastSyncAt=Date.now();
+
+      setSyncState('ok','Sincronizzato');
+
+    }catch(err){
+
+      console.error(err);
+      setSyncState('error','Sync non riuscita');
+
+    }finally{
+
+      syncPromise=null;
+
+    }
+
+  })();
+
+  return syncPromise;
+}
 $('#loginForm').onsubmit=async e=>{
   e.preventDefault();
   const msg=$('#loginMsg');
