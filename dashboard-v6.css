@@ -531,3 +531,35 @@ body{
 #view-dashboard .dashboard-brand-claim::after{
   display:none !important;
 }
+/* ===== HERO: contenuti più in basso ===== */
+
+#view-dashboard .dashboard-brand-claim{
+  margin-top:32px;
+}
+
+#view-dashboard .hero-actions{
+  margin-top:28px;
+}
+#view-dashboard .dashboard-brand-inner{
+  justify-content:flex-start;
+  padding-top:32px;
+}
+
+#view-dashboard .dashboard-brand-image{
+  margin-bottom:6px;
+}
+@media (max-width:700px){
+
+  #view-dashboard .dashboard-brand-inner{
+    padding-top:28px;
+  }
+
+  #view-dashboard .dashboard-brand-claim{
+    margin-top:38px;
+  }
+
+  #view-dashboard .hero-actions{
+    margin-top:30px;
+  }
+
+}
