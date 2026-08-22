@@ -73,99 +73,17 @@ $('#mobileMenuBackdrop')?.addEventListener('click',closeMobileMenu);
 $('#mobileLogoutBtn')?.addEventListener('click',()=>db.auth.signOut());
 
 async function loadCore(){
-  const timed = async (name, query) => {
-  const start = performance.now();
-
-  try {
-    const result = await query;
-    const ms = Math.round(performance.now() - start);
-
-    console.log(`⏱️ ${name}: ${ms} ms`, result.error ? '❌' : '✅');
-
-    return result;
-  } catch (err) {
-    const ms = Math.round(performance.now() - start);
-    console.error(`⏱️ ${name}: ${ms} ms ❌`, err);
-    throw err;
-  }
-};
-
-console.time('🚀 LOADCORE TOTALE');
-
-const results = await Promise.all([
-  timed(
-    '1. pe_school_years ACTIVE',
-    db.from('pe_school_years')
-      .select('*')
-      .eq('is_active', true)
-      .maybeSingle()
-  ),
-
-  timed(
-    '2. pe_school_years ALL',
-    db.from('pe_school_years')
-      .select('*')
-      .order('start_date', {ascending:false})
-  ),
-
-  timed(
-    '3. pe_classes',
-    db.from('pe_classes')
-      .select('*')
-      .eq('archived', false)
-      .order('school_level')
-      .order('grade')
-      .order('name')
-  ),
-
-  timed(
-    '4. pe_sports',
-    db.from('pe_sports')
-      .select('*')
-      .eq('active', true)
-      .order('name')
-  ),
-
-  timed(
-    '5. pe_lessons',
-    db.from('pe_lessons')
-      .select('*,pe_classes!pe_lessons_class_id_fkey(name),pe_sports(name)')
-      .order('lesson_date')
-      .limit(200)
-  ),
-
-  timed(
-    '6. pe_sport_modules',
-    db.from('pe_sport_modules')
-      .select('*,pe_classes!pe_sport_modules_class_id_fkey(name),pe_sports(name)')
-      .order('start_date', {ascending:false})
-      .limit(100)
-  ),
-
-  timed(
-    '7. pe_motor_tests',
-    db.from('pe_motor_tests')
-      .select('*')
-      .eq('active', true)
-      .order('name')
-  ),
-
-  timed(
-    '8. pe_calendar_exceptions',
-    db.from('pe_calendar_exceptions')
-      .select('*')
-      .order('exception_date')
-  ),
-
-  timed(
-    '9. pe_motor_test_hall_of_fame',
-    db.from('pe_motor_test_hall_of_fame')
-      .select('*')
-      .limit(40)
-  )
+ const results=await Promise.all([
+  db.from('pe_school_years').select('*').eq('is_active',true).maybeSingle(),
+  db.from('pe_school_years').select('*').order('start_date',{ascending:false}),
+  db.from('pe_classes').select('*').eq('archived',false).order('school_level').order('grade').order('name'),
+  db.from('pe_sports').select('*').eq('active',true).order('name'),
+  db.from('pe_lessons').select('*,pe_classes!pe_lessons_class_id_fkey(name),pe_sports(name)').order('lesson_date').limit(200),
+  db.from('pe_sport_modules').select('*,pe_classes!pe_sport_modules_class_id_fkey(name),pe_sports(name)').order('start_date',{ascending:false}).limit(100),
+  db.from('pe_motor_tests').select('*').eq('active',true).order('name'),
+  db.from('pe_calendar_exceptions').select('*').order('exception_date'),
+  db.from('pe_motor_test_hall_of_fame').select('*').limit(40)
 ]);
-
-console.timeEnd('🚀 LOADCORE TOTALE');
   const firstError=results.find(r=>r.error)?.error;if(firstError)throw firstError;
   const [y,ys,c,s,l,m,t,e,h]=results;
   st.year=y.data||null;st.schoolYears=ys.data||[];st.classes=c.data||[];st.sports=s.data||[];st.lessons=l.data||[];st.modules=m.data||[];st.tests=t.data||[];st.exceptions=e.data||[];st.hof=h.data||[];
@@ -203,6 +121,8 @@ Promise.all(
 )
 .then(counts => {
   st.sportCounts = Object.fromEntries(counts);
+renderSports();
+renderDashboard();
 
   // Aggiorna l'archivio quando i conteggi sono pronti,
   // senza bloccare login e sincronizzazione principale.
