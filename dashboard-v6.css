@@ -610,3 +610,14 @@ body{
     font-size:18px;
   }
 }
+/* ELIMINA QUALSIASI DECORAZIONE A RIGA NELLA HERO */
+#view-dashboard .dashboard-brand-claim::before,
+#view-dashboard .dashboard-brand-claim::after,
+#view-dashboard .dashboard-brand-inner::before,
+#view-dashboard .dashboard-brand-inner::after{
+    content: none !important;
+    display: none !important;
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
