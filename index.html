@@ -126,9 +126,13 @@
 <section id="view-primarygames" class="view">
   <button id="backPrimaryToSports" class="back-btn">← Torna a tutti gli sport</button>
   <div class="primary-hero">
-    <div><span class="kicker">GIOCHI SCUOLA PRIMARIA</span><h3>Il tuo libro dei giochi, sempre con te.</h3><p>I 75 giochi originali del tuo libro, con immagine, difficoltà, materiali, descrizione, regole e varianti. I nuovi giochi che aggiungi vengono sincronizzati tra i tuoi dispositivi.</p></div>
-    <div class="primary-hero-actions"><div class="primary-count"><b id="primaryGameCount">75</b><span>giochi</span></div><button id="newPrimaryGameBtn" class="btn white">+ Crea nuovo gioco</button></div>
+  <div>
+    <h3>Il tuo libro dei giochi, sempre con te.</h3>
   </div>
+  <div class="primary-hero-actions">
+    <button id="newPrimaryGameBtn" class="btn white hidden">+ Crea nuovo gioco</button>
+  </div>
+</div>
   <div class="primary-toolbar glass"><div class="searchbar primary-search"><span>⌕</span><input id="primaryGameSearch" placeholder="Cerca un gioco…"></div><select id="primaryDifficulty"><option value="">Tutte le difficoltà</option><option value="1">Difficoltà 1</option><option value="2">Difficoltà 2</option><option value="3">Difficoltà 3</option><option value="4">Difficoltà 4</option><option value="5">Difficoltà 5</option></select></div>
   <div id="primaryGamesGrid" class="primary-games-grid"></div>
 </section>
