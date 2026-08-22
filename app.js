@@ -835,7 +835,28 @@ let syncBusy=false,lastSyncAt=0;
 async function syncFromCloud({quiet=false}={}){if(!st.user||syncBusy)return;syncBusy=true;if(!quiet)setSyncState('syncing','Sincronizzo…');try{await loadCore();if(st.primaryDefaults.length){await loadPrimaryCustom();st.primaryGames=[...st.primaryCustom,...st.primaryDefaults];if($('#view-primarygames').classList.contains('active'))renderPrimaryGames()}renderSports();renderCalendar();lastSyncAt=Date.now();setSyncState('ok','Sincronizzato')}catch(err){console.error(err);setSyncState('error','Sync non riuscita')}finally{syncBusy=false}}
 $('#loginForm').onsubmit=async e=>{e.preventDefault();const msg=$('#loginMsg');msg.textContent='Accesso sicuro…';const email=$('#email').value.trim();const password=$('#password').value;let{error}=await db.auth.signInWithPassword({email,password});if(error){msg.textContent='Email o password non corrette.';return}msg.textContent=''};
 $('#logoutBtn').onclick=()=>db.auth.signOut();
-async function enter(user){st.user=user;const ownerNavBtn=document.getElementById('ownerNavBtn');if(ownerNavBtn)ownerNavBtn.classList.toggle('hidden',!isOwner());$('#userMail').textContent=user.email||'';$('#authView').classList.add('hidden');$('#appView').classList.remove('hidden');await syncFromCloud()}
+async function enter(user){
+  st.user=user;
+
+  const ownerNavBtn=document.getElementById('ownerNavBtn');
+  if(ownerNavBtn){
+    ownerNavBtn.classList.toggle('hidden',!isOwner());
+  }
+
+  const newPrimaryGameBtn=document.getElementById('newPrimaryGameBtn');
+  if(newPrimaryGameBtn){
+    newPrimaryGameBtn.classList.toggle('hidden',!isOwner());
+    newPrimaryGameBtn.onclick=isOwner()
+      ? ()=>openPrimaryGameForm()
+      : null;
+  }
+
+  $('#userMail').textContent=user.email||'';
+  $('#authView').classList.add('hidden');
+  $('#appView').classList.remove('hidden');
+
+  await syncFromCloud();
+}
 let{data:{session}}=await db.auth.getSession();if(session)await enter(session.user);
 db.auth.onAuthStateChange((event,se)=>{if(se&&!st.user)setTimeout(()=>enter(se.user),0);if(!se){st.user=null;$('#appView').classList.add('hidden');$('#authView').classList.remove('hidden')}});
 addEventListener('online',()=>syncFromCloud());
