@@ -992,10 +992,10 @@ $('#loginForm').onsubmit=async e=>{
 
   const email=$('#email').value.trim();
   const password=$('#password').value;
-  console.time('LOGIN SUPABASE');
+ 
 
   const {data,error}=await db.auth.signInWithPassword({email,password});
-  console.timeEnd('LOGIN SUPABASE');
+  
 
   if(error){
     msg.textContent='Email o password non corrette.';
@@ -1005,9 +1005,9 @@ $('#loginForm').onsubmit=async e=>{
   msg.textContent='Sincronizzazione dati…';
 
   if(data?.user && !st.user){
-    console.time('ENTER + SYNC');
+    
     await enter(data.user);
-    console.timeEnd('ENTER + SYNC');
+    
   }
 
   msg.textContent='';
