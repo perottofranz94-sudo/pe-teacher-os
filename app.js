@@ -794,7 +794,11 @@ function openPrimaryGameForm(g=null){
   $('#primaryImagePreview').innerHTML=g?`<img src="${esc(g._imageUrl||'')}" alt="Anteprima">`:'';
   $('#primaryGameFormModal').showModal();
 }
-$('#newPrimaryGameBtn').onclick=()=>openPrimaryGameForm();
+const newPrimaryGameBtn=$('#newPrimaryGameBtn');
+if(newPrimaryGameBtn){
+  newPrimaryGameBtn.classList.toggle('hidden',!isOwner());
+  if(isOwner()) newPrimaryGameBtn.onclick=()=>openPrimaryGameForm();
+}
 $('#primaryGameSearch').oninput=renderPrimaryGames;$('#primaryDifficulty').onchange=renderPrimaryGames;
 $('#primaryImage').onchange=e=>{const f=e.target.files?.[0];if(!f){$('#primaryImagePreview').innerHTML='';return}if(f.size>5*1024*1024){toast('Immagine troppo grande: massimo 5 MB');e.target.value='';return}const u=URL.createObjectURL(f);$('#primaryImagePreview').innerHTML=`<img src="${u}" alt="Anteprima nuova immagine">`};
 function primarySlug(v){return v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
