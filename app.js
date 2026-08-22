@@ -88,8 +88,47 @@ async function loadCore(){
   const [y,ys,c,s,l,m,t,e,h]=results;
   st.year=y.data||null;st.schoolYears=ys.data||[];st.classes=c.data||[];st.sports=s.data||[];st.lessons=l.data||[];st.modules=m.data||[];st.tests=t.data||[];st.exceptions=e.data||[];st.hof=h.data||[];
   const classOpts=st.classes.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');['#extraClass','#manualClass'].forEach(id=>{if($(id))$(id).innerHTML=classOpts});if($('#extraAutoSport'))$('#extraAutoSport').innerHTML=st.sports.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
-  const counts=await Promise.all(st.sports.map(async sp=>{const{count,error}=await db.from('pe_exercises').select('*',{count:'exact',head:true}).eq('sport_id',sp.id).eq('active',true).eq('audit_status','VERIFIED');if(error)throw error;return[sp.id,count||0]}));
-  st.sportCounts=Object.fromEntries(counts);populateSelects();renderDashboard();renderClasses();renderModules();renderTests();renderSettings();
+  st.sportCounts = {};
+
+populateSelects();
+renderDashboard();
+renderClasses();
+renderModules();
+renderTests();
+renderSettings();
+
+/*
+ * I conteggi degli esercizi NON devono bloccare il Sync principale.
+ * Li carichiamo in background dopo che Dashboard e dati personali
+ * sono già disponibili.
+ */
+Promise.all(
+  st.sports.map(async sp => {
+    const { count, error } = await db
+      .from('pe_exercises')
+      .select('*', { count: 'exact', head: true })
+      .eq('sport_id', sp.id)
+      .eq('active', true)
+      .eq('audit_status', 'VERIFIED');
+
+    if (error) {
+      console.warn(`Conteggio esercizi non disponibile per ${sp.name}`, error);
+      return [sp.id, 0];
+    }
+
+    return [sp.id, count || 0];
+  })
+)
+.then(counts => {
+  st.sportCounts = Object.fromEntries(counts);
+
+  // Aggiorna l'archivio quando i conteggi sono pronti,
+  // senza bloccare login e sincronizzazione principale.
+  renderSports();
+})
+.catch(err => {
+  console.warn('Conteggi archivio sport non disponibili', err);
+});
 }
 
 function populateSelects(){
