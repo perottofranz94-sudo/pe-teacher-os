@@ -998,11 +998,9 @@ $('#loginForm').onsubmit=async e=>{
 
   msg.textContent='Sincronizzazione dati…';
 
-  if(data?.user && !st.user){
-    
-    await enter(data.user);
-    
-  }
+if(data?.user){
+  await enter(data.user);
+}
 
   msg.textContent='';
 };
@@ -1047,5 +1045,4 @@ db.auth.onAuthStateChange((event,session)=>{
 });
 addEventListener('online',()=>syncFromCloud());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastSyncAt>5000)syncFromCloud({quiet:true})});
-setInterval(()=>{if(document.visibilityState==='visible')syncFromCloud({quiet:true})},45000);
 if('serviceWorker'in navigator)addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('./service-worker.js?v=5.9',{updateViaCache:'none'});await r.update();}catch(e){console.warn('SW update',e)}});
