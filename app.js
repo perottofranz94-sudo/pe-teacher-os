@@ -949,19 +949,13 @@ async function syncFromCloud({quiet=false}={}){
 
       await loadCore();
 
-      if(st.primaryDefaults.length){
-
-        await loadPrimaryCustom();
-
-        st.primaryGames=[
-          ...st.primaryCustom,
-          ...st.primaryDefaults
-        ];
-
-        if($('#view-primarygames')?.classList.contains('active')){
-          renderPrimaryGames();
-        }
-      }
+      // I giochi primaria vengono caricati solo quando serve.
+// Non devono rallentare la sincronizzazione generale.
+if($('#view-primarygames')?.classList.contains('active')){
+  loadPrimaryGames().catch(err=>{
+    console.warn('Aggiornamento giochi primaria non riuscito',err);
+  });
+}
 
       renderSports();
       renderCalendar();
