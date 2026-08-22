@@ -23,6 +23,52 @@ async function applyTimetableTimesToModule(moduleId,classId){const[{data:slots,e
 function currentSchoolYearDefaults(){const now=new Date(),startYear=now.getMonth()>=6?now.getFullYear():now.getFullYear()-1;return{label:`${startYear}/${startYear+1}`,start:`${startYear}-09-01`,end:`${startYear+1}-06-30`}}
 function openSchoolYearDialog(initial=!st.year){const d=currentSchoolYearDefaults();$('#migrateModalTitle').textContent=initial?'Crea il primo anno scolastico':'Crea nuovo anno scolastico';$('#promoteClassesWrap').classList.toggle('hidden',initial);$('#migrateSubmitBtn').textContent=initial?'Crea anno scolastico':'Crea nuovo anno scolastico';const yes=document.querySelector('input[name=\"promoteClasses\"][value=\"yes\"]');if(yes)yes.checked=true;if(initial||!$('#newYearLabel').value){$('#newYearLabel').value=d.label;$('#newYearStart').value=d.start;$('#newYearEnd').value=d.end}$('#migrateModal').showModal()}
 function requireSchoolYear(message='Prima devi creare un anno scolastico.'){if(st.year)return true;toast(message);openSchoolYearDialog(true);return false}
+async function openPlannerFromDashboard(){
+
+  // STEP 1 — serve prima un anno scolastico
+  if(!st.year){
+
+    const createYear = await appConfirm({
+      icon:'📅',
+      kicker:'PRIMA CONFIGURAZIONE',
+      title:'Prima creiamo il tuo anno scolastico',
+      message:'Per generare una programmazione AttivaMente deve sapere in quale anno scolastico stai lavorando.',
+      details:'Dopo aver creato l’anno scolastico potrai inserire le tue classi, il loro orario settimanale e successivamente generare automaticamente le lezioni.',
+      confirmText:'Crea anno scolastico',
+      danger:false
+    });
+
+    if(createYear){
+      openSchoolYearDialog(true);
+    }
+
+    return;
+  }
+
+  // STEP 2 — serve almeno una classe
+  if(!st.classes.length){
+
+    const createClass = await appConfirm({
+      icon:'👥',
+      kicker:'MANCA ANCORA UN PASSAGGIO',
+      title:'Ora crea almeno una classe',
+      message:`L’anno scolastico ${st.year.label} è pronto, ma non hai ancora creato nessuna classe.`,
+      details:'La programmazione viene costruita in base alla classe, al numero di alunni, al livello sportivo e all’orario settimanale.',
+      confirmText:'Crea una classe',
+      danger:false
+    });
+
+    if(createClass){
+      go('classes');
+      openClass(null);
+    }
+
+    return;
+  }
+
+  // Tutto pronto
+  go('planner');
+}
 function updateGradeOptions(selected=''){const level=$('#classSchoolLevel').value,opts=schoolGradeOptions[level]||[];$('#classGrade').innerHTML=opts.length?opts.map(([v,l])=>`<option value="${v}" ${String(selected)===v?'selected':''}>${l}</option>`).join(''):'<option value="">Seleziona prima il grado scolastico</option>';$('#schoolLevelHelp').textContent=level?`Percorso: ${schoolLevelLabels[level]}. Potrai cambiare questa impostazione anche in seguito.`:'Seleziona prima il grado scolastico.'}
 
 function appConfirm({
@@ -65,7 +111,13 @@ function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');se
 function openMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');b?.classList.remove('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','true');document.body.classList.add('menu-open')}
 function closeMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.remove('open');m.setAttribute('aria-hidden','true');b?.classList.add('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','false');document.body.classList.remove('menu-open')}
 function go(v){closeMobileMenu();$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${v}`));$$('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));let m={dashboard:['PANORAMICA','Dashboard'],calendar:['ANNO SCOLASTICO','Calendario'],classes:['GESTIONE','Classi'],planner:['MOTORE DIDATTICO','Programmazione'],sports:['MEGA ARCHIVIO','Archivio sport'],tests:['VALUTAZIONE','Test motori'],primarygames:['SCUOLA PRIMARIA','Giochi scuola primaria'],owner:['AREA RISERVATA','Area OWNER'],settings:['CONFIGURAZIONE','Impostazioni']}[v];$('#pageKicker').textContent=m[0];$('#pageTitle').textContent=m[1];if(v==='sports')renderSports();if(v==='primarygames')loadPrimaryGames();if(v==='tests')renderTests();if(v==='calendar')renderCalendar();if(v==='settings')renderSettings()}
-$$('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));$$('[data-jump]').forEach(b=>b.onclick=()=>go(b.dataset.jump));$('#quickPlan').onclick=()=>go('planner');$$('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).close());
+$$('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));$$('[data-jump]').forEach(b=>b.onclick=()=>go(b.dataset.jump));$('#quickPlan').onclick=()=>go('planner');$('#heroSchoolYearBtn')?.addEventListener('click',()=>{
+  openSchoolYearDialog(!st.year);
+});
+
+$('#heroPlannerBtn')?.addEventListener('click',()=>{
+  openPlannerFromDashboard();
+});$$('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).close());
 $('#mobileMenuBtn')?.addEventListener('click',openMobileMenu);
 $('#mobileMoreBtn')?.addEventListener('click',openMobileMenu);
 $('#mobileMenuClose')?.addEventListener('click',closeMobileMenu);
