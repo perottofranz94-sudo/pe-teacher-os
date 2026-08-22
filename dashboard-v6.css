@@ -398,29 +398,3 @@
     transition:none !important;
   }
 }
-from pathlib import Path
-import zipfile
-
-css = r"""
-/* AttivaMente Dashboard v6 — integrazione logo nella hero
-   Aggiungere in fondo a dashboard-v6.css */
-
-#view-dashboard .dashboard-brand-image{
-  /* Il PNG originale ha un fondale blu incorporato.
-     Lighten fa emergere logo/testo e lascia prevalere la hero
-     nelle zone scure, eliminando l'effetto "rettangolo". */
-  mix-blend-mode: lighten;
-  filter:
-    drop-shadow(0 18px 30px rgba(0,0,0,.18))
-    saturate(1.05)
-    contrast(1.03);
-}
-"""
-p = Path("/mnt/data/logo_fix")
-p.mkdir(exist_ok=True)
-f = p/"logo-fix-v6.css"
-f.write_text(css, encoding="utf-8")
-z = Path("/mnt/data/AttivaMente_logo_hero_fix.zip")
-with zipfile.ZipFile(z,"w",zipfile.ZIP_DEFLATED) as zz:
-    zz.write(f, arcname="logo-fix-v6.css")
-print(z)
