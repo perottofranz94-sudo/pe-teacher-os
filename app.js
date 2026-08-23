@@ -499,7 +499,7 @@ async function openClass(id){
     const{data:en,error}=await db.from('pe_student_enrollments').select('*,pe_students!pe_student_enrollments_student_id_fkey(*)').eq('class_id',id).eq('active',true);if(error)return toast(error.message);
     classOriginalStudentIds=(en||[]).map(x=>x.student_id);(en||[]).forEach(x=>addStudentRow(x.pe_students?.first_name,x.pe_students?.last_name,x.pe_students?.sex,x.pe_students?.id));
   }else{$('#classModalTitle').textContent='Nuova classe';$('#className').value='';$('#classSchoolLevel').value='';updateGradeOptions('')}
-  await Promise.all([renderLevelGrid(id),loadClassTimetable(id)]);updateClassAutoCounts();$('#classModal').showModal();
+  await Promise.all([renderLevelGrid(id),loadClassTimetable(id)]);updateClassAutoCounts();updateSportLevelsVisibility();$('#classModal').showModal();
 }
 function updateClassAutoCounts(){
   const rows=$$('.student-row');
@@ -522,7 +522,48 @@ async function renderLevelGrid(classId){
   let levels={};if(classId){const{data,error}=await db.from('pe_class_sport_levels').select('*').eq('class_id',classId);if(error)throw error;(data||[]).forEach(x=>levels[x.sport_id]=x.level)}
   $('#sportLevelGrid').innerHTML=st.sports.map(s=>`<div class="level-item"><span>${iconMap[s.slug]||'●'} ${esc(s.name)}</span><select data-sport-level="${s.id}"><option value="">Non impostato</option>${[1,2,3,4,5].map(n=>`<option value="${n}" ${levels[s.id]==n?'selected':''}>${n} · ${['','Principiante','Base','Intermedio','Avanzato','Molto avanzato'][n]}</option>`).join('')}</select></div>`).join('');
 }
-$('#classSchoolLevel').onchange=()=>updateGradeOptions('');
+function updateSportLevelsVisibility(){
+
+  const schoolLevel = $('#classSchoolLevel').value;
+  const grade = Number($('#classGrade').value || 0);
+
+  const grid = $('#sportLevelGrid');
+
+  if(!grid) return;
+
+  /*
+   * 1ª, 2ª e 3ª primaria:
+   * niente livelli specifici per sport.
+   */
+  const hideSportLevels =
+    schoolLevel === 'primary' &&
+    grade >= 1 &&
+    grade <= 3;
+
+  /*
+   * Cerchiamo il contenitore della sezione partendo
+   * dalla griglia dei livelli.
+   */
+  const section =
+    grid.closest('.sport-level-section') ||
+    grid.closest('.form-section') ||
+    grid.parentElement;
+
+  if(section){
+    section.classList.toggle('hidden', hideSportLevels);
+  }
+}
+
+
+$('#classSchoolLevel').onchange=()=>{
+  updateGradeOptions('');
+  updateSportLevelsVisibility();
+};
+
+$('#classGrade').onchange=()=>{
+  updateSportLevelsVisibility();
+};
+
 
 $('#deleteClassBtn').onclick=async()=>{
   const id=$('#classId').value;if(!id)return;
