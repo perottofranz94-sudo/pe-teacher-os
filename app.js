@@ -15,7 +15,91 @@ const schoolGradeOptions={primary:[['1','Prima primaria'],['2','Seconda primaria
 let classOriginalStudentIds=[];
 const weekdayOptions=[[1,'Lunedì'],[2,'Martedì'],[3,'Mercoledì'],[4,'Giovedì'],[5,'Venerdì'],[6,'Sabato'],[7,'Domenica']];
 function minutesBetween(start,end){if(!start||!end)return 0;const [sh,sm]=start.split(':').map(Number),[eh,em]=end.split(':').map(Number);return (eh*60+em)-(sh*60+sm)}
-function addTimetableRow(weekday=1,start='',end=''){const d=document.createElement('div');d.className='timetable-row';d.innerHTML=`<label>Giorno<select class="tt-day">${weekdayOptions.map(([v,l])=>`<option value="${v}" ${Number(weekday)===v?'selected':''}>${l}</option>`).join('')}</select></label><label>Inizio<input class="tt-start" type="time" value="${esc(start||'')}"></label><label>Fine<input class="tt-end" type="time" value="${esc(end||'')}"></label><button type="button" class="tt-remove" aria-label="Rimuovi giorno">×</button>`;d.querySelector('.tt-remove').onclick=()=>{if($$('.timetable-row').length>1)d.remove();else{d.querySelector('.tt-start').value='';d.querySelector('.tt-end').value=''}};$('#timetableRows').appendChild(d)}
+function addTimetableRow(weekday=1,start='',end=''){
+  const d=document.createElement('div');
+  d.className='timetable-row';
+
+  d.innerHTML=`
+    <label class="tt-field tt-day-field">
+      Giorno
+      <select class="tt-day">
+        ${weekdayOptions.map(([v,l])=>`
+          <option value="${v}" ${Number(weekday)===v?'selected':''}>
+            ${l}
+          </option>
+        `).join('')}
+      </select>
+    </label>
+
+    <label class="tt-field">
+      Inizio
+      <input
+        class="tt-start"
+        type="time"
+        value="${esc(start||'')}"
+      >
+    </label>
+
+    <label class="tt-field">
+      Fine
+      <input
+        class="tt-end"
+        type="time"
+        value="${esc(end||'')}"
+      >
+    </label>
+
+    <button
+      type="button"
+      class="tt-remove"
+      aria-label="Rimuovi giorno"
+    >×</button>
+  `;
+
+  const startInput=d.querySelector('.tt-start');
+  const endInput=d.querySelector('.tt-end');
+
+  startInput.addEventListener('change',()=>{
+    if(!startInput.value) return;
+
+    const [h,m]=startInput.value.split(':').map(Number);
+
+    const startMinutes=(h*60)+m;
+    const suggestedMinutes=startMinutes+60;
+
+    const endH=Math.floor(suggestedMinutes/60)%24;
+    const endM=suggestedMinutes%60;
+
+    const suggested=
+      `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+
+    /*
+     * Imposta automaticamente +1 ora solo se:
+     * - Fine è vuota
+     * - oppure Fine è uguale/prima dell'inizio
+     *
+     * Se il docente ha già scelto manualmente un orario valido,
+     * non viene sovrascritto.
+     */
+    if(
+      !endInput.value ||
+      minutesBetween(startInput.value,endInput.value)<=0
+    ){
+      endInput.value=suggested;
+    }
+  });
+
+  d.querySelector('.tt-remove').onclick=()=>{
+    if($$('.timetable-row').length>1){
+      d.remove();
+    }else{
+      startInput.value='';
+      endInput.value='';
+    }
+  };
+
+  $('#timetableRows').appendChild(d);
+}
 function collectTimetableRows(){return $$('.timetable-row').map(r=>({weekday:Number(r.querySelector('.tt-day').value),start:r.querySelector('.tt-start').value,end:r.querySelector('.tt-end').value})).filter(x=>x.start||x.end)}
 async function loadClassTimetable(classId){$('#timetableRows').innerHTML='';if(!classId){addTimetableRow(1,'','');return}const{data,error}=await db.from('pe_class_timetable_slots').select('*').eq('class_id',classId).eq('active',true).order('weekday').order('start_time');if(error)throw error;(data||[]).forEach(x=>addTimetableRow(x.weekday,String(x.start_time||'').slice(0,5),String(x.end_time||'').slice(0,5)));if(!(data||[]).length)addTimetableRow(1,'','')}
 async function saveClassTimetable(classId,rows){const{error:delErr}=await db.from('pe_class_timetable_slots').delete().eq('class_id',classId);if(delErr)throw delErr;const payload=rows.map(x=>({owner_id:st.user.id,class_id:classId,weekday:x.weekday,start_time:x.start,end_time:x.end,lesson_minutes:minutesBetween(x.start,x.end),valid_from:st.year?.start_date||null,valid_to:st.year?.end_date||null,active:true}));if(payload.length){const{error}=await db.from('pe_class_timetable_slots').insert(payload);if(error)throw error}}
