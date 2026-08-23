@@ -1023,8 +1023,10 @@ function updatePlannerPrimaryMode(){
   const sportField = $('#planSportField');
   const topics = $('#planTopicsSection');
   const levelField = document.querySelector('.planner-level-field');
+  const primarySettings = $('#planPrimarySettings');
 
   if(mode === 'primary_games'){
+    primarySettings?.classList.remove('hidden');
 
     sportField?.classList.add('hidden');
     topics?.classList.add('hidden');
@@ -1039,7 +1041,7 @@ function updatePlannerPrimaryMode(){
     }
 
   }else{
-
+primarySettings?.classList.add('hidden');
     sportField?.classList.remove('hidden');
     levelField?.classList.remove('hidden');
 
