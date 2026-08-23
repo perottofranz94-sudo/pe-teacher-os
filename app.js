@@ -1849,6 +1849,133 @@ function openAdaptLessonModal(lesson,items){
 
   $('#adaptLessonModal').showModal();
 }
+$$('[data-adapt-reason]').forEach(btn=>{
+
+  btn.onclick=()=>{
+
+    $$('[data-adapt-reason]').forEach(x=>
+      x.classList.remove('selected')
+    );
+
+    btn.classList.add('selected');
+
+    const reason=btn.dataset.adaptReason;
+
+    adaptLessonCtx.reason=reason;
+
+    const box=$('#adaptLessonDetails');
+    const field=$('#adaptDynamicField');
+
+    box.classList.remove('hidden');
+
+    if(reason==='fewer_students' || reason==='more_students'){
+
+      field.innerHTML=`
+        <label>
+          Quanti alunni ci sono oggi?
+          <input
+            id="adaptStudentCount"
+            type="number"
+            min="1"
+            max="100"
+            value="${adaptLessonCtx.lesson?.pe_classes?.student_count||''}"
+          >
+        </label>
+      `;
+
+    }else if(reason==='less_time'){
+
+      field.innerHTML=`
+        <label>
+          Quanti minuti hai a disposizione?
+          <input
+            id="adaptMinutes"
+            type="number"
+            min="20"
+            max="${adaptLessonCtx.lesson.duration_min}"
+            value="${Math.min(60,adaptLessonCtx.lesson.duration_min)}"
+          >
+        </label>
+      `;
+
+    }else if(reason==='no_gym'){
+
+      field.innerHTML=`
+        <label>
+          Che spazio hai a disposizione?
+          <select id="adaptSpace">
+            <option value="small_room">Aula grande / spazio ridotto</option>
+            <option value="corridor">Corridoio</option>
+            <option value="outdoor_small">Piccolo spazio esterno</option>
+            <option value="other">Altro</option>
+          </select>
+        </label>
+      `;
+
+    }else if(reason==='no_outdoor'){
+
+      field.innerHTML=`
+        <label>
+          Dove puoi svolgere la lezione?
+          <select id="adaptSpace">
+            <option value="gym">Palestra</option>
+            <option value="small_room">Aula grande / spazio ridotto</option>
+            <option value="corridor">Corridoio</option>
+          </select>
+        </label>
+      `;
+
+    }else if(reason==='missing_material'){
+
+      field.innerHTML=`
+        <label>
+          Quale materiale non hai?
+          <textarea
+            id="adaptMissingMaterial"
+            rows="3"
+            placeholder="Es. palloni, cerchi, racchette..."
+          ></textarea>
+        </label>
+      `;
+
+    }else if(reason==='difficult_class'){
+
+      field.innerHTML=`
+        <label>
+          Che tipo di difficoltà stai incontrando?
+          <select id="adaptClassIssue">
+            <option value="attention">Poca attenzione</option>
+            <option value="chaos">Troppa confusione</option>
+            <option value="conflict">Conflitti tra alunni</option>
+            <option value="low_motivation">Scarsa motivazione</option>
+          </select>
+        </label>
+      `;
+
+    }else{
+
+      field.innerHTML=`
+        <label>
+          Descrivi cosa è cambiato
+          <textarea
+            id="adaptOtherText"
+            rows="4"
+            placeholder="Es. palestra occupata e ho solo metà campo..."
+          ></textarea>
+        </label>
+      `;
+    }
+
+  };
+
+});
+$('#adaptCancelBtn').onclick=()=>{
+  $('#adaptLessonModal').close();
+};
+
+$('#adaptContinueBtn').onclick=()=>{
+  toast('Parametri adattamento acquisiti');
+};
 $('#closeAdaptLessonModal').onclick=()=>{
   $('#adaptLessonModal').close();
 };
