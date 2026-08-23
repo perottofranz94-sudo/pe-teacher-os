@@ -492,12 +492,141 @@ async function deleteSingleLesson(lesson){
   $('#lessonModal').close();toast('Lezione eliminata');await loadCore();renderCalendar();renderModules();
 }
 async function moveLessonToChosenDate(lesson){
-  const date=prompt('Nuova data della lezione (AAAA-MM-GG):',lesson.lesson_date||'');
-  if(date===null)return;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Inserisci la data nel formato AAAA-MM-GG');return}
-  const{data,error}=await db.rpc('pe_move_lesson_date',{p_lesson_id:lesson.id,p_new_date:date});
-  if(error)return toast('Errore: '+error.message);
-  $('#lessonModal').close();toast('Lezione spostata');await loadCore();renderCalendar();
+
+  const modal=document.createElement('dialog');
+  modal.className='modal move-lesson-date-modal';
+
+  modal.innerHTML=`
+    <div class="modal-head">
+      <div>
+        <span class="kicker">SPOSTA LEZIONE</span>
+        <h3>Scegli la nuova data</h3>
+      </div>
+
+      <button
+        type="button"
+        class="move-date-close"
+        aria-label="Chiudi"
+      >×</button>
+    </div>
+
+    <div class="move-date-content">
+
+      <div class="move-date-icon">📅</div>
+
+      <p>
+        Seleziona dal calendario il giorno in cui vuoi svolgere
+        <strong>${esc(lesson.title||'questa lezione')}</strong>.
+      </p>
+
+      <label class="move-date-field">
+        Nuova data
+        <input
+          id="moveLessonDateInput"
+          type="date"
+          value="${esc(lesson.lesson_date||'')}"
+          min="${esc(st.year?.start_date||'')}"
+          max="${esc(st.year?.end_date||'')}"
+        >
+      </label>
+
+      <div class="move-date-current">
+        <span>Data attuale</span>
+        <strong>${fmt(lesson.lesson_date)}</strong>
+      </div>
+
+      <div class="move-date-actions">
+        <button
+          type="button"
+          class="btn secondary move-date-cancel"
+        >
+          Annulla
+        </button>
+
+        <button
+          type="button"
+          class="btn primary move-date-confirm"
+        >
+          Sposta lezione
+        </button>
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const close=()=>{
+    try{modal.close()}catch{}
+    modal.remove();
+  };
+
+  modal.querySelector('.move-date-close').onclick=close;
+  modal.querySelector('.move-date-cancel').onclick=close;
+
+  modal.oncancel=e=>{
+    e.preventDefault();
+    close();
+  };
+
+  modal.querySelector('.move-date-confirm').onclick=async()=>{
+
+    const date=modal.querySelector('#moveLessonDateInput').value;
+
+    if(!date){
+      toast('Seleziona una nuova data');
+      return;
+    }
+
+    if(date===lesson.lesson_date){
+      toast('Hai selezionato la stessa data');
+      return;
+    }
+
+    const btn=modal.querySelector('.move-date-confirm');
+    btn.disabled=true;
+    btn.textContent='Spostamento…';
+
+    const {error}=await db.rpc(
+      'pe_move_lesson_date',
+      {
+        p_lesson_id:lesson.id,
+        p_new_date:date
+      }
+    );
+
+    if(error){
+      btn.disabled=false;
+      btn.textContent='Sposta lezione';
+      toast('Errore: '+error.message);
+      return;
+    }
+
+    close();
+
+    $('#lessonModal').close();
+
+    toast('Lezione spostata');
+
+    await loadCore();
+
+    renderCalendar();
+    renderModules();
+  };
+
+  modal.showModal();
+
+  /*
+   * Su browser compatibili, prova ad aprire immediatamente
+   * il selettore calendario.
+   */
+  const input=modal.querySelector('#moveLessonDateInput');
+
+  setTimeout(()=>{
+    try{
+      input.showPicker?.();
+    }catch{}
+  },150);
 }
 async function shiftLessonChain(lesson){
   const raw=prompt('Di quante occasioni di lezione vuoi slittare questa lezione e tutte le successive?','1');
