@@ -206,13 +206,53 @@
   </div>
 
 </div>
-<label id="planModeField" class="hidden">
-  Tipo di programmazione
-  <select id="planMode">
-    <option value="primary_games">📚 Libro dei giochi</option>
-    <option value="sport">🏅 Sport</option>
+<div id="planModeField" class="hidden primary-mode-section">
+
+  <div class="primary-mode-intro">
+    <span class="kicker">QUARTA E QUINTA PRIMARIA</span>
+    <h4>Come vuoi programmare questa classe?</h4>
+    <p>
+      Negli ultimi due anni della scuola primaria puoi continuare con il
+      <strong>Libro dei giochi</strong>, utilizzando attività adatte al livello
+      della classe, oppure iniziare una <strong>disciplina sportiva</strong>
+      con una progressione tecnica strutturata.
+    </p>
+  </div>
+
+  <div class="primary-mode-cards">
+
+    <button
+      type="button"
+      class="primary-mode-card active"
+      data-plan-mode="primary_games"
+    >
+      <span class="primary-mode-icon">📚</span>
+      <strong>Libro dei giochi</strong>
+      <small>
+        Percorso motorio progressivo con giochi adatti alla classe.
+      </small>
+    </button>
+
+    <button
+      type="button"
+      class="primary-mode-card"
+      data-plan-mode="sport"
+    >
+      <span class="primary-mode-icon">🏅</span>
+      <strong>Disciplina sportiva</strong>
+      <small>
+        Scegli uno sport e costruisci una progressione tecnica.
+      </small>
+    </button>
+
+  </div>
+
+  <select id="planMode" class="hidden">
+    <option value="primary_games">Libro dei giochi</option>
+    <option value="sport">Sport</option>
   </select>
-</label>
+
+</div>
 
 <label id="planSportField">
   Sport
