@@ -634,6 +634,167 @@ async function deleteModuleBlock(moduleId){
   toast(`Blocco ${sportName} eliminato da ${className}`);await loadCore();renderModules();renderCalendar();
 }
 let plannerBusy=false;
+async function renderPlanTopics(){
+
+  const sportId=$('#planSport')?.value;
+  const lessonCount=Math.max(
+    1,
+    Number($('#planWeeks')?.value||1)
+  );
+
+  const box=$('#planTopicsList');
+  const section=$('#planTopicsSection');
+
+  if(!box || !section)return;
+
+  if(!sportId){
+    box.innerHTML='';
+    section.classList.add('hidden');
+    return;
+  }
+
+  section.classList.remove('hidden');
+
+  box.innerHTML=`
+    <div class="plan-topics-loading">
+      Carico gli argomenti…
+    </div>
+  `;
+
+  const {data,error}=await db
+    .from('pe_exercises')
+    .select('category')
+    .eq('sport_id',sportId)
+    .eq('active',true)
+    .eq('audit_status','VERIFIED');
+
+  if(error){
+    box.innerHTML=`
+      <div class="plan-topics-empty">
+        Impossibile caricare gli argomenti.
+      </div>
+    `;
+    return;
+  }
+
+  /*
+   * Categorie che NON devono essere selezionabili
+   * come argomento didattico.
+   */
+  const excluded=[
+    'warm up',
+    'warm-up',
+    'warmup',
+    'attivazione',
+    'riscaldamento',
+    'gioco',
+    'giochi',
+    'partita',
+    'ssg',
+    'small sided games',
+    'valutazione',
+    'assessment',
+    'test',
+    'cooldown',
+    'defaticamento',
+    'chiusura'
+  ];
+
+  const categories=[
+    ...new Set(
+      (data||[])
+        .map(x=>String(x.category||'').trim())
+        .filter(Boolean)
+        .filter(cat=>{
+          const c=cat.toLowerCase();
+
+          return !excluded.some(ex=>
+            c===ex ||
+            c.includes(ex)
+          );
+        })
+    )
+  ].sort((a,b)=>
+    a.localeCompare(b,'it')
+  );
+
+  if(!categories.length){
+
+    box.innerHTML=`
+      <div class="plan-topics-empty">
+        Nessun argomento disponibile per questo sport.
+      </div>
+    `;
+
+    return;
+  }
+
+  /*
+   * Manteniamo le scelte già effettuate
+   * quando cambia il numero di lezioni.
+   */
+  const previous=
+    [...box.querySelectorAll('.plan-topic-select')]
+      .map(x=>x.value);
+
+  box.innerHTML='';
+
+  for(let i=0;i<lessonCount;i++){
+
+    const row=document.createElement('div');
+
+    row.className='plan-topic-row';
+
+    const previousValue=previous[i]||'';
+
+    row.innerHTML=`
+
+      <div class="plan-topic-number">
+        <span>LEZIONE</span>
+        <strong>${i+1}</strong>
+      </div>
+
+      <label class="plan-topic-field">
+
+        <span>Argomento</span>
+
+        <select
+          class="plan-topic-select"
+          data-lesson-index="${i}"
+          required
+        >
+
+          <option value="">
+            Seleziona argomento…
+          </option>
+
+          ${categories.map(cat=>`
+            <option
+              value="${esc(cat)}"
+              ${previousValue===cat?'selected':''}
+            >
+              ${esc(cat)}
+            </option>
+          `).join('')}
+
+        </select>
+
+      </label>
+
+    `;
+
+    box.appendChild(row);
+  }
+}
+$('#planSport')?.addEventListener(
+  'change',
+  renderPlanTopics
+);
+
+$('#planWeeks')?.addEventListener(
+  'input',
+  renderPlanTopics
+);
 async function generatePlan(){
   if(plannerBusy)return;
   const cid=$('#planClass').value,sid=$('#planSport').value,msg=$('#plannerMsg'),btn=$('#generatePlanBtn');
