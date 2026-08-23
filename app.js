@@ -1286,6 +1286,8 @@ if(topicsError){
 
 function updatePlannerForSelectedClass(){
 
+  const planWeeksField = $('#planWeeksField');
+  const planMinutesField = $('#planMinutesField');
   const classId = $('#planClass')?.value;
   const cl = st.classes.find(x => x.id === classId);
 
