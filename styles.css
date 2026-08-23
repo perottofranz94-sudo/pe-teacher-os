@@ -1254,3 +1254,47 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
   }
 
 }
+/* =========================================================
+   FIX DEFINITIVO iPHONE — DATE ANNO SCOLASTICO COMPATTE
+   ========================================================= */
+
+@media (max-width:700px){
+
+  #migrateModal #migrateForm .form-row{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    gap:14px !important;
+  }
+
+  #migrateModal #migrateForm label{
+    width:auto !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    align-self:flex-start !important;
+  }
+
+  #migrateModal #newYearStart,
+  #migrateModal #newYearEnd{
+    display:block !important;
+
+    width:155px !important;
+    min-width:155px !important;
+    max-width:155px !important;
+
+    height:48px !important;
+    min-height:48px !important;
+
+    padding:0 10px !important;
+    margin-top:6px !important;
+
+    box-sizing:border-box !important;
+    border-radius:13px !important;
+
+    font-size:15px !important;
+
+    flex:none !important;
+    align-self:flex-start !important;
+  }
+
+}
