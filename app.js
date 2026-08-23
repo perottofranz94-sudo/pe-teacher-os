@@ -1330,6 +1330,8 @@ function updatePlannerForSelectedClass(){
     sportField?.classList.add('hidden');
     topics?.classList.add('hidden');
     levelField?.classList.add('hidden');
+    planWeeksField?.classList.add('hidden');
+    planMinutesField?.classList.remove('hidden');
 
     if($('#planSport')){
       $('#planSport').value = '';
@@ -1387,6 +1389,8 @@ function updatePlannerForSelectedClass(){
   primaryChoice?.classList.add('hidden');
   modeField?.classList.add('hidden');
   primarySettings?.classList.add('hidden');
+  planWeeksField?.classList.remove('hidden');
+  planMinutesField?.classList.remove('hidden');
 
   sportField?.classList.remove('hidden');
   levelField?.classList.remove('hidden');
@@ -1413,6 +1417,8 @@ function updatePlannerPrimaryMode(){
   const topics = $('#planTopicsSection');
   const levelField = document.querySelector('.planner-level-field');
   const primarySettings = $('#planPrimarySettings');
+  const planWeeksField = $('#planWeeksField');
+  const planMinutesField = $('#planMinutesField');
 
   if(mode === 'primary_games'){
     primarySettings?.classList.remove('hidden');
@@ -1420,6 +1426,8 @@ function updatePlannerPrimaryMode(){
     sportField?.classList.add('hidden');
     topics?.classList.add('hidden');
     levelField?.classList.add('hidden');
+    planWeeksField?.classList.add('hidden');
+    planMinutesField?.classList.remove('hidden');
 
     if($('#planSport')){
       $('#planSport').value = '';
@@ -1433,6 +1441,8 @@ function updatePlannerPrimaryMode(){
 primarySettings?.classList.add('hidden');
     sportField?.classList.remove('hidden');
     levelField?.classList.remove('hidden');
+    planWeeksField?.classList.remove('hidden');
+    planMinutesField?.classList.remove('hidden');
 
     if($('#planSport')?.value){
 
