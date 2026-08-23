@@ -2541,6 +2541,194 @@ function renderAdaptLessonPreview(proposal){
 };
 
 }
+async function applyAdaptedLesson(){
+
+  if(
+    !adaptLessonCtx?.lesson ||
+    !adaptLessonCtx?.proposal ||
+    !adaptLessonCtx?.original
+  ){
+    throw new Error('Dati adattamento incompleti.');
+  }
+
+  const lesson=adaptLessonCtx.lesson;
+  const proposal=adaptLessonCtx.proposal;
+  const original=adaptLessonCtx.original;
+
+  const lessonId=lesson.id;
+
+  /*
+   * =====================================================
+   * 1. AGGIORNIAMO SOLO LA DURATA DELLA SINGOLA LEZIONE
+   * =====================================================
+   */
+
+  const originalNote=
+    lesson.teacher_notes||'';
+
+  const adaptationNote=
+    `⚡ Lezione adattata da ${original.duration}' a ${proposal.targetMinutes}'.`;
+
+  const newTeacherNotes=
+    originalNote.includes('⚡ Lezione adattata')
+      ? originalNote
+      : `${originalNote}${originalNote ? '\n\n' : ''}${adaptationNote}`;
+
+  const {error:lessonError}=await db
+    .from('pe_lessons')
+    .update({
+      duration_min:proposal.targetMinutes,
+      teacher_notes:newTeacherNotes
+    })
+    .eq('id',lessonId)
+    .eq('owner_id',st.user.id);
+
+  if(lessonError){
+    throw lessonError;
+  }
+
+
+  /*
+   * =====================================================
+   * 2. QUALI ATTIVITÀ RESTANO?
+   * =====================================================
+   */
+
+  const keptIds=
+    new Set(
+      proposal.items
+        .map(x=>x.id)
+        .filter(Boolean)
+    );
+
+
+  /*
+   * =====================================================
+   * 3. ELIMINIAMO SOLO LE ATTIVITÀ RIMOSSE
+   * =====================================================
+   */
+
+  const removedIds=
+    original.items
+      .filter(x=>!keptIds.has(x.id))
+      .map(x=>x.id)
+      .filter(Boolean);
+
+  if(removedIds.length){
+
+    const {error:deleteError}=await db
+      .from('pe_lesson_exercises')
+      .delete()
+      .eq('lesson_id',lessonId)
+      .eq('owner_id',st.user.id)
+      .in('id',removedIds);
+
+    if(deleteError){
+      throw deleteError;
+    }
+  }
+
+
+  /*
+   * =====================================================
+   * 4. AGGIORNIAMO DURATA E ORDINE DELLE ATTIVITÀ RIMASTE
+   * =====================================================
+   */
+
+  for(
+    let index=0;
+    index<proposal.items.length;
+    index++
+  ){
+
+    const item=proposal.items[index];
+
+    if(!item.id)continue;
+
+    const previousReason=
+      item.selection_reason||'';
+
+    const adaptReason=
+      item._adaptReason
+        ? `⚡ ${item._adaptReason}`
+        : '⚡ Attività mantenuta nella versione adattata';
+
+    const selectionReason=
+      previousReason
+        ? `${previousReason} · ${adaptReason}`
+        : adaptReason;
+
+
+    const {error:updateError}=await db
+      .from('pe_lesson_exercises')
+      .update({
+        duration_min:Number(item._newDuration),
+        order_no:index+1,
+        selection_reason:selectionReason
+      })
+      .eq('id',item.id)
+      .eq('lesson_id',lessonId)
+      .eq('owner_id',st.user.id);
+
+    if(updateError){
+      throw updateError;
+    }
+  }
+
+
+  /*
+   * =====================================================
+   * 5. CONTROLLO FINALE
+   * =====================================================
+   */
+
+  const {data:check,error:checkError}=await db
+    .from('pe_lesson_exercises')
+    .select('id,duration_min')
+    .eq('lesson_id',lessonId)
+    .eq('owner_id',st.user.id);
+
+  if(checkError){
+    throw checkError;
+  }
+
+  const finalMinutes=
+    (check||[])
+      .reduce(
+        (sum,x)=>
+          sum+Number(x.duration_min||0),
+        0
+      );
+
+  if(finalMinutes!==proposal.targetMinutes){
+
+    console.warn(
+      'Durata adattata non coerente',
+      {
+        expected:proposal.targetMinutes,
+        actual:finalMinutes
+      }
+    );
+  }
+
+
+  /*
+   * =====================================================
+   * 6. AGGIORNIAMO SUBITO L'APP
+   * =====================================================
+   */
+
+  await loadCore();
+
+  $('#adaptLessonModal').close();
+  $('#lessonModal').close();
+
+  toast(
+    `Lezione adattata a ${proposal.targetMinutes} minuti`
+  );
+
+  await openLesson(lessonId);
+}
 function openAdaptLessonModal(lesson,items){
 
   adaptLessonCtx={
