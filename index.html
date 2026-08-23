@@ -176,7 +176,36 @@
     </p>
   </div>
 </div>
+<div id="planPrimarySettings" class="hidden">
 
+  <label>
+    Durata della programmazione
+    <select id="planPrimaryScope">
+      <option value="year">📅 Tutto l'anno scolastico</option>
+      <option value="custom">🔢 Numero di lezioni personalizzato</option>
+    </select>
+  </label>
+
+  <label id="planPrimaryCountField" class="hidden">
+    Numero di lezioni
+    <input
+      id="planPrimaryCount"
+      type="number"
+      min="1"
+      max="40"
+      value="10"
+    >
+  </label>
+
+  <div class="primary-plan-note">
+    <strong>✹ Progressione automatica</strong>
+    <span>
+      I giochi possono essere riproposti durante l'anno, ma mai troppo
+      ravvicinati. La difficoltà cresce progressivamente in base alla classe.
+    </span>
+  </div>
+
+</div>
 <label id="planModeField" class="hidden">
   Tipo di programmazione
   <select id="planMode">
