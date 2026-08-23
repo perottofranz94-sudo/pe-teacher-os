@@ -829,6 +829,377 @@ $('#planWeeks')?.addEventListener(
   'input',
   renderPlanTopics
 );
+async function generatePrimaryGamesPlan(){
+
+  const classId=$('#planClass').value;
+  const cl=st.classes.find(x=>x.id===classId);
+
+  const msg=$('#plannerMsg');
+  const btn=$('#generatePlanBtn');
+
+  if(!cl){
+    msg.textContent='Seleziona una classe.';
+    return;
+  }
+
+  btn.disabled=true;
+  btn.textContent='Creo la programmazione…';
+
+  let moduleId=null;
+
+  try{
+
+    msg.textContent='Carico il Libro dei giochi…';
+
+    await loadPrimaryGames();
+
+    const games=(st.primaryGames||[])
+      .filter(g=>Number(g.difficulty)>=1)
+      .filter(g=>Number(g.difficulty)<=5);
+
+    if(games.length<3){
+      throw new Error('Non ci sono abbastanza giochi disponibili.');
+    }
+
+    const [{data:slots,error:slotsError},{data:exceptions,error:exceptionsError}]
+      =await Promise.all([
+
+        db
+          .from('pe_class_timetable_slots')
+          .select('*')
+          .eq('class_id',classId)
+          .eq('active',true)
+          .order('weekday')
+          .order('start_time'),
+
+        db
+          .from('pe_calendar_exceptions')
+          .select('*')
+          .or(
+            `class_id.eq.${classId},school_year_id.eq.${cl.school_year_id}`
+          )
+
+      ]);
+
+    if(slotsError)throw slotsError;
+    if(exceptionsError)throw exceptionsError;
+
+    if(!(slots||[]).length){
+      throw new Error('La classe non ha ancora un orario settimanale.');
+    }
+
+    const startDate=
+      $('#planStart').value ||
+      st.year?.start_date;
+
+    const endDate=st.year?.end_date;
+
+    if(!startDate || !endDate){
+      throw new Error('Anno scolastico o data di partenza non disponibili.');
+    }
+
+    const exceptionRanges=(exceptions||[]).map(x=>({
+      start:x.exception_date,
+      end:x.end_date||x.exception_date
+    }));
+
+    const isException=dateStr=>
+      exceptionRanges.some(x=>
+        dateStr>=x.start &&
+        dateStr<=x.end
+      );
+
+    const availableDates=[];
+
+    let cursor=new Date(startDate+'T12:00:00');
+    const end=new Date(endDate+'T12:00:00');
+
+    while(cursor<=end && availableDates.length<40){
+
+      const jsDay=cursor.getDay();
+      const weekday=jsDay===0 ? 7 : jsDay;
+
+      const dateStr=localISODate(cursor);
+
+      const daySlots=(slots||[])
+        .filter(s=>
+          Number(s.weekday)===weekday &&
+          (!s.valid_from || dateStr>=s.valid_from) &&
+          (!s.valid_to || dateStr<=s.valid_to)
+        )
+        .sort((a,b)=>
+          String(a.start_time)
+            .localeCompare(String(b.start_time))
+        );
+
+      if(daySlots.length && !isException(dateStr)){
+        availableDates.push({
+          date:dateStr,
+          start_time:daySlots[0].start_time,
+          end_time:daySlots[0].end_time
+        });
+      }
+
+      cursor.setDate(cursor.getDate()+1);
+    }
+
+    const scope=$('#planPrimaryScope')?.value||'year';
+
+    let requestedCount=
+      scope==='custom'
+        ? Number($('#planPrimaryCount')?.value||1)
+        : availableDates.length;
+
+    requestedCount=Math.max(
+      1,
+      Math.min(40,requestedCount,availableDates.length)
+    );
+
+    const lessonMinutes=
+      Number($('#planMinutes').value)||120;
+
+    const {data:module,error:moduleError}=await db
+      .from('pe_sport_modules')
+      .insert({
+        owner_id:st.user.id,
+        class_id:classId,
+        sport_id:null,
+        module_type:'manual',
+        title:`Libro dei giochi · ${cl.name}`,
+        start_date:availableDates[0].date,
+        planned_weeks:requestedCount,
+        lesson_duration_min:lessonMinutes,
+        progression_mode:'progressive',
+        status:'planned',
+        notes:'Programmazione automatica progressiva dal Libro dei giochi AttivaMente.'
+      })
+      .select()
+      .single();
+
+    if(moduleError)throw moduleError;
+
+    moduleId=module.id;
+
+    const grade=Number(cl.grade);
+
+    function allowedDifficulties(index,total){
+
+      const progress=
+        total<=1 ? 1 : index/(total-1);
+
+      const secondHalf=progress>=0.50;
+
+      if(grade===1){
+        return secondHalf ? [1,2] : [1];
+      }
+
+      if(grade===2){
+        return secondHalf ? [1,2,3] : [1,2];
+      }
+
+      if(grade===3){
+        return secondHalf ? [1,2,3,4] : [1,2,3];
+      }
+
+      if(grade===4){
+        return secondHalf ? [1,2,3,4,5] : [1,2,3,4];
+      }
+
+      return [1,2,3,4,5];
+    }
+
+    const lastUsed=new Map();
+
+    function chooseGames(lessonIndex,totalLessons,amount=3){
+
+      const allowed=
+        allowedDifficulties(
+          lessonIndex,
+          totalLessons
+        );
+
+      let candidates=games
+        .filter(g=>
+          allowed.includes(Number(g.difficulty))
+        )
+        .map(g=>{
+
+          const previous=
+            lastUsed.has(g.id)
+              ? lastUsed.get(g.id)
+              : -999;
+
+          const distance=
+            lessonIndex-previous;
+
+          const recentPenalty=
+            distance<=4 ? 1000 : 0;
+
+          return{
+            game:g,
+            score:
+              recentPenalty
+              - Number(g.difficulty)*3
+              - Math.random()*5
+          };
+
+        })
+        .sort((a,b)=>a.score-b.score);
+
+      const chosen=
+        candidates
+          .slice(0,amount)
+          .map(x=>x.game);
+
+      chosen.forEach(g=>
+        lastUsed.set(g.id,lessonIndex)
+      );
+
+      return chosen;
+    }
+
+    msg.textContent=`Creo ${requestedCount} lezioni…`;
+
+    for(let i=0;i<requestedCount;i++){
+
+      const slot=availableDates[i];
+
+      const selectedGames=
+        chooseGames(
+          i,
+          requestedCount,
+          3
+        );
+
+      const {data:lesson,error:lessonError}=await db
+        .from('pe_lessons')
+        .insert({
+          owner_id:st.user.id,
+          module_id:module.id,
+          class_id:classId,
+          sport_id:null,
+          lesson_date:slot.date,
+          sequence_no:i+1,
+          title:`Libro dei giochi — Lezione ${i+1}/${requestedCount}`,
+          duration_min:lessonMinutes,
+          generation_mode:'automatic',
+          status:'planned',
+          learning_goal:'Sviluppo motorio globale attraverso giochi progressivi.',
+          teacher_notes:`Programmazione Libro dei giochi · ${cl.name}.`,
+          start_time:slot.start_time,
+          end_time:slot.end_time,
+          is_extra:false
+        })
+        .select()
+        .single();
+
+      if(lessonError)throw lessonError;
+
+      const gameTime=
+        Math.floor(
+          lessonMinutes*0.88/3
+        );
+
+      const used=
+        gameTime*3;
+
+      const closing=
+        Math.max(
+          5,
+          lessonMinutes-used
+        );
+
+      const payload=
+        selectedGames.map((g,index)=>{
+
+          const marker=
+            g.is_custom
+              ? `PRIMARY_GAME:CUSTOM:${g.id}`
+              : `PRIMARY_GAME:BOOK:${g.source_page}`;
+
+          return{
+            owner_id:st.user.id,
+            lesson_id:lesson.id,
+            exercise_id:null,
+            phase:
+              index===0
+                ? 'activation'
+                : index===2
+                ? 'final'
+                : 'main',
+            order_no:index+1,
+            duration_min:gameTime,
+            custom_title:g.title,
+            custom_explanation:g.description||'',
+            custom_field_dimensions:g.material_spaces||null,
+            primary_game_ref:marker,
+            station_count:1,
+            players_per_group:cl.student_count,
+            selection_reason:
+              `Libro dei giochi · difficoltà ${g.difficulty}/5 · progressione automatica per ${cl.name}.`
+          };
+        });
+
+      payload.push({
+        owner_id:st.user.id,
+        lesson_id:lesson.id,
+        exercise_id:null,
+        phase:'closing',
+        order_no:4,
+        duration_min:closing,
+        custom_title:'Chiusura, acqua e feedback',
+        custom_explanation:'Recupero materiale, breve pausa, feedback finale e saluto.',
+        station_count:1,
+        players_per_group:cl.student_count,
+        selection_reason:'Tempo flessibile per una gestione realistica della lezione.'
+      });
+
+      const {error:itemsError}=await db
+        .from('pe_lesson_exercises')
+        .insert(payload);
+
+      if(itemsError)throw itemsError;
+    }
+
+    const {error:statusError}=await db
+      .from('pe_sport_modules')
+      .update({status:'generated'})
+      .eq('id',module.id);
+
+    if(statusError)throw statusError;
+
+    msg.textContent='Programmazione creata!';
+
+    toast(`${requestedCount} lezioni dal Libro dei giochi create`);
+
+    await loadCore();
+
+    renderCalendar();
+    renderModules();
+
+  }catch(err){
+
+    console.error(err);
+
+    if(moduleId){
+      await db
+        .from('pe_sport_modules')
+        .delete()
+        .eq('id',moduleId);
+    }
+
+    msg.textContent=
+      'Errore: '+
+      (err.message||'generazione non riuscita');
+
+    toast('Programmazione non riuscita');
+
+  }finally{
+
+    btn.disabled=false;
+    btn.textContent='✦ Genera programmazione';
+  }
+}
 async function generatePlan(){
   if(plannerBusy)return;
   const cid=$('#planClass').value,sid=$('#planSport').value,msg=$('#plannerMsg'),btn=$('#generatePlanBtn');
