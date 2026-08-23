@@ -1072,6 +1072,15 @@ $('#planMode')?.addEventListener(
   'change',
   updatePlannerPrimaryMode
 );
+$('#planPrimaryScope')?.addEventListener('change',()=>{
+
+  const custom =
+    $('#planPrimaryScope').value === 'custom';
+
+  $('#planPrimaryCountField')
+    ?.classList.toggle('hidden', !custom);
+
+});
 $('#plannerForm').onsubmit=e=>{e.preventDefault();generatePlan()};
 $('#generatePlanBtn').onclick=e=>{e.preventDefault();generatePlan()};
 let replaceCtx=null;
