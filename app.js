@@ -2214,6 +2214,256 @@ function buildShorterLessonProposal(items,targetMinutes){
 
   };
 }
+function renderAdaptLessonPreview(proposal){
+
+  const preview=$('#adaptLessonPreview');
+
+  if(!preview || !adaptLessonCtx)return;
+
+  const original=adaptLessonCtx.items||[];
+
+  const getTitle=item=>{
+    const pm=primaryMarker(item.primary_game_ref);
+
+    return item.custom_title ||
+      item.pe_exercises?.name ||
+      (pm ? 'Gioco motorio' : 'Attività');
+  };
+
+  const getPhase=item=>
+    phaseLabel[item.phase] ||
+    item.phase ||
+    'Attività';
+
+
+  /* =====================================================
+     VERSIONE ORIGINALE
+     ===================================================== */
+
+  const originalHtml=original.map(item=>{
+
+    const wasRemoved=
+      proposal.removed.some(
+        x=>x.id===item.id
+      );
+
+    return `
+      <div class="adapt-preview-item ${wasRemoved?'will-remove':''}">
+
+        <div class="adapt-preview-minutes">
+          ${Number(item.duration_min||0)}'
+        </div>
+
+        <div class="adapt-preview-copy">
+
+          <span class="kicker">
+            ${esc(getPhase(item))}
+          </span>
+
+          <strong>
+            ${esc(getTitle(item))}
+          </strong>
+
+          ${wasRemoved
+            ? `<small class="adapt-remove-label">
+                 Verrà rimossa nella versione adattata
+               </small>`
+            : ''
+          }
+
+        </div>
+
+      </div>
+    `;
+
+  }).join('');
+
+
+  /* =====================================================
+     VERSIONE ADATTATA
+     ===================================================== */
+
+  const adaptedHtml=proposal.items.map(item=>{
+
+    const changed=
+      Number(item._newDuration)!==
+      Number(item._originalDuration);
+
+    return `
+      <div class="adapt-preview-item adapted">
+
+        <div class="adapt-preview-minutes">
+          ${item._newDuration}'
+        </div>
+
+        <div class="adapt-preview-copy">
+
+          <span class="kicker">
+            ${esc(getPhase(item))}
+          </span>
+
+          <strong>
+            ${esc(getTitle(item))}
+          </strong>
+
+          <small class="${changed?'adapt-change-label':'adapt-keep-label'}">
+            ${
+              changed
+                ? `Da ${item._originalDuration}' a ${item._newDuration}'`
+                : 'Mantenuta'
+            }
+          </small>
+
+          ${
+            item._adaptReason
+              ? `<small class="adapt-reason-note">
+                   ✦ ${esc(item._adaptReason)}
+                 </small>`
+              : ''
+          }
+
+        </div>
+
+      </div>
+    `;
+
+  }).join('');
+
+
+  /* =====================================================
+     CONFRONTO
+     ===================================================== */
+
+  preview.innerHTML=`
+
+    <div class="adapt-preview-heading">
+
+      <div>
+        <span class="kicker">
+          PROPOSTA ATTIVAMENTE
+        </span>
+
+        <h3>
+          Ecco come adatterei la lezione
+        </h3>
+
+        <p>
+          L'obiettivo didattico rimane invariato.
+          AttivaMente ha ridistribuito il tempo disponibile
+          senza modificare il resto della programmazione.
+        </p>
+      </div>
+
+    </div>
+
+
+    <div class="adapt-comparison">
+
+      <section class="adapt-comparison-column original">
+
+        <div class="adapt-column-head">
+
+          <div>
+            <span class="kicker">
+              ORIGINALE
+            </span>
+
+            <strong>
+              ${proposal.originalTotal} minuti
+            </strong>
+          </div>
+
+        </div>
+
+        <div class="adapt-preview-list">
+          ${originalHtml}
+        </div>
+
+      </section>
+
+
+      <div class="adapt-comparison-arrow">
+        →
+      </div>
+
+
+      <section class="adapt-comparison-column adapted">
+
+        <div class="adapt-column-head">
+
+          <div>
+            <span class="kicker">
+              ⚡ VERSIONE ADATTATA
+            </span>
+
+            <strong>
+              ${proposal.finalTotal} minuti
+            </strong>
+          </div>
+
+        </div>
+
+        <div class="adapt-preview-list">
+          ${adaptedHtml}
+        </div>
+
+      </section>
+
+    </div>
+
+
+    <div class="adapt-preview-actions">
+
+      <button
+        type="button"
+        class="btn secondary"
+        id="keepOriginalLessonBtn"
+      >
+        Mantieni originale
+      </button>
+
+      <button
+        type="button"
+        class="btn adapt-confirm-btn"
+        id="confirmAdaptedLessonBtn"
+      >
+        ⚡ Usa versione adattata
+      </button>
+
+    </div>
+
+    <small class="adapt-save-warning">
+      Nessuna modifica è stata ancora salvata.
+    </small>
+
+  `;
+
+
+  preview.classList.remove('hidden');
+
+
+  /* =====================================================
+     PER ORA NON SALVIAMO NULLA
+     ===================================================== */
+
+  $('#keepOriginalLessonBtn').onclick=()=>{
+
+    preview.classList.add('hidden');
+
+    toast('Lezione originale mantenuta');
+
+  };
+
+
+  $('#confirmAdaptedLessonBtn').onclick=()=>{
+
+    toast(
+      'Anteprima pronta. Il salvataggio verrà attivato nel prossimo passaggio.'
+    );
+
+  };
+
+}
 function openAdaptLessonModal(lesson,items){
 
   adaptLessonCtx={
@@ -2223,6 +2473,12 @@ function openAdaptLessonModal(lesson,items){
   const details=$('#adaptLessonDetails');
 const status=$('#adaptStatusMsg');
 const generateBtn=$('#adaptGenerateBtn');
+  const preview=$('#adaptLessonPreview');
+  preview?.classList.add('hidden');
+
+if(preview){
+  preview.innerHTML='';
+}
 
 details?.classList.add('hidden');
 status?.classList.add('hidden');
@@ -2637,6 +2893,7 @@ $('#adaptGenerateBtn').onclick=()=>{
    */
   adaptLessonCtx.proposal=
     proposal;
+  renderAdaptLessonPreview(proposal);
 
   console.log(
     '⚡ AttivaMente · proposta lezione adattata',
