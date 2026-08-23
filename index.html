@@ -162,8 +162,33 @@
     <article class="panel glass">
       <div class="panel-head"><div><span class="kicker">MOTORE DIDATTICO</span><h3>Genera un modulo</h3></div></div>
       <form id="plannerForm">
-        <label>Classe<select id="planClass"></select></label>
-        <label>Sport<select id="planSport"></select></label>
+        <label>
+  Classe
+  <select id="planClass"></select>
+</label>
+
+<div id="planPrimaryChoice" class="hidden">
+  <div class="primary-planner-card">
+    <span class="kicker">SCUOLA PRIMARIA</span>
+    <h4>📚 Libro dei giochi</h4>
+    <p id="planPrimaryChoiceText">
+      Crea una programmazione progressiva utilizzando i giochi del libro.
+    </p>
+  </div>
+</div>
+
+<label id="planModeField" class="hidden">
+  Tipo di programmazione
+  <select id="planMode">
+    <option value="primary_games">📚 Libro dei giochi</option>
+    <option value="sport">🏅 Sport</option>
+  </select>
+</label>
+
+<label id="planSportField">
+  Sport
+  <select id="planSport"></select>
+</label>
         <div class="form-row"><label>Numero di lezioni<input id="planWeeks" type="number" min="1" max="60" value="3"></label><label>Durata lezione<input id="planMinutes" type="number" min="45" max="180" value="120"></label></div>
         <div id="planTopicsSection" class="plan-topics-section">
 
