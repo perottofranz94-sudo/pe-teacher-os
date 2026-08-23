@@ -1206,3 +1206,51 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
   }
 
 }
+/* =========================================================
+   iPHONE — CAMPI DATA/ORA COMPATTI
+   ========================================================= */
+
+@media (max-width: 700px){
+
+  /* Date e orari: niente larghezza enorme */
+  input[type="date"],
+  input[type="time"]{
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 170px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Data: spazio sufficiente solo per gg/mm/aaaa */
+  input[type="date"]{
+    width: 155px !important;
+  }
+
+  /* Ora: ancora più stretta */
+  input[type="time"]{
+    width: 125px !important;
+  }
+
+}
+@media (max-width: 700px){
+
+  #yearForm .form-row{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    gap:12px !important;
+  }
+
+  #yearForm label{
+    width:auto !important;
+    max-width:100% !important;
+  }
+
+  #yearForm input[type="date"]{
+    display:block !important;
+    width:155px !important;
+    max-width:155px !important;
+    margin-top:6px !important;
+  }
+
+}
