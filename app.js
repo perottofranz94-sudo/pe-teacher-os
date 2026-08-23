@@ -2045,29 +2045,99 @@ function buildShorterLessonProposal(items,targetMinutes){
 
 
   /*
-   * Prima riduciamo progressivamente le attività
-   * centrali, senza scendere sotto 5 minuti.
+ * =====================================================
+ * RIDUZIONE DIDATTICAMENTE INTELLIGENTE
+ * =====================================================
+ *
+ * Se il tempo disponibile è molto inferiore
+ * all'originale, è meglio proporre meno attività
+ * ma con un tempo realmente utilizzabile.
+ */
+
+const compressionRatio=
+  targetMinutes/originalTotal;
+
+
+/*
+ * Tempo minimo sensato per un'attività centrale.
+ *
+ * Riduzione molto forte  -> almeno 7'
+ * Riduzione media        -> almeno 8'
+ * Riduzione leggera      -> almeno 10'
+ */
+let minMainDuration=10;
+
+if(compressionRatio<=0.35){
+  minMainDuration=7;
+}else if(compressionRatio<=0.60){
+  minMainDuration=8;
+}
+
+
+/*
+ * Se mantenere tutte le attività centrali
+ * costringerebbe a renderle troppo brevi,
+ * ne eliminiamo alcune.
+ *
+ * Manteniamo preferibilmente quelle iniziali
+ * della progressione.
+ */
+while(total()>targetMinutes){
+
+  const currentMains=
+    selected.filter(
+      x=>x._type==='main'
+    );
+
+  const reducible=
+    currentMains
+      .filter(
+        x=>x._newDuration>minMainDuration
+      )
+      .sort(
+        (a,b)=>
+          b._newDuration-a._newDuration
+      );
+
+
+  /*
+   * Possiamo ancora accorciare senza rendere
+   * l'attività troppo breve.
    */
-  while(total()>targetMinutes){
-
-    const reducible=
-      selected
-        .filter(x=>
-          x._type==='main' &&
-          x._newDuration>5
-        )
-        .sort(
-          (a,b)=>
-            b._newDuration-a._newDuration
-        );
-
-    if(!reducible.length)break;
+  if(reducible.length){
 
     reducible[0]._newDuration--;
 
     reducible[0]._adaptReason=
       'Attività centrale abbreviata';
+
+    continue;
   }
+
+
+  /*
+   * Tutte hanno raggiunto il minimo sensato.
+   * A questo punto eliminiamo un'attività,
+   * invece di trasformarle tutte in micro-attività.
+   */
+  if(currentMains.length>1){
+
+    const remove=
+      currentMains[currentMains.length-1];
+
+    const index=
+      selected.indexOf(remove);
+
+    if(index>=0){
+      selected.splice(index,1);
+    }
+
+    continue;
+  }
+
+
+  break;
+}
 
 
   /*
@@ -2090,32 +2160,6 @@ function buildShorterLessonProposal(items,targetMinutes){
     game._adaptReason=
       'Applicazione finale abbreviata';
   }
-
-
-  /*
-   * Se siamo ancora oltre il tempo disponibile,
-   * eliminiamo attività centrali partendo dalle ultime,
-   * purché rimanga almeno un'attività centrale.
-   */
-  while(total()>targetMinutes){
-
-    const currentMains=
-      selected.filter(
-        x=>x._type==='main'
-      );
-
-    if(currentMains.length<=1)break;
-
-    const remove=
-      currentMains[currentMains.length-1];
-
-    const index=
-      selected.indexOf(remove);
-
-    selected.splice(index,1);
-  }
-
-
   /*
    * Ultimo aggiustamento:
    * riduciamo l'attività centrale rimasta.
