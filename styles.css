@@ -1584,3 +1584,28 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
   }
 
 }
+/* =========================================================
+   PULSANTE ADATTA LEZIONE
+   ========================================================= */
+
+.adapt-lesson-btn{
+  background:
+    linear-gradient(
+      135deg,
+      #ffd67d,
+      #ffb85c
+    );
+
+  color:#231504;
+
+  border:0;
+
+  font-weight:900;
+
+  box-shadow:
+    0 10px 28px rgba(255,184,92,.18);
+}
+
+.adapt-lesson-btn:hover{
+  transform:translateY(-1px);
+}
