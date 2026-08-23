@@ -520,6 +520,85 @@
     </div>
   </div>
 </dialog>
+  <dialog id="adaptLessonModal" class="modal adapt-lesson-modal">
+
+  <div class="modal-head">
+
+    <div>
+      <span class="kicker">⚡ ADATTA LEZIONE</span>
+      <h3>Cos'è cambiato?</h3>
+      <p class="muted">
+        Seleziona l'imprevisto. AttivaMente adatterà soltanto questa lezione,
+        mantenendo intatto il resto della programmazione.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="icon-btn"
+      id="closeAdaptLessonModal"
+      aria-label="Chiudi"
+    >
+      ×
+    </button>
+
+  </div>
+
+  <div id="adaptLessonContext" class="adapt-lesson-context"></div>
+
+  <div class="adapt-reasons-grid">
+
+    <button type="button" class="adapt-reason-card" data-adapt-reason="fewer_students">
+      <span class="adapt-reason-icon">👥</span>
+      <strong>Ho meno alunni</strong>
+      <small>Adatta gruppi, campi e organizzazione.</small>
+    </button>
+
+    <button type="button" class="adapt-reason-card" data-adapt-reason="more_students">
+      <span class="adapt-reason-icon">👥</span>
+      <strong>Ho più alunni</strong>
+      <small>Riduci attese e mantieni tutti attivi.</small>
+    </button>
+
+    <button type="button" class="adapt-reason-card" data-adapt-reason="no_gym">
+      <span class="adapt-reason-icon">🏟️</span>
+      <strong>Non ho la palestra</strong>
+      <small>Trova attività adatte a uno spazio alternativo.</small>
+    </button>
+
+    <button type="button" class="adapt-reason-card" data-adapt-reason="no_outdoor">
+      <span class="adapt-reason-icon">🌧️</span>
+      <strong>Non posso andare fuori</strong>
+      <small>Trasforma la lezione in una proposta indoor.</small>
+    </button>
+
+    <button type="button" class="adapt-reason-card" data-adapt-reason="less_time">
+      <span class="adapt-reason-icon">⏱️</span>
+      <strong>Ho meno tempo</strong>
+      <small>Ridimensiona la lezione senza perdere l'obiettivo.</small>
+    </button>
+
+    <button type="button" class="adapt-reason-card" data-adapt-reason="missing_material">
+      <span class="adapt-reason-icon">🎒</span>
+      <strong>Mi manca del materiale</strong>
+      <small>Trova alternative con ciò che hai disponibile.</small>
+    </button>
+
+    <button type="button" class="adapt-reason-card" data-adapt-reason="difficult_class">
+      <span class="adapt-reason-icon">😵</span>
+      <strong>Classe difficile da gestire</strong>
+      <small>Semplifica organizzazione, regole e transizioni.</small>
+    </button>
+
+    <button type="button" class="adapt-reason-card" data-adapt-reason="other">
+      <span class="adapt-reason-icon">✏️</span>
+      <strong>Altro imprevisto</strong>
+      <small>Descrivi liberamente cosa è cambiato.</small>
+    </button>
+
+  </div>
+
+</dialog>
 
 </body>
 </html>
