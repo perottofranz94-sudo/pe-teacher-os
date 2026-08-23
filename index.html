@@ -165,7 +165,26 @@
         <label>Classe<select id="planClass"></select></label>
         <label>Sport<select id="planSport"></select></label>
         <div class="form-row"><label>Numero di lezioni<input id="planWeeks" type="number" min="1" max="60" value="3"></label><label>Durata lezione<input id="planMinutes" type="number" min="45" max="180" value="120"></label></div>
-        <div class="form-row"><label>Data di partenza<input id="planStart" type="date"></label><label>Livello<select id="planLevel"><option value="">Usa livello classe-sport</option><option value="1">1 · Principiante</option><option value="2">2 · Base</option><option value="3">3 · Intermedio</option><option value="4">4 · Avanzato</option><option value="5">5 · Molto avanzato</option></select></label></div>
+<div class="form-row planner-start-row">
+
+  <label class="planner-date-field">
+    Data di partenza
+    <input id="planStart" type="date">
+  </label>
+
+  <label class="planner-level-field">
+    Livello
+    <select id="planLevel">
+      <option value="">Usa livello classe-sport</option>
+      <option value="1">1 · Principiante</option>
+      <option value="2">2 · Base</option>
+      <option value="3">3 · Intermedio</option>
+      <option value="4">4 · Avanzato</option>
+      <option value="5">5 · Molto avanzato</option>
+    </select>
+  </label>
+
+</div>
         <button id="generatePlanBtn" class="btn primary" type="button">✦ Genera programmazione</button><small id="plannerMsg"></small>
       </form>
     </article>
