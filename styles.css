@@ -1747,3 +1747,21 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
 
   line-height:1.45;
 }
+.adapt-generate-btn{
+  background:
+    linear-gradient(
+      135deg,
+      #ffd67d,
+      #ffb85c
+    );
+
+  color:#231504;
+  border:0;
+  font-weight:900;
+}
+
+.adapt-lesson-preview{
+  margin-top:18px;
+  padding-top:18px;
+  border-top:1px solid var(--line);
+}
