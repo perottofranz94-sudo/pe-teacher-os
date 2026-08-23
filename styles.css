@@ -1609,3 +1609,103 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
 .adapt-lesson-btn:hover{
   transform:translateY(-1px);
 }
+/* =========================================================
+   ADATTA LEZIONE — SCELTA IMPREVISTO
+   ========================================================= */
+
+.adapt-lesson-modal{
+  width:min(760px,94vw);
+}
+
+.adapt-lesson-context{
+  margin:14px 0 18px;
+  padding:14px 16px;
+  border-radius:16px;
+  background:rgba(114,229,193,.07);
+  border:1px solid rgba(114,229,193,.13);
+}
+
+.adapt-lesson-context > div{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.adapt-lesson-context strong{
+  font-size:17px;
+}
+
+.adapt-lesson-context small{
+  color:var(--muted);
+}
+
+.adapt-reasons-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.adapt-reason-card{
+  min-height:120px;
+  padding:15px;
+
+  border-radius:18px;
+  border:1px solid var(--line);
+
+  background:#0b192b;
+  color:#fff;
+
+  text-align:left;
+  cursor:pointer;
+
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:6px;
+
+  transition:.18s ease;
+}
+
+.adapt-reason-card:hover{
+  transform:translateY(-1px);
+  border-color:rgba(255,207,113,.45);
+}
+
+.adapt-reason-card.selected{
+  border-color:#ffd67d;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(92,67,27,.75),
+      rgba(25,42,58,.95)
+    );
+
+  box-shadow:
+    0 0 0 3px rgba(255,214,125,.07);
+}
+
+.adapt-reason-icon{
+  font-size:25px;
+}
+
+.adapt-reason-card strong{
+  font-size:14px;
+}
+
+.adapt-reason-card small{
+  color:var(--muted);
+  line-height:1.4;
+}
+
+@media(max-width:700px){
+
+  .adapt-reasons-grid{
+    grid-template-columns:1fr;
+  }
+
+  .adapt-reason-card{
+    min-height:100px;
+  }
+
+}
