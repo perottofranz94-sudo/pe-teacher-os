@@ -1916,111 +1916,166 @@ async function startReplacement(itemId,lesson,items){
 
   replaceCtx={item,lesson};
 
-  const cl=st.classes.find(x=>x.id===lesson.class_id);
-
-  const isYoungPrimary=
-    cl?.school_level==='primary' &&
-    Number(cl.grade)>=1 &&
-    Number(cl.grade)<=3;
+  const isPrimaryGame=
+    !!primaryMarker(item.primary_game_ref);
 
   const sameBtn=$('#replaceSameSport');
   const freeBtn=$('#replaceFree');
 
-  /*
-   * 1ª - 2ª - 3ª primaria
-   */
-  if(isYoungPrimary){
+
+  /* =====================================================
+     ATTIVITÀ PROVENIENTE DAL LIBRO DEI GIOCHI
+     ===================================================== */
+
+  if(isPrimaryGame){
 
     if(sameBtn){
       sameBtn.innerHTML=`
         📚 Altro gioco dal Libro dei giochi
         <small style="display:block;margin-top:5px;opacity:.72">
-          Consigliato per questa classe
+          Cerca un altro gioco del tuo archivio primaria
         </small>
       `;
     }
 
     if(freeBtn){
       freeBtn.innerHTML=`
-        🏅 Scegli da una disciplina sportiva
+        🏅 Scegli dall'archivio sportivo
         <small style="display:block;margin-top:5px;opacity:.72">
-          Cerca un'attività nell'archivio sportivo
+          Sostituisci il gioco con un'attività sportiva
         </small>
       `;
     }
 
-  }else{
+  }
 
-    /*
-     * Ripristino comportamento normale
-     */
+
+  /* =====================================================
+     ATTIVITÀ SPORTIVA
+     ===================================================== */
+
+  else{
+
     if(sameBtn){
-      sameBtn.textContent='Cambia con attività simile';
+      sameBtn.innerHTML=`
+        ↻ Scegli un'attività simile
+        <small style="display:block;margin-top:5px;opacity:.72">
+          Rimani nello stesso sport
+        </small>
+      `;
     }
 
     if(freeBtn){
-      freeBtn.textContent='Scegli liberamente';
+      freeBtn.innerHTML=`
+        ✦ Scegli liberamente
+        <small style="display:block;margin-top:5px;opacity:.72">
+          Cerca un'altra attività nell'archivio
+        </small>
+      `;
     }
+
   }
 
   $('#replaceModeModal').showModal();
 }
 
 
+/* =========================================================
+   PRIMO PULSANTE
+   ========================================================= */
+
 $('#replaceSameSport').onclick=async()=>{
 
   if(!replaceCtx)return;
 
-  const cl=st.classes.find(
-    x=>x.id===replaceCtx.lesson.class_id
-  );
+  const item=replaceCtx.item;
 
-  const isYoungPrimary=
-    cl?.school_level==='primary' &&
-    Number(cl.grade)>=1 &&
-    Number(cl.grade)<=3;
+  const primaryGame=
+    primaryMarker(item.primary_game_ref);
 
   $('#replaceModeModal').close();
 
+
   /*
-   * Per 1ª-3ª primaria:
-   * il pulsante principale porta sempre
-   * al Libro dei giochi.
+   * Se il gioco arriva dal Libro dei giochi,
+   * apro direttamente il Libro dei giochi.
    */
-  if(isYoungPrimary){
-    await showPrimaryReplacementPickerForClass(cl);
+  if(primaryGame){
+
+    const cl=st.classes.find(
+      x=>x.id===replaceCtx.lesson.class_id
+    );
+
+    /*
+     * Se conosco la classe primaria,
+     * uso il picker filtrato per difficoltà.
+     */
+    if(cl?.school_level==='primary'){
+
+      await showPrimaryReplacementPickerForClass(cl);
+
+    }else{
+
+      await showPrimaryReplacementPicker();
+
+    }
+
     return;
   }
 
+
   /*
-   * Comportamento normale
+   * Se invece è un esercizio sportivo,
+   * resto nello stesso sport.
    */
-  const pm=primaryMarker(
-    replaceCtx.item.primary_game_ref
-  );
-
-  if(pm){
-    await showPrimaryReplacementPicker();
-    return;
-  }
-
-  const sid=
-    replaceCtx.item.pe_exercises?.sport_id ||
+  const sportId=
+    item.pe_exercises?.sport_id ||
     replaceCtx.lesson.pe_sports?.id;
 
-  if(sid){
-    await showExerciseReplacementPicker(sid);
+  if(sportId){
+    await showExerciseReplacementPicker(sportId);
   }
 };
 
+
+/* =========================================================
+   SECONDO PULSANTE
+   ========================================================= */
 
 $('#replaceFree').onclick=()=>{
 
   if(!replaceCtx)return;
 
+  const isPrimaryGame=
+    !!primaryMarker(
+      replaceCtx.item.primary_game_ref
+    );
+
   $('#replaceModeModal').close();
 
-  showReplacementSports();
+
+  /*
+   * Libro dei giochi:
+   * il secondo pulsante significa
+   * "vai nell'archivio sportivo".
+   */
+  if(isPrimaryGame){
+
+    showReplacementSports({
+      includePrimary:false
+    });
+
+    return;
+  }
+
+
+  /*
+   * Attività sportiva:
+   * scelta libera normale.
+   */
+  showReplacementSports({
+    includePrimary:true
+  });
 };
 async function showPrimaryReplacementPickerForClass(cl){
 
@@ -2129,7 +2184,63 @@ async function showPrimaryReplacementPickerForClass(cl){
 
   $('#replacePickerModal').showModal();
 }
-function showReplacementSports(){const primaryCount=(st.primaryDefaults?.length||75)+(st.primaryCustom?.length||0);$('#replacePickerTitle').textContent='Scegli la disciplina';$('#replacePickerBody').innerHTML=`<div class="replace-picker-sports">${st.sports.map(s=>`<button class="replace-picker-sport" data-replace-sport="${s.id}"><span>${iconMap[s.slug]||'🏅'}</span><b>${esc(s.name)}</b><span>${st.sportCounts[s.id]||0} attività verificate</span></button>`).join('')}<button class="replace-picker-sport primary-sport-card" data-replace-primary="1"><span>✹</span><b>Giochi Scuola Primaria</b><span>${primaryCount} giochi</span></button></div>`;$$('[data-replace-sport]').forEach(b=>b.onclick=()=>showExerciseReplacementPicker(b.dataset.replaceSport));$('[data-replace-primary]').onclick=()=>showPrimaryReplacementPicker();$('#replacePickerModal').showModal()}
+function showReplacementSports({includePrimary=true}={}){
+
+  const primaryCount=
+    (st.primaryDefaults?.length||75)+
+    (st.primaryCustom?.length||0);
+
+  $('#replacePickerTitle').textContent='Scegli la disciplina';
+
+  const sportsHtml=
+    st.sports.map(s=>`
+      <button
+        class="replace-picker-sport"
+        data-replace-sport="${s.id}"
+      >
+        <span>${iconMap[s.slug]||'🏅'}</span>
+        <b>${esc(s.name)}</b>
+        <span>${st.sportCounts[s.id]||0} attività verificate</span>
+      </button>
+    `).join('');
+
+  const primaryHtml=
+    includePrimary
+      ? `
+        <button
+          class="replace-picker-sport primary-sport-card"
+          data-replace-primary="1"
+        >
+          <span>✹</span>
+          <b>Giochi Scuola Primaria</b>
+          <span>${primaryCount} giochi</span>
+        </button>
+      `
+      : '';
+
+  $('#replacePickerBody').innerHTML=`
+    <div class="replace-picker-sports">
+      ${sportsHtml}
+      ${primaryHtml}
+    </div>
+  `;
+
+  $$('[data-replace-sport]').forEach(
+    b=>b.onclick=
+      ()=>showExerciseReplacementPicker(
+        b.dataset.replaceSport
+      )
+  );
+
+  const primaryBtn=$('[data-replace-primary]');
+
+  if(primaryBtn){
+    primaryBtn.onclick=
+      ()=>showPrimaryReplacementPicker();
+  }
+
+  $('#replacePickerModal').showModal();
+}
 async function showExerciseReplacementPicker(sportId){const sp=st.sports.find(x=>x.id===sportId);$('#replacePickerTitle').textContent=sp?.name||'Attività';$('#replacePickerBody').innerHTML='<p class="muted">Caricamento attività…</p>';$('#replacePickerModal').showModal();let{data,error}=await db.from('pe_exercises').select('id,name,student_explanation,difficulty,duration_min,duration_max').eq('sport_id',sportId).eq('active',true).eq('audit_status','VERIFIED').order('name').limit(500);if(error){toast(error.message);return}$('#replacePickerBody').innerHTML=`<div class="replace-exercise-grid">${(data||[]).map(e=>`<article class="replace-exercise-card"><h4>${esc(e.name)}</h4><p>${esc(e.student_explanation||'')}</p><div class="category-pills"><span class="chip">Liv. ${e.difficulty||'—'}</span><span class="chip">${e.duration_min||'—'}–${e.duration_max||'—'}'</span></div><button class="btn primary small-btn" data-choose-exercise="${e.id}">Scegli</button></article>`).join('')}</div>`;$$('[data-choose-exercise]').forEach(b=>b.onclick=()=>applyExerciseReplacement(b.dataset.chooseExercise))}
 async function showPrimaryReplacementPicker(){await loadPrimaryGames();$('#replacePickerTitle').textContent='Giochi Scuola Primaria';$('#replacePickerBody').innerHTML=`<div class="replace-exercise-grid">${st.primaryGames.map(g=>`<article class="replace-exercise-card"><img class="replace-primary-thumb" src="${esc(g._imageUrl||('./'+g.image_path))}" alt=""><h4>${esc(g.title)}</h4><p>${esc(g.description||'')}</p><div class="category-pills"><span class="chip">Difficoltà ${g.difficulty}/5</span></div><button class="btn primary small-btn" data-choose-primary="${esc(g.id)}">Scegli</button></article>`).join('')}</div>`;$$('[data-choose-primary]').forEach(b=>b.onclick=()=>applyPrimaryReplacement(b.dataset.choosePrimary));$('#replacePickerModal').showModal()}
 async function applyExerciseReplacement(newId){if(!replaceCtx)return;const old=replaceCtx.item.exercise_id||null;const{error}=await db.from('pe_lesson_exercises').update({exercise_id:newId,custom_title:null,custom_explanation:null,custom_field_dimensions:null,custom_equipment:null,primary_game_ref:null,replaced_from_exercise_id:old,replaced_at:new Date().toISOString(),replacement_reason:'manual_change'}).eq('id',replaceCtx.item.id);if(error)return toast(error.message);await db.from('pe_lesson_exercise_replacements').insert({owner_id:st.user.id,lesson_exercise_id:replaceCtx.item.id,old_exercise_id:old,new_exercise_id:newId});const lessonId=replaceCtx.lesson.id;$('#replacePickerModal').close();toast('Attività sostituita');await loadCore();await openLesson(lessonId)}
