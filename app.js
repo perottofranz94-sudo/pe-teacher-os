@@ -905,6 +905,7 @@ function updatePlannerForSelectedClass(){
   const sportField = $('#planSportField');
   const modeField = $('#planModeField');
   const primaryChoice = $('#planPrimaryChoice');
+  const primarySettings = $('#planPrimarySettings');
   const primaryChoiceText = $('#planPrimaryChoiceText');
 
   const topics = $('#planTopicsSection');
@@ -934,6 +935,7 @@ function updatePlannerForSelectedClass(){
   if(isPrimary && grade >= 1 && grade <= 3){
 
     primaryChoice?.classList.remove('hidden');
+    primarySettings?.classList.remove('hidden');
 
     modeField?.classList.add('hidden');
     sportField?.classList.add('hidden');
@@ -995,6 +997,7 @@ function updatePlannerForSelectedClass(){
 
   primaryChoice?.classList.add('hidden');
   modeField?.classList.add('hidden');
+  primarySettings?.classList.add('hidden');
 
   sportField?.classList.remove('hidden');
   levelField?.classList.remove('hidden');
