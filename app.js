@@ -547,7 +547,7 @@ async function moveLessonToChosenDate(lesson){
           type="button"
           class="btn primary move-date-confirm"
         >
-          Sposta lezione
+          Continua
         </button>
       </div>
 
@@ -583,43 +583,273 @@ async function moveLessonToChosenDate(lesson){
       return;
     }
 
-    const btn=modal.querySelector('.move-date-confirm');
-    btn.disabled=true;
-    btn.textContent='Spostamento…';
+    /*
+     * Controlliamo se questa lezione appartiene a un modulo
+     * e se esistono lezioni successive dello stesso modulo.
+     */
+    let hasFollowingLessons=false;
+    let followingCount=0;
 
-    const {error}=await db.rpc(
-      'pe_move_lesson_date',
-      {
-        p_lesson_id:lesson.id,
-        p_new_date:date
+    if(lesson.module_id){
+
+      const {data:following,error:followingError}=await db
+        .from('pe_lessons')
+        .select('id,sequence_no')
+        .eq('module_id',lesson.module_id)
+        .gt('sequence_no',lesson.sequence_no);
+
+      if(followingError){
+        toast('Errore nel controllo delle lezioni successive');
+        return;
       }
-    );
 
-    if(error){
-      btn.disabled=false;
-      btn.textContent='Sposta lezione';
-      toast('Errore: '+error.message);
+      followingCount=(following||[]).length;
+      hasFollowingLessons=followingCount>0;
+    }
+
+    /*
+     * Se è l'ultima lezione del modulo,
+     * non serve chiedere nulla:
+     * spostiamo soltanto questa.
+     */
+    if(!hasFollowingLessons){
+
+      const btn=modal.querySelector('.move-date-confirm');
+
+      btn.disabled=true;
+      btn.textContent='Spostamento…';
+
+      const {error}=await db.rpc(
+        'pe_move_lesson_date',
+        {
+          p_lesson_id:lesson.id,
+          p_new_date:date
+        }
+      );
+
+      if(error){
+        btn.disabled=false;
+        btn.textContent='Continua';
+        toast('Errore: '+error.message);
+        return;
+      }
+
+      close();
+
+      $('#lessonModal').close();
+
+      toast('Lezione spostata');
+
+      await loadCore();
+
+      renderCalendar();
+      renderModules();
+
       return;
     }
 
+    /*
+     * Ci sono lezioni successive.
+     * Chiudiamo il calendario e chiediamo cosa fare.
+     */
     close();
 
-    $('#lessonModal').close();
+    const choiceModal=document.createElement('dialog');
+    choiceModal.className='modal move-chain-choice-modal';
 
-    toast('Lezione spostata');
+    choiceModal.innerHTML=`
+      <div class="modal-head">
+        <div>
+          <span class="kicker">GESTISCI LA PROGRESSIONE</span>
+          <h3>Come vuoi spostare la lezione?</h3>
+        </div>
 
-    await loadCore();
+        <button
+          type="button"
+          class="move-chain-close"
+          aria-label="Chiudi"
+        >×</button>
+      </div>
 
-    renderCalendar();
-    renderModules();
+      <div class="move-chain-content">
+
+        <div class="move-chain-icon">↪</div>
+
+        <p>
+          Dopo questa lezione ci sono ancora
+          <strong>
+            ${followingCount}
+            ${followingCount===1?'lezione':'lezioni'}
+          </strong>
+          dello stesso modulo.
+        </p>
+
+        <p class="move-chain-question">
+          Vuoi modificare solamente questa data oppure
+          ripianificare automaticamente anche le successive?
+        </p>
+
+        <div class="move-chain-options">
+
+          <button
+            type="button"
+            class="move-chain-option move-only-one"
+          >
+            <span class="move-option-icon">📅</span>
+
+            <span class="move-option-copy">
+              <strong>Sposta solo questa</strong>
+              <small>
+                Le altre lezioni manterranno le date attuali.
+              </small>
+            </span>
+
+            <span class="move-option-arrow">→</span>
+          </button>
+
+          <button
+            type="button"
+            class="move-chain-option recommended move-all-next"
+          >
+            <span class="move-option-icon">↪</span>
+
+            <span class="move-option-copy">
+              <strong>Questa e le successive</strong>
+              <small>
+                AttivaMente ripianificherà le lezioni successive
+                sulle prossime giornate utili della classe.
+              </small>
+            </span>
+
+            <span class="move-option-arrow">→</span>
+          </button>
+
+        </div>
+
+        <div class="move-chain-date-summary">
+          <span>Nuova data scelta</span>
+          <strong>${fmt(date)}</strong>
+        </div>
+
+        <button
+          type="button"
+          class="btn ghost move-chain-cancel"
+        >
+          Annulla
+        </button>
+
+      </div>
+    `;
+
+    document.body.appendChild(choiceModal);
+
+    const closeChoice=()=>{
+      try{choiceModal.close()}catch{}
+      choiceModal.remove();
+    };
+
+    choiceModal.querySelector('.move-chain-close').onclick=closeChoice;
+    choiceModal.querySelector('.move-chain-cancel').onclick=closeChoice;
+
+    choiceModal.oncancel=e=>{
+      e.preventDefault();
+      closeChoice();
+    };
+
+    /*
+     * OPZIONE 1
+     * Sposta soltanto questa lezione.
+     */
+    choiceModal.querySelector('.move-only-one').onclick=async()=>{
+
+      const buttons=choiceModal.querySelectorAll('button');
+
+      buttons.forEach(b=>b.disabled=true);
+
+      const {error}=await db.rpc(
+        'pe_move_lesson_date',
+        {
+          p_lesson_id:lesson.id,
+          p_new_date:date
+        }
+      );
+
+      if(error){
+        buttons.forEach(b=>b.disabled=false);
+        toast('Errore: '+error.message);
+        return;
+      }
+
+      closeChoice();
+
+      $('#lessonModal').close();
+
+      toast('Lezione spostata');
+
+      await loadCore();
+
+      renderCalendar();
+      renderModules();
+    };
+
+    /*
+     * OPZIONE 2
+     * Sposta questa e ripianifica tutte le successive
+     * dello stesso modulo.
+     */
+    choiceModal.querySelector('.move-all-next').onclick=async()=>{
+
+      const buttons=choiceModal.querySelectorAll('button');
+
+      buttons.forEach(b=>b.disabled=true);
+
+      const selected=
+        choiceModal.querySelector('.move-all-next strong');
+
+      if(selected){
+        selected.textContent='Ripianificazione…';
+      }
+
+      const {data,error}=await db.rpc(
+        'pe_move_lesson_chain_to_date',
+        {
+          p_lesson_id:lesson.id,
+          p_new_date:date
+        }
+      );
+
+      if(error){
+
+        buttons.forEach(b=>b.disabled=false);
+
+        if(selected){
+          selected.textContent='Questa e le successive';
+        }
+
+        toast('Errore: '+error.message);
+
+        return;
+      }
+
+      closeChoice();
+
+      $('#lessonModal').close();
+
+      toast(
+        `${data?.moved_lessons||followingCount+1} lezioni ripianificate`
+      );
+
+      await loadCore();
+
+      renderCalendar();
+      renderModules();
+    };
+
+    choiceModal.showModal();
   };
 
   modal.showModal();
 
-  /*
-   * Su browser compatibili, prova ad aprire immediatamente
-   * il selettore calendario.
-   */
   const input=modal.querySelector('#moveLessonDateInput');
 
   setTimeout(()=>{
