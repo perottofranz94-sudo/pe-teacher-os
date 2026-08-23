@@ -2161,7 +2161,19 @@ $('#adaptContinueBtn').onclick=()=>{
   );
 
 
-  toast('Imprevisto acquisito');
+ const statusMsg=$('#adaptStatusMsg');
+
+if(statusMsg){
+
+  statusMsg.textContent=
+    reason==='less_time'
+      ? `✓ Adattamento impostato: ${constraints.newDuration} minuti disponibili.`
+      : reason==='fewer_students' || reason==='more_students'
+      ? `✓ Adattamento impostato: ${constraints.newStudents} alunni presenti.`
+      : '✓ Imprevisto acquisito. AttivaMente può preparare una versione adattata.';
+
+  statusMsg.classList.remove('hidden');
+}
 
 };
 $('#closeAdaptLessonModal').onclick=()=>{
