@@ -1471,6 +1471,25 @@ $('#planMode')?.addEventListener(
   'change',
   updatePlannerPrimaryMode
 );
+$$('[data-plan-mode]').forEach(btn=>{
+
+  btn.addEventListener('click',()=>{
+
+    const mode=btn.dataset.planMode;
+
+    $('#planMode').value=mode;
+
+    $$('[data-plan-mode]').forEach(x=>{
+      x.classList.toggle(
+        'active',
+        x.dataset.planMode===mode
+      );
+    });
+
+    updatePlannerPrimaryMode();
+  });
+
+});
 $('#planPrimaryScope')?.addEventListener('change',()=>{
 
   const custom =
