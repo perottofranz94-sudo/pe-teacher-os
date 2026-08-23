@@ -1731,3 +1731,19 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
   border-radius:14px;
   resize:vertical;
 }
+.adapt-status-msg{
+  margin-top:14px;
+  padding:12px 14px;
+
+  border-radius:14px;
+
+  background:rgba(114,229,193,.10);
+  border:1px solid rgba(114,229,193,.22);
+
+  color:#c8f8e9;
+
+  font-size:12px;
+  font-weight:800;
+
+  line-height:1.45;
+}
