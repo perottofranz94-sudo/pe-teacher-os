@@ -640,3 +640,102 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
   }
 
 }
+/* =========================================================
+   SPOSTAMENTO LEZIONE — CALENDARIO
+   ========================================================= */
+
+.move-lesson-date-modal{
+  width:min(520px,calc(100vw - 28px));
+}
+
+.move-date-content{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:8px 4px 4px;
+  text-align:center;
+}
+
+.move-date-icon{
+  width:68px;
+  height:68px;
+  display:grid;
+  place-items:center;
+  margin:8px auto 18px;
+  border-radius:22px;
+  font-size:32px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(32,117,238,.32),
+      rgba(18,193,184,.20)
+    );
+  border:1px solid rgba(109,181,255,.28);
+}
+
+.move-date-content > p{
+  max-width:430px;
+  margin:0 auto 24px;
+  line-height:1.55;
+}
+
+.move-date-field{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  text-align:left;
+}
+
+.move-date-field input{
+  width:100%;
+  min-height:58px;
+  box-sizing:border-box;
+  padding:0 16px;
+  font-size:17px;
+  border-radius:17px;
+}
+
+.move-date-current{
+  width:100%;
+  margin-top:13px;
+  padding:13px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-sizing:border-box;
+  border-radius:15px;
+  background:rgba(5,36,82,.35);
+  border:1px solid rgba(102,165,245,.16);
+}
+
+.move-date-current span{
+  opacity:.7;
+  font-size:13px;
+}
+
+.move-date-actions{
+  width:100%;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:24px;
+}
+
+@media(max-width:700px){
+
+  .move-date-actions{
+    grid-template-columns:1fr;
+  }
+
+  .move-date-actions .btn{
+    width:100%;
+    min-height:54px;
+  }
+
+  .move-date-field input{
+    min-height:60px;
+    font-size:18px;
+  }
+
+}
