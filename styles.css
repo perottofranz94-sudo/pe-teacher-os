@@ -1765,3 +1765,189 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
   padding-top:18px;
   border-top:1px solid var(--line);
 }
+/* =========================================================
+   ADATTA LEZIONE — CONFRONTO
+   ========================================================= */
+
+.adapt-preview-heading{
+  margin-bottom:16px;
+}
+
+.adapt-preview-heading h3{
+  margin:5px 0 7px;
+}
+
+.adapt-preview-heading p{
+  margin:0;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+
+.adapt-comparison{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr);
+  gap:10px;
+  align-items:start;
+}
+
+.adapt-comparison-column{
+  padding:14px;
+  border-radius:20px;
+  border:1px solid var(--line);
+  background:rgba(8,24,40,.55);
+}
+
+.adapt-comparison-column.adapted{
+  border-color:rgba(114,229,193,.25);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(16,70,67,.38),
+      rgba(8,24,40,.72)
+    );
+}
+
+.adapt-column-head{
+  margin-bottom:12px;
+}
+
+.adapt-column-head > div{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+}
+
+.adapt-column-head strong{
+  font-size:14px;
+}
+
+.adapt-preview-list{
+  display:grid;
+  gap:8px;
+}
+
+.adapt-preview-item{
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr);
+  gap:10px;
+  align-items:start;
+
+  padding:10px;
+
+  border-radius:14px;
+
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.05);
+}
+
+.adapt-preview-item.will-remove{
+  opacity:.48;
+}
+
+.adapt-preview-item.will-remove strong{
+  text-decoration:line-through;
+}
+
+.adapt-preview-minutes{
+  font-size:15px;
+  font-weight:900;
+}
+
+.adapt-preview-copy{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.adapt-preview-copy strong{
+  font-size:12px;
+}
+
+.adapt-preview-copy small{
+  font-size:10px;
+}
+
+.adapt-remove-label{
+  color:#ffaaa5;
+}
+
+.adapt-change-label{
+  color:#ffe09a;
+}
+
+.adapt-keep-label{
+  color:#baf3e2;
+}
+
+.adapt-reason-note{
+  color:var(--muted);
+}
+
+.adapt-comparison-arrow{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  min-height:100px;
+
+  font-size:22px;
+  font-weight:900;
+
+  color:#ffd67d;
+}
+
+.adapt-preview-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+
+  margin-top:16px;
+}
+
+.adapt-confirm-btn{
+  background:
+    linear-gradient(
+      135deg,
+      #72e5c1,
+      #51cfae
+    );
+
+  color:#06241d;
+  border:0;
+  font-weight:900;
+}
+
+.adapt-save-warning{
+  display:block;
+  margin-top:8px;
+  text-align:right;
+  color:var(--muted);
+}
+
+
+/* IPHONE */
+
+@media(max-width:700px){
+
+  .adapt-comparison{
+    grid-template-columns:1fr;
+  }
+
+  .adapt-comparison-arrow{
+    min-height:auto;
+    transform:rotate(90deg);
+    padding:2px;
+  }
+
+  .adapt-preview-actions{
+    flex-direction:column-reverse;
+  }
+
+  .adapt-preview-actions .btn{
+    width:100%;
+  }
+
+}
