@@ -525,3 +525,50 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
   .app-confirm-actions{grid-template-columns:1fr}
   .app-confirm-actions #appConfirmOk{order:-1}
 }
+/* ===== ORARIO CLASSE ===== */
+
+.timetable-row{
+  display:grid;
+  grid-template-columns:
+    minmax(150px,1.4fr)
+    minmax(120px,1fr)
+    minmax(120px,1fr)
+    42px;
+  gap:12px;
+  align-items:end;
+}
+
+.timetable-row .tt-field{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  min-width:0;
+}
+
+.timetable-row .tt-field input,
+.timetable-row .tt-field select{
+  width:100%;
+  min-height:48px;
+  box-sizing:border-box;
+}
+
+.timetable-row .tt-remove{
+  height:48px;
+  align-self:end;
+}
+
+@media (max-width:700px){
+  .timetable-row{
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+
+  .timetable-row .tt-day-field{
+    grid-column:1 / -1;
+  }
+
+  .timetable-row .tt-remove{
+    grid-column:1 / -1;
+    width:100%;
+  }
+}
