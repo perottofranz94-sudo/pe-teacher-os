@@ -1815,7 +1815,405 @@ $('#generatePlanBtn').onclick=e=>{e.preventDefault();generatePlan()};
 let replaceCtx=null;
 function primaryMarker(ref=''){const m=String(ref||'').match(/PRIMARY_GAME:(BOOK:(\d+)|CUSTOM:([0-9a-f-]+))/i);if(!m)return null;return m[2]?`book-${m[2]}`:m[3]}
 let adaptLessonCtx=null;
+function buildShorterLessonProposal(items,targetMinutes){
 
+  const original=(items||[])
+    .map((item,index)=>({
+      ...item,
+      _originalIndex:index,
+      _originalDuration:Number(item.duration_min||0)
+    }))
+    .filter(item=>item._originalDuration>0);
+
+  if(!original.length){
+    return {
+      ok:false,
+      error:'La lezione non contiene attività utilizzabili.'
+    };
+  }
+
+  const originalTotal=
+    original.reduce(
+      (sum,item)=>sum+item._originalDuration,
+      0
+    );
+
+  targetMinutes=Number(targetMinutes);
+
+  if(!targetMinutes || targetMinutes<20){
+    return {
+      ok:false,
+      error:'Durata disponibile non valida.'
+    };
+  }
+
+  if(targetMinutes>=originalTotal){
+    return {
+      ok:false,
+      error:'La nuova durata deve essere inferiore alla durata originale.'
+    };
+  }
+
+
+  /* =====================================================
+     RICONOSCIMENTO DELLE FASI
+     ===================================================== */
+
+  const phaseType=item=>{
+
+    const phase=
+      String(item.phase||'').toLowerCase();
+
+    if(
+      phase.includes('warm') ||
+      phase.includes('attiv') ||
+      phase.includes('riscal')
+    ){
+      return 'warmup';
+    }
+
+    if(
+      phase.includes('final') ||
+      phase.includes('game') ||
+      phase.includes('partita') ||
+      phase.includes('small') ||
+      phase.includes('ssg')
+    ){
+      return 'game';
+    }
+
+    if(
+      phase.includes('cool') ||
+      phase.includes('defatic') ||
+      phase.includes('chius')
+    ){
+      return 'closing';
+    }
+
+    return 'main';
+  };
+
+
+  const enriched=
+    original.map(item=>({
+      ...item,
+      _type:phaseType(item)
+    }));
+
+
+  /* =====================================================
+     QUANTO TEMPO RISERVIAMO ALLE VARIE PARTI
+     ===================================================== */
+
+  let warmupTarget=
+    Math.max(
+      5,
+      Math.round(targetMinutes*0.15)
+    );
+
+  let closingTarget=
+    Math.max(
+      0,
+      Math.round(targetMinutes*0.08)
+    );
+
+  /*
+   * Su lezioni molto corte evitiamo di consumare
+   * troppi minuti nella chiusura.
+   */
+  if(targetMinutes<=45){
+    warmupTarget=Math.min(warmupTarget,7);
+    closingTarget=Math.min(closingTarget,3);
+  }
+
+  if(targetMinutes<=30){
+    warmupTarget=5;
+    closingTarget=0;
+  }
+
+
+  /* =====================================================
+     SELEZIONE ATTIVITÀ DA MANTENERE
+     ===================================================== */
+
+  const warmups=
+    enriched.filter(x=>x._type==='warmup');
+
+  const mains=
+    enriched.filter(x=>x._type==='main');
+
+  const games=
+    enriched.filter(x=>x._type==='game');
+
+  const closings=
+    enriched.filter(x=>x._type==='closing');
+
+
+  const selected=[];
+
+
+  /*
+   * Manteniamo un warm-up.
+   */
+  if(warmups.length){
+    selected.push({
+      ...warmups[0],
+      _newDuration:
+        Math.min(
+          warmups[0]._originalDuration,
+          warmupTarget
+        ),
+      _adaptReason:'Attivazione mantenuta e abbreviata'
+    });
+  }
+
+
+  /*
+   * Manteniamo le attività centrali nell'ordine
+   * didattico originale.
+   */
+  mains.forEach(item=>{
+
+    selected.push({
+      ...item,
+      _newDuration:item._originalDuration,
+      _adaptReason:'Attività centrale'
+    });
+
+  });
+
+
+  /*
+   * Se esiste una partita/applicazione finale,
+   * cerchiamo di conservarne almeno una.
+   */
+  if(games.length){
+
+    const game=games[games.length-1];
+
+    selected.push({
+      ...game,
+      _newDuration:game._originalDuration,
+      _adaptReason:'Applicazione finale mantenuta'
+    });
+
+  }
+
+
+  /*
+   * Manteniamo la chiusura solo se c'è abbastanza tempo.
+   */
+  if(
+    closings.length &&
+    closingTarget>0
+  ){
+
+    const closing=closings[closings.length-1];
+
+    selected.push({
+      ...closing,
+      _newDuration:
+        Math.min(
+          closing._originalDuration,
+          closingTarget
+        ),
+      _adaptReason:'Chiusura abbreviata'
+    });
+
+  }
+
+
+  /* =====================================================
+     ORDINE ORIGINALE
+     ===================================================== */
+
+  selected.sort(
+    (a,b)=>
+      a._originalIndex-b._originalIndex
+  );
+
+
+  /* =====================================================
+     RIDUZIONE FINO AL TARGET
+     ===================================================== */
+
+  const total=()=>selected.reduce(
+    (sum,item)=>
+      sum+Number(item._newDuration||0),
+    0
+  );
+
+
+  /*
+   * Prima riduciamo progressivamente le attività
+   * centrali, senza scendere sotto 5 minuti.
+   */
+  while(total()>targetMinutes){
+
+    const reducible=
+      selected
+        .filter(x=>
+          x._type==='main' &&
+          x._newDuration>5
+        )
+        .sort(
+          (a,b)=>
+            b._newDuration-a._newDuration
+        );
+
+    if(!reducible.length)break;
+
+    reducible[0]._newDuration--;
+
+    reducible[0]._adaptReason=
+      'Attività centrale abbreviata';
+  }
+
+
+  /*
+   * Poi riduciamo l'eventuale gioco finale,
+   * ma cerchiamo di lasciargli almeno 8 minuti.
+   */
+  while(total()>targetMinutes){
+
+    const game=
+      selected.find(
+        x=>
+          x._type==='game' &&
+          x._newDuration>8
+      );
+
+    if(!game)break;
+
+    game._newDuration--;
+
+    game._adaptReason=
+      'Applicazione finale abbreviata';
+  }
+
+
+  /*
+   * Se siamo ancora oltre il tempo disponibile,
+   * eliminiamo attività centrali partendo dalle ultime,
+   * purché rimanga almeno un'attività centrale.
+   */
+  while(total()>targetMinutes){
+
+    const currentMains=
+      selected.filter(
+        x=>x._type==='main'
+      );
+
+    if(currentMains.length<=1)break;
+
+    const remove=
+      currentMains[currentMains.length-1];
+
+    const index=
+      selected.indexOf(remove);
+
+    selected.splice(index,1);
+  }
+
+
+  /*
+   * Ultimo aggiustamento:
+   * riduciamo l'attività centrale rimasta.
+   */
+  while(total()>targetMinutes){
+
+    const main=
+      selected.find(
+        x=>
+          x._type==='main' &&
+          x._newDuration>5
+      );
+
+    if(!main)break;
+
+    main._newDuration--;
+
+    main._adaptReason=
+      'Attività centrale abbreviata';
+  }
+
+
+  /* =====================================================
+     SE RESTANO MINUTI LIBERI
+     ===================================================== */
+
+  while(total()<targetMinutes){
+
+    /*
+     * Diamo prima i minuti alle attività centrali.
+     */
+    const main=
+      selected.find(
+        x=>
+          x._type==='main' &&
+          x._newDuration<x._originalDuration
+      );
+
+    if(main){
+
+      main._newDuration++;
+      continue;
+
+    }
+
+
+    /*
+     * Poi all'applicazione finale.
+     */
+    const game=
+      selected.find(
+        x=>
+          x._type==='game' &&
+          x._newDuration<x._originalDuration
+      );
+
+    if(game){
+
+      game._newDuration++;
+      continue;
+
+    }
+
+
+    /*
+     * Se non possiamo più espandere nulla,
+     * interrompiamo.
+     */
+    break;
+  }
+
+
+  const finalTotal=total();
+
+
+  return {
+
+    ok:finalTotal===targetMinutes,
+
+    originalTotal,
+
+    targetMinutes,
+
+    finalTotal,
+
+    removed:
+      enriched.filter(
+        originalItem=>
+          !selected.some(
+            selectedItem=>
+              selectedItem.id===originalItem.id
+          )
+      ),
+
+    items:selected
+
+  };
+}
 function openAdaptLessonModal(lesson,items){
 
   adaptLessonCtx={
@@ -2196,6 +2594,68 @@ if(generateBtn){
 
 }
 }
+
+};
+$('#adaptGenerateBtn').onclick=()=>{
+
+  if(!adaptLessonCtx?.constraints){
+    toast('Prima conferma il nuovo imprevisto');
+    return;
+  }
+
+  const constraints=
+    adaptLessonCtx.constraints;
+
+  if(constraints.reason!=='less_time'){
+    toast('Questo adattamento non è ancora disponibile');
+    return;
+  }
+
+  const proposal=
+    buildShorterLessonProposal(
+      adaptLessonCtx.items,
+      constraints.newDuration
+    );
+
+  if(!proposal.ok){
+
+    console.warn(
+      '⚡ Proposta adattamento non valida',
+      proposal
+    );
+
+    toast(
+      'Non riesco ancora ad adattare correttamente questa lezione'
+    );
+
+    return;
+  }
+
+  /*
+   * Conserviamo la proposta solamente in memoria.
+   * Supabase NON viene toccato.
+   */
+  adaptLessonCtx.proposal=
+    proposal;
+
+  console.log(
+    '⚡ AttivaMente · proposta lezione adattata',
+    proposal
+  );
+
+  const status=$('#adaptStatusMsg');
+
+  if(status){
+
+    status.innerHTML=`
+      ✓ Versione da
+      <strong>${proposal.targetMinutes} minuti</strong>
+      preparata.
+      Nessuna modifica è stata ancora applicata.
+    `;
+
+    status.classList.remove('hidden');
+  }
 
 };
 $('#closeAdaptLessonModal').onclick=()=>{
