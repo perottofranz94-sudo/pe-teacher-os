@@ -2499,21 +2499,73 @@ function renderAdaptLessonPreview(proposal){
   };
 
 
-  $('#confirmAdaptedLessonBtn').onclick=()=>{
+  $('#confirmAdaptedLessonBtn').onclick=async()=>{
 
-    toast(
-      'Anteprima pronta. Il salvataggio verrà attivato nel prossimo passaggio.'
+  if(!adaptLessonCtx?.proposal){
+    toast('Nessuna versione adattata disponibile');
+    return;
+  }
+
+  const btn=$('#confirmAdaptedLessonBtn');
+
+  if(btn){
+    btn.disabled=true;
+    btn.textContent='Preparazione...';
+  }
+
+  try{
+
+    await applyAdaptedLesson();
+
+  }catch(err){
+
+    console.error(
+      'Errore adattamento lezione',
+      err
     );
 
-  };
+    toast(
+      err?.message ||
+      'Impossibile applicare la versione adattata'
+    );
+
+  }finally{
+
+    if(btn){
+      btn.disabled=false;
+      btn.textContent='⚡ Usa versione adattata';
+    }
+
+  }
+
+};
 
 }
 function openAdaptLessonModal(lesson,items){
 
   adaptLessonCtx={
-    lesson,
-    items
-  };
+  lesson,
+  items,
+
+  original:{
+    duration:Number(lesson.duration_min||0),
+
+    items:(items||[]).map(item=>({
+      id:item.id,
+      lesson_id:item.lesson_id,
+      exercise_id:item.exercise_id,
+      primary_game_ref:item.primary_game_ref,
+      phase:item.phase,
+      order_no:item.order_no,
+      duration_min:Number(item.duration_min||0),
+      custom_title:item.custom_title,
+      custom_explanation:item.custom_explanation,
+      selection_reason:item.selection_reason,
+      station_count:item.station_count,
+      players_per_group:item.players_per_group
+    }))
+  }
+};
   const details=$('#adaptLessonDetails');
 const status=$('#adaptStatusMsg');
 const generateBtn=$('#adaptGenerateBtn');
