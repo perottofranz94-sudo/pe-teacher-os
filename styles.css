@@ -1255,7 +1255,8 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
 
 }
 /* =========================================================
-   FIX DEFINITIVO iPHONE — DATE ANNO SCOLASTICO COMPATTE
+   iPHONE — ANNO SCOLASTICO
+   3 CAMPI IDENTICI, COMPATTI E CENTRATI
    ========================================================= */
 
 @media (max-width:700px){
@@ -1267,109 +1268,81 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
     gap:14px !important;
   }
 
+  /* I contenitori dei tre campi */
   #migrateModal #migrateForm label{
-    width:auto !important;
-    min-width:0 !important;
-    max-width:100% !important;
+    width:220px !important;
+    min-width:220px !important;
+    max-width:220px !important;
+    justify-self:start !important;
     align-self:flex-start !important;
   }
 
-  #migrateModal #newYearStart,
-  #migrateModal #newYearEnd{
-    display:block !important;
-
-    width:155px !important;
-    min-width:155px !important;
-    max-width:155px !important;
-
-    height:48px !important;
-    min-height:48px !important;
-
-    padding:0 10px !important;
-    margin-top:6px !important;
-
-    box-sizing:border-box !important;
-    border-radius:13px !important;
-
-    font-size:15px !important;
-
-    flex:none !important;
-    align-self:flex-start !important;
-  }
-
-}
-/* =========================================================
-   iPHONE — NUOVO ANNO SCOLASTICO
-   Date larghe come Etichetta anno e perfettamente centrate
-   ========================================================= */
-
-@media (max-width:700px){
-
-  #migrateModal #migrateForm .form-row{
-    display:flex !important;
-    flex-direction:column !important;
-    align-items:stretch !important;
-    gap:14px !important;
-  }
-
-  #migrateModal #migrateForm label{
-    width:100% !important;
-    max-width:100% !important;
-    min-width:0 !important;
-  }
-
+  /* TUTTI E TRE ESATTAMENTE UGUALI */
   #migrateModal #newYearLabel,
   #migrateModal #newYearStart,
   #migrateModal #newYearEnd{
     display:block !important;
 
-    width:100% !important;
-    max-width:100% !important;
-    min-width:0 !important;
+    width:220px !important;
+    min-width:220px !important;
+    max-width:220px !important;
 
     height:48px !important;
     min-height:48px !important;
+    max-height:48px !important;
 
     box-sizing:border-box !important;
 
-    margin-top:6px !important;
     padding:0 12px !important;
+    margin:0 !important;
 
-    border-radius:13px !important;
+    border-radius:14px !important;
 
+    text-align:center !important;
     font-size:15px !important;
+
+    flex:none !important;
   }
 
-  /* CENTRATURA DELLE DATE */
+  /* Etichetta anno centrata */
+  #migrateModal #newYearLabel{
+    line-height:48px !important;
+  }
 
+  /* Date centrate verticalmente e orizzontalmente su iPhone */
   #migrateModal #newYearStart,
   #migrateModal #newYearEnd{
-    text-align:center !important;
-    line-height:48px !important;
+    line-height:normal !important;
+    -webkit-appearance:none !important;
+    appearance:none !important;
   }
 
   #migrateModal #newYearStart::-webkit-date-and-time-value,
   #migrateModal #newYearEnd::-webkit-date-and-time-value{
+    width:100% !important;
+    min-height:48px !important;
+
     display:flex !important;
     align-items:center !important;
     justify-content:center !important;
 
-    width:100% !important;
-    height:48px !important;
+    padding:0 !important;
+    margin:0 !important;
 
     text-align:center !important;
   }
 
   #migrateModal #newYearStart::-webkit-datetime-edit,
   #migrateModal #newYearEnd::-webkit-datetime-edit{
+    width:100% !important;
+    height:48px !important;
+
     display:flex !important;
     align-items:center !important;
     justify-content:center !important;
 
-    width:100% !important;
-    height:48px !important;
-
     padding:0 !important;
+    margin:0 !important;
   }
 
 }
