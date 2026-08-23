@@ -209,64 +209,261 @@ $('#mobileMenuBackdrop')?.addEventListener('click',closeMobileMenu);
 $('#mobileLogoutBtn')?.addEventListener('click',()=>db.auth.signOut());
 
 async function loadCore(){
- const results=await Promise.all([
-  db.from('pe_school_years').select('*').eq('is_active',true).maybeSingle(),
-  db.from('pe_school_years').select('*').order('start_date',{ascending:false}),
-  db.from('pe_classes').select('*').eq('archived',false).order('school_level').order('grade').order('name'),
-  db.from('pe_sports').select('*').eq('active',true).order('name'),
-  db.from('pe_lessons').select('*,pe_classes!pe_lessons_class_id_fkey(name),pe_sports(name)').order('lesson_date').limit(200),
-  db.from('pe_sport_modules').select('*,pe_classes!pe_sport_modules_class_id_fkey(name),pe_sports(name)').order('start_date',{ascending:false}).limit(100),
-  db.from('pe_motor_tests').select('*').eq('active',true).order('name'),
-  db.from('pe_calendar_exceptions').select('*').order('exception_date'),
-  db.from('pe_motor_test_hall_of_fame').select('*').limit(40)
-]);
-  const firstError=results.find(r=>r.error)?.error;if(firstError)throw firstError;
-  const [y,ys,c,s,l,m,t,e,h]=results;
-  st.year=y.data||null;st.schoolYears=ys.data||[];st.classes=c.data||[];st.sports=s.data||[];st.lessons=l.data||[];st.modules=m.data||[];st.tests=t.data||[];st.exceptions=e.data||[];st.hof=h.data||[];
-  const classOpts=st.classes.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');['#extraClass','#manualClass'].forEach(id=>{if($(id))$(id).innerHTML=classOpts});if($('#extraAutoSport'))$('#extraAutoSport').innerHTML=st.sports.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
-  st.sportCounts = {};
 
-populateSelects();
-renderDashboard();
-renderClasses();
-renderModules();
-renderTests();
-renderSettings();
+  const t0=performance.now();
 
-/*
- * I conteggi degli esercizi NON devono bloccare il Sync principale.
- * Li carichiamo in background dopo che Dashboard e dati personali
- * sono già disponibili.
- */
-Promise.all(
-  st.sports.map(async sp => {
-    const { count, error } = await db
-      .from('pe_exercises')
-      .select('*', { count: 'exact', head: true })
-      .eq('sport_id', sp.id)
-      .eq('active', true)
-      .eq('audit_status', 'VERIFIED');
+  /*
+   * =======================================================
+   * FASE 1 — DATI ESSENZIALI
+   * Devono arrivare velocemente.
+   * =======================================================
+   */
 
-    if (error) {
-      console.warn(`Conteggio esercizi non disponibile per ${sp.name}`, error);
-      return [sp.id, 0];
+  const coreResults=await Promise.all([
+
+    db
+      .from('pe_school_years')
+      .select('*')
+      .eq('is_active',true)
+      .maybeSingle(),
+
+    db
+      .from('pe_school_years')
+      .select('*')
+      .order('start_date',{ascending:false}),
+
+    db
+      .from('pe_classes')
+      .select('*')
+      .eq('archived',false)
+      .order('school_level')
+      .order('grade')
+      .order('name'),
+
+    db
+      .from('pe_sports')
+      .select('*')
+      .eq('active',true)
+      .order('name'),
+
+    db
+      .from('pe_lessons')
+      .select(`
+        *,
+        pe_classes!pe_lessons_class_id_fkey(name),
+        pe_sports(name)
+      `)
+      .order('lesson_date')
+      .limit(80)
+
+  ]);
+
+  const coreError=coreResults.find(r=>r.error)?.error;
+
+  if(coreError){
+    throw coreError;
+  }
+
+  const [y,ys,c,s,l]=coreResults;
+
+  st.year=y.data||null;
+  st.schoolYears=ys.data||[];
+  st.classes=c.data||[];
+  st.sports=s.data||[];
+  st.lessons=l.data||[];
+
+  /*
+   * Aggiorna SUBITO l'interfaccia.
+   */
+
+  const classOpts=st.classes
+    .map(x=>`<option value="${x.id}">${esc(x.name)}</option>`)
+    .join('');
+
+  ['#extraClass','#manualClass'].forEach(id=>{
+    if($(id)){
+      $(id).innerHTML=classOpts;
     }
+  });
 
-    return [sp.id, count || 0];
-  })
-)
-.then(counts => {
-  st.sportCounts = Object.fromEntries(counts);
-renderSports();
-renderDashboard();
+  if($('#extraAutoSport')){
+    $('#extraAutoSport').innerHTML=st.sports
+      .map(x=>`<option value="${x.id}">${esc(x.name)}</option>`)
+      .join('');
+  }
 
-  // Aggiorna l'archivio quando i conteggi sono pronti,
-  // senza bloccare login e sincronizzazione principale.
+  populateSelects();
+
+  renderDashboard();
+  renderClasses();
   renderSports();
-})
-.catch(err => {
-  console.warn('Conteggi archivio sport non disponibili', err);
-});
+
+  const coreMs=Math.round(performance.now()-t0);
+
+  console.log(
+    `[SYNC V2] dati essenziali pronti in ${coreMs} ms`
+  );
+
+
+  /*
+   * =======================================================
+   * FASE 2 — DATI SECONDARI
+   * NON BLOCCANO l'app.
+   * =======================================================
+   */
+
+  loadSecondaryData()
+    .catch(err=>{
+      console.warn(
+        '[SYNC V2] dati secondari non disponibili',
+        err
+      );
+    });
+
+
+  /*
+   * =======================================================
+   * FASE 3 — CONTEGGI ARCHIVIO
+   * Ancora più in background.
+   * =======================================================
+   */
+
+  loadSportCounts()
+    .catch(err=>{
+      console.warn(
+        '[SYNC V2] conteggi sport non disponibili',
+        err
+      );
+    });
+}
+async function loadSecondaryData(){
+
+  const t0=performance.now();
+
+  const results=await Promise.allSettled([
+
+    db
+      .from('pe_sport_modules')
+      .select(`
+        *,
+        pe_classes!pe_sport_modules_class_id_fkey(name),
+        pe_sports(name)
+      `)
+      .order('start_date',{ascending:false})
+      .limit(100),
+
+    db
+      .from('pe_motor_tests')
+      .select('*')
+      .eq('active',true)
+      .order('name'),
+
+    db
+      .from('pe_calendar_exceptions')
+      .select('*')
+      .order('exception_date'),
+
+    db
+      .from('pe_motor_test_hall_of_fame')
+      .select('*')
+      .limit(40)
+
+  ]);
+
+  /*
+   * Promise.allSettled:
+   * se una query secondaria fallisce,
+   * le altre continuano a funzionare.
+   */
+
+  const modulesResult=results[0];
+  const testsResult=results[1];
+  const exceptionsResult=results[2];
+  const hofResult=results[3];
+
+  if(
+    modulesResult.status==='fulfilled' &&
+    !modulesResult.value.error
+  ){
+    st.modules=modulesResult.value.data||[];
+  }
+
+  if(
+    testsResult.status==='fulfilled' &&
+    !testsResult.value.error
+  ){
+    st.tests=testsResult.value.data||[];
+  }
+
+  if(
+    exceptionsResult.status==='fulfilled' &&
+    !exceptionsResult.value.error
+  ){
+    st.exceptions=exceptionsResult.value.data||[];
+  }
+
+  if(
+    hofResult.status==='fulfilled' &&
+    !hofResult.value.error
+  ){
+    st.hof=hofResult.value.data||[];
+  }
+
+  renderModules();
+  renderTests();
+  renderSettings();
+  renderDashboard();
+  renderCalendar();
+
+  const ms=Math.round(performance.now()-t0);
+
+  console.log(
+    `[SYNC V2] dati secondari pronti in ${ms} ms`
+  );
+}
+async function loadSportCounts(){
+
+  st.sportCounts={};
+
+  const counts=await Promise.all(
+
+    st.sports.map(async sp=>{
+
+      const {count,error}=await db
+        .from('pe_exercises')
+        .select(
+          '*',
+          {
+            count:'exact',
+            head:true
+          }
+        )
+        .eq('sport_id',sp.id)
+        .eq('active',true)
+        .eq('audit_status','VERIFIED');
+
+      if(error){
+
+        console.warn(
+          `Conteggio esercizi non disponibile per ${sp.name}`,
+          error
+        );
+
+        return [sp.id,0];
+      }
+
+      return [
+        sp.id,
+        count||0
+      ];
+    })
+
+  );
+
+  st.sportCounts=Object.fromEntries(counts);
+
+  renderSports();
+  renderDashboard();
 }
 
 function populateSelects(){
