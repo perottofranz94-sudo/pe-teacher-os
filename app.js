@@ -478,12 +478,323 @@ function populateSelects(){
 }
 function listItem(a,b,c=''){return`<div class="list-item"><div><strong>${esc(a)}</strong><small>${esc(b)}</small></div>${c}</div>`}
 function renderDashboard(){
-  $('#statClasses').textContent=st.classes.length;$('#statSports').textContent=st.sports.length+1;$('#statLessons').textContent=st.lessons.length;$('#statTests').textContent=st.tests.length;
-  $('#heroExerciseCount').textContent=Object.values(st.sportCounts).reduce((a,b)=>a+b,0)||1390;
-  const today=localISODate(new Date()),u=st.lessons.filter(x=>x.lesson_date>=today).slice(0,6);
-  $('#upcomingLessons').innerHTML=u.map(x=>`<div class="list-item" data-lesson="${x.id}"><div><strong>${esc(x.title)}</strong><small>${esc(x.pe_classes?.name||'')} · ${fmt(x.lesson_date)}</small></div><span class="chip good">${x.duration_min}'</span></div>`).join('')||listItem('Nessuna lezione futura','Programma il primo modulo');
-  $$('[data-lesson]').forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));
-  $('#dashboardHof').innerHTML=st.hof.slice(0,6).map(x=>listItem(`${x.first_name} ${x.last_name}`,`${x.test_name} · ${x.school_year_label}`,`<span class="chip gold">${x.result_value} ${esc(x.unit)}</span>`)).join('')||listItem('Nessun record ancora','Inserisci i primi risultati');
+
+  $('#statClasses').textContent=st.classes.length;
+  $('#statSports').textContent=st.sports.length+1;
+  $('#statLessons').textContent=st.lessons.length;
+  $('#statTests').textContent=st.tests.length;
+
+  $('#heroExerciseCount').textContent=
+    Object.values(st.sportCounts).reduce((a,b)=>a+b,0)||1390;
+
+
+  /* =====================================================
+     DATA E ORA ITALIANA
+     ===================================================== */
+
+  const nowItalyParts=
+    new Intl.DateTimeFormat(
+      'it-IT',
+      {
+        timeZone:'Europe/Rome',
+        year:'numeric',
+        month:'2-digit',
+        day:'2-digit',
+        hour:'2-digit',
+        minute:'2-digit',
+        hour12:false
+      }
+    ).formatToParts(new Date());
+
+  const italyPart=type=>
+    nowItalyParts.find(x=>x.type===type)?.value||'';
+
+  const todayItaly=
+    `${italyPart('year')}-${italyPart('month')}-${italyPart('day')}`;
+
+  const currentMinutes=
+    Number(italyPart('hour'))*60+
+    Number(italyPart('minute'));
+
+
+  /* =====================================================
+     LEZIONI DI OGGI
+     ===================================================== */
+
+  const todayLessons=st.lessons
+    .filter(x=>x.lesson_date===todayItaly)
+    .sort((a,b)=>{
+      const timeA=String(a.start_time||'99:99').slice(0,5);
+      const timeB=String(b.start_time||'99:99').slice(0,5);
+      return timeA.localeCompare(timeB);
+    });
+
+  const todaySection=$('#todayLessonsSection');
+  const todayList=$('#todayLessonsList');
+  const todayDate=$('#todayLessonsDate');
+
+
+  if(todayLessons.length){
+
+    todaySection?.classList.remove('hidden');
+
+    if(todayDate){
+
+      todayDate.textContent=
+        new Intl.DateTimeFormat(
+          'it-IT',
+          {
+            timeZone:'Europe/Rome',
+            weekday:'long',
+            day:'numeric',
+            month:'long'
+          }
+        ).format(new Date());
+
+    }
+
+
+    todayList.innerHTML=
+      todayLessons.map(lesson=>{
+
+        const start=
+          String(lesson.start_time||'').slice(0,5);
+
+        const end=
+          String(lesson.end_time||'').slice(0,5);
+
+
+        let status='OGGI';
+        let statusClass='today';
+
+
+        if(start){
+
+          const [sh,sm]=start.split(':').map(Number);
+
+          const startMinutes=
+            sh*60+sm;
+
+          let endMinutes=null;
+
+          if(end){
+
+            const [eh,em]=end.split(':').map(Number);
+
+            endMinutes=
+              eh*60+em;
+
+          }
+
+
+          if(
+            endMinutes!==null &&
+            currentMinutes>=startMinutes &&
+            currentMinutes<endMinutes
+          ){
+
+            status='IN CORSO';
+            statusClass='live';
+
+          }else if(
+            currentMinutes<startMinutes
+          ){
+
+            const diff=
+              startMinutes-currentMinutes;
+
+            if(diff<=60){
+
+              status='TRA POCO';
+              statusClass='soon';
+
+            }else{
+
+              status='PIÙ TARDI';
+              statusClass='later';
+
+            }
+
+          }else if(
+            endMinutes!==null &&
+            currentMinutes>=endMinutes
+          ){
+
+            status='CONCLUSA';
+            statusClass='done';
+
+          }
+
+        }
+
+
+        const when=
+          start
+            ? `${start}${end?' – '+end:''}`
+            : 'Orario non indicato';
+
+
+        return `
+          <article class="today-lesson-card">
+
+            <div class="today-lesson-time">
+              ${esc(when)}
+            </div>
+
+            <div class="today-lesson-main">
+
+              <div class="today-lesson-top">
+
+                <span class="today-status ${statusClass}">
+                  ${status}
+                </span>
+
+                ${lesson.is_extra
+                  ? `<span class="chip">EXTRA</span>`
+                  : ''
+                }
+
+              </div>
+
+              <h4>
+                ${esc(lesson.pe_classes?.name||'Classe')}
+              </h4>
+
+              <p>
+                ${esc(lesson.title)}
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              class="btn primary today-open-lesson"
+              data-today-lesson="${lesson.id}"
+            >
+              Apri lezione
+            </button>
+
+          </article>
+        `;
+
+      }).join('');
+
+
+    $$('[data-today-lesson]').forEach(
+      b=>b.onclick=
+        ()=>openLesson(
+          b.dataset.todayLesson
+        )
+    );
+
+  }else{
+
+    todaySection?.classList.add('hidden');
+
+    if(todayList){
+      todayList.innerHTML='';
+    }
+
+  }
+
+
+  /* =====================================================
+     PROSSIME LEZIONI
+     ===================================================== */
+
+  const u=st.lessons
+    .filter(x=>x.lesson_date>=todayItaly)
+    .sort((a,b)=>{
+
+      const dateCompare=
+        String(a.lesson_date)
+          .localeCompare(String(b.lesson_date));
+
+      if(dateCompare!==0){
+        return dateCompare;
+      }
+
+      const timeA=
+        String(a.start_time||'99:99').slice(0,5);
+
+      const timeB=
+        String(b.start_time||'99:99').slice(0,5);
+
+      return timeA.localeCompare(timeB);
+
+    })
+    .slice(0,6);
+
+
+  $('#upcomingLessons').innerHTML=
+    u.map(x=>`
+
+      <div
+        class="list-item"
+        data-lesson="${x.id}"
+      >
+
+        <div>
+
+          <strong>
+            ${esc(x.title)}
+          </strong>
+
+          <small>
+            ${esc(x.pe_classes?.name||'')}
+            ·
+            ${fmt(x.lesson_date)}
+            ${x.start_time
+              ? ` · ${String(x.start_time).slice(0,5)}`
+              : ''
+            }
+          </small>
+
+        </div>
+
+        <span class="chip good">
+          ${x.duration_min}'
+        </span>
+
+      </div>
+
+    `).join('')
+    ||
+    listItem(
+      'Nessuna lezione futura',
+      'Programma il primo modulo'
+    );
+
+
+  $$('[data-lesson]').forEach(
+    b=>b.onclick=
+      ()=>openLesson(
+        b.dataset.lesson
+      )
+  );
+
+
+  /* =====================================================
+     HALL OF FAME
+     ===================================================== */
+
+  $('#dashboardHof').innerHTML=
+    st.hof
+      .slice(0,6)
+      .map(x=>
+        listItem(
+          `${x.first_name} ${x.last_name}`,
+          `${x.test_name} · ${x.school_year_label}`,
+          `<span class="chip gold">${x.result_value} ${esc(x.unit)}</span>`
+        )
+      )
+      .join('')
+    ||
+    listItem(
+      'Nessun record ancora',
+      'Inserisci i primi risultati'
+    );
+
 }
 function renderClasses(){
   $('#classesGrid').innerHTML=st.classes.map(c=>`<article class="class-card" data-class="${c.id}">${c.school_level?`<span class="class-school-badge">${esc(schoolLevelLabels[c.school_level]||c.school_level)}</span>`:'<span class="class-school-badge">Grado scolastico da impostare</span>'}<span class="kicker">CLASSE</span><h4>${esc(c.name)}</h4><div class="class-counts"><span class="chip">${c.student_count} alunni</span><span class="chip">♀ ${c.female_count??'—'}</span><span class="chip">♂ ${c.male_count??'—'}</span></div><div class="edit-hint">Apri e modifica →</div></article>`).join('')||`<article class="class-card"><h4>Nessuna classe</h4><p>Creane una per iniziare.</p></article>`;
