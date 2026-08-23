@@ -890,6 +890,183 @@ if(topicsError){
     msg.textContent='Errore: '+(err?.message||'generazione non riuscita');toast('Programmazione non generata');
   }finally{plannerBusy=false;if(btn){btn.disabled=false;btn.textContent='✦ Genera programmazione'}}
 }
+/* =========================================================
+   PLANNER ADATTIVO IN BASE ALLA CLASSE
+   1ª-3ª primaria -> Libro dei giochi
+   4ª-5ª primaria -> Libro dei giochi oppure Sport
+   Medie/superiori -> Sport
+   ========================================================= */
+
+function updatePlannerForSelectedClass(){
+
+  const classId = $('#planClass')?.value;
+  const cl = st.classes.find(x => x.id === classId);
+
+  const sportField = $('#planSportField');
+  const modeField = $('#planModeField');
+  const primaryChoice = $('#planPrimaryChoice');
+  const primaryChoiceText = $('#planPrimaryChoiceText');
+
+  const topics = $('#planTopicsSection');
+  const levelField = document.querySelector('.planner-level-field');
+
+  /* Nessuna classe selezionata */
+  if(!cl){
+
+    primaryChoice?.classList.add('hidden');
+    modeField?.classList.add('hidden');
+
+    sportField?.classList.remove('hidden');
+    topics?.classList.remove('hidden');
+    levelField?.classList.remove('hidden');
+
+    return;
+  }
+
+  const isPrimary = cl.school_level === 'primary';
+  const grade = Number(cl.grade || 0);
+
+
+  /* =====================================================
+     PRIMA - SECONDA - TERZA PRIMARIA
+     ===================================================== */
+
+  if(isPrimary && grade >= 1 && grade <= 3){
+
+    primaryChoice?.classList.remove('hidden');
+
+    modeField?.classList.add('hidden');
+    sportField?.classList.add('hidden');
+    topics?.classList.add('hidden');
+    levelField?.classList.add('hidden');
+
+    if($('#planSport')){
+      $('#planSport').value = '';
+    }
+
+    if($('#planTopicsList')){
+      $('#planTopicsList').innerHTML = '';
+    }
+
+    if(primaryChoiceText){
+
+      if(grade === 1){
+
+        primaryChoiceText.textContent =
+          'Per la prima primaria AttivaMente consiglia il Libro dei giochi: si parte dai giochi di livello 1 e, dalla seconda parte dell’anno, vengono introdotti progressivamente anche giochi di livello 2.';
+
+      }else if(grade === 2){
+
+        primaryChoiceText.textContent =
+          'Per la seconda primaria AttivaMente consiglia il Libro dei giochi: vengono utilizzati soprattutto giochi di livello 1 e 2, introducendo progressivamente il livello 3 dalla seconda parte dell’anno.';
+
+      }else{
+
+        primaryChoiceText.textContent =
+          'Per la terza primaria AttivaMente consiglia il Libro dei giochi: la programmazione utilizza progressivamente giochi di livello 1, 2 e 3, introducendo attività più complesse durante l’anno.';
+
+      }
+
+    }
+
+    return;
+  }
+
+
+  /* =====================================================
+     QUARTA - QUINTA PRIMARIA
+     ===================================================== */
+
+  if(isPrimary && grade >= 4 && grade <= 5){
+
+    primaryChoice?.classList.add('hidden');
+
+    modeField?.classList.remove('hidden');
+
+    updatePlannerPrimaryMode();
+
+    return;
+  }
+
+
+  /* =====================================================
+     MEDIE / SUPERIORI
+     ===================================================== */
+
+  primaryChoice?.classList.add('hidden');
+  modeField?.classList.add('hidden');
+
+  sportField?.classList.remove('hidden');
+  levelField?.classList.remove('hidden');
+
+  if($('#planSport')?.value){
+    topics?.classList.remove('hidden');
+    renderPlanTopics();
+  }else{
+    topics?.classList.add('hidden');
+  }
+}
+
+
+/* =========================================================
+   QUARTA / QUINTA PRIMARIA
+   Scelta Libro dei giochi oppure Sport
+   ========================================================= */
+
+function updatePlannerPrimaryMode(){
+
+  const mode = $('#planMode')?.value || 'primary_games';
+
+  const sportField = $('#planSportField');
+  const topics = $('#planTopicsSection');
+  const levelField = document.querySelector('.planner-level-field');
+
+  if(mode === 'primary_games'){
+
+    sportField?.classList.add('hidden');
+    topics?.classList.add('hidden');
+    levelField?.classList.add('hidden');
+
+    if($('#planSport')){
+      $('#planSport').value = '';
+    }
+
+    if($('#planTopicsList')){
+      $('#planTopicsList').innerHTML = '';
+    }
+
+  }else{
+
+    sportField?.classList.remove('hidden');
+    levelField?.classList.remove('hidden');
+
+    if($('#planSport')?.value){
+
+      topics?.classList.remove('hidden');
+      renderPlanTopics();
+
+    }else{
+
+      topics?.classList.add('hidden');
+
+    }
+  }
+}
+
+
+/* =========================================================
+   EVENTI DEL PLANNER
+   ========================================================= */
+
+$('#planClass')?.addEventListener(
+  'change',
+  updatePlannerForSelectedClass
+);
+
+$('#planMode')?.addEventListener(
+  'change',
+  updatePlannerPrimaryMode
+);
 $('#plannerForm').onsubmit=e=>{e.preventDefault();generatePlan()};
 $('#generatePlanBtn').onclick=e=>{e.preventDefault();generatePlan()};
 let replaceCtx=null;
