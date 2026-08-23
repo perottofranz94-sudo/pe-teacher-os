@@ -925,3 +925,143 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
     min-height:50px;
   }
 }
+/* =========================================================
+   ATTIVAMENTE — FIX FORM iPHONE
+   Anno scolastico / Orario classe / Planner
+   ========================================================= */
+
+@media (max-width:700px){
+
+  /* Safari: impedisce a date/time di uscire dai contenitori */
+  input[type="date"],
+  input[type="time"]{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    display:block !important;
+  }
+
+
+  /* =========================================
+     1. CREAZIONE ANNO SCOLASTICO
+     Inizio e Fine uno sotto l'altro
+     ========================================= */
+
+  #migrateModal .form-row{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:14px !important;
+    width:100% !important;
+  }
+
+  #migrateModal label{
+    min-width:0 !important;
+    width:100% !important;
+  }
+
+  #newYearStart,
+  #newYearEnd{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    min-height:54px !important;
+    padding:12px 14px !important;
+    border-radius:15px !important;
+  }
+
+
+  /* =========================================
+     2. ORARIO CLASSE
+     Giorno → Inizio → Fine → Rimuovi
+     tutti uno sotto l'altro
+     ========================================= */
+
+  .timetable-row{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:13px !important;
+
+    width:100% !important;
+
+    padding:15px !important;
+    margin-bottom:12px !important;
+
+    border-radius:18px !important;
+
+    background:rgba(7,27,52,.48) !important;
+    border:1px solid rgba(115,168,231,.16) !important;
+  }
+
+  .timetable-row .tt-field,
+  .timetable-row .tt-day-field{
+    grid-column:auto !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  .timetable-row .tt-day,
+  .timetable-row .tt-start,
+  .timetable-row .tt-end{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    min-height:54px !important;
+
+    padding:12px 14px !important;
+
+    border-radius:15px !important;
+  }
+
+  .timetable-row .tt-remove{
+    grid-column:auto !important;
+
+    width:100% !important;
+    height:46px !important;
+
+    margin-top:2px !important;
+
+    border-radius:14px !important;
+  }
+
+
+  /* =========================================
+     3. DATA DI PARTENZA MODULO
+     stessa dimensione degli altri input
+     ========================================= */
+
+  .planner-start-row{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:13px !important;
+    width:100% !important;
+  }
+
+  .planner-date-field,
+  .planner-level-field{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+
+  #planStart{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+
+    min-height:48px !important;
+
+    padding:13px 14px !important;
+    border-radius:14px !important;
+
+    /* evita la larghezza assurda del date picker iOS */
+    -webkit-appearance:none;
+    appearance:none;
+  }
+
+  #planLevel{
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+}
