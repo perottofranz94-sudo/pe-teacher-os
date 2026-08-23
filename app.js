@@ -1822,6 +1822,17 @@ function openAdaptLessonModal(lesson,items){
     lesson,
     items
   };
+  const details=$('#adaptLessonDetails');
+const status=$('#adaptStatusMsg');
+const generateBtn=$('#adaptGenerateBtn');
+
+details?.classList.add('hidden');
+status?.classList.add('hidden');
+generateBtn?.classList.add('hidden');
+
+$$('[data-adapt-reason]').forEach(x=>
+  x.classList.remove('selected')
+);
 
   const className=
     lesson.pe_classes?.name||'Classe';
@@ -2173,6 +2184,17 @@ if(statusMsg){
       : '✓ Imprevisto acquisito. AttivaMente può preparare una versione adattata.';
 
   statusMsg.classList.remove('hidden');
+  const generateBtn=$('#adaptGenerateBtn');
+
+if(generateBtn){
+
+  if(reason==='less_time'){
+    generateBtn.classList.remove('hidden');
+  }else{
+    generateBtn.classList.add('hidden');
+  }
+
+}
 }
 
 };
