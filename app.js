@@ -1202,6 +1202,22 @@ async function generatePrimaryGamesPlan(){
 }
 async function generatePlan(){
   if(plannerBusy)return;
+  const selectedClass=
+  st.classes.find(
+    x=>x.id===$('#planClass').value
+  );
+
+const primaryMode=
+  selectedClass?.school_level==='primary' &&
+  (
+    Number(selectedClass.grade)<=3 ||
+    $('#planMode')?.value==='primary_games'
+  );
+
+if(primaryMode){
+  await generatePrimaryGamesPlan();
+  return;
+}
   const cid=$('#planClass').value,sid=$('#planSport').value,msg=$('#plannerMsg'),btn=$('#generatePlanBtn');
   if(!cid||!sid){msg.textContent='Seleziona classe e sport.';return}
   const startDate=$('#planStart').value,lessonCount=Number($('#planWeeks').value),minutes=Number($('#planMinutes').value);
