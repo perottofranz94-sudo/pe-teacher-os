@@ -662,11 +662,11 @@ async function renderPlanTopics(){
   `;
 
   const {data,error}=await db
-    .from('pe_exercises')
-    .select('category')
-    .eq('sport_id',sportId)
-    .eq('active',true)
-    .eq('audit_status','VERIFIED');
+  .from('pe_categories')
+  .select('id,name,sort_order')
+  .eq('sport_id',sportId)
+  .order('sort_order')
+  .order('name');
 
   if(error){
     box.innerHTML=`
@@ -700,23 +700,16 @@ async function renderPlanTopics(){
     'chiusura'
   ];
 
-  const categories=[
-    ...new Set(
-      (data||[])
-        .map(x=>String(x.category||'').trim())
-        .filter(Boolean)
-        .filter(cat=>{
-          const c=cat.toLowerCase();
+  const categories=(data||[])
+  .filter(x=>x?.id && x?.name)
+  .filter(x=>{
+    const c=String(x.name).toLowerCase().trim();
 
-          return !excluded.some(ex=>
-            c===ex ||
-            c.includes(ex)
-          );
-        })
-    )
-  ].sort((a,b)=>
-    a.localeCompare(b,'it')
-  );
+    return !excluded.some(ex=>
+      c===ex ||
+      c.includes(ex)
+    );
+  });
 
   if(!categories.length){
 
@@ -769,13 +762,13 @@ async function renderPlanTopics(){
           </option>
 
           ${categories.map(cat=>`
-            <option
-              value="${esc(cat)}"
-              ${previousValue===cat?'selected':''}
-            >
-              ${esc(cat)}
-            </option>
-          `).join('')}
+  <option
+    value="${esc(cat.id)}"
+    ${previousValue===cat.id?'selected':''}
+  >
+    ${esc(cat.name)}
+  </option>
+`).join('')}
 
         </select>
 
