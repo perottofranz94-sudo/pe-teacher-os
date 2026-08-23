@@ -309,7 +309,26 @@
 <div class="form-row"><label>Classe / anno<select id="classGrade" required></select></label><div class="school-level-help" id="schoolLevelHelp">Seleziona prima il grado scolastico.</div></div>
 <div id="classAutoCounts" class="class-auto-counts"><span>👥 0 alunni</span><span>♀ 0</span><span>♂ 0</span><small>Conteggio automatico dai nominativi inseriti sotto.</small></div>
 <div class="modal-section timetable-section"><div class="section-title-row compact"><div><span class="kicker">ORARIO SETTIMANALE</span><h4>Quando hai lezione con questa classe?</h4><p>Inserisci uno o più giorni con ora di inizio e fine. Il generatore automatico userà questi dati per inserire le lezioni nel calendario.</p></div><button id="addTimetableRow" type="button" class="btn secondary small-btn">+ Aggiungi giorno</button></div><div id="timetableRows" class="timetable-rows"></div><small class="field-help">È necessario almeno un giorno/orario per utilizzare la programmazione automatica.</small></div>
-<div class="modal-section"><div class="section-title-row compact"><div><span class="kicker">ALUNNI</span><h4>Nomi e cognomi</h4></div><button id="addStudentRow" type="button" class="btn secondary small-btn">+ Aggiungi alunno</button></div><div id="studentRows"></div></div>
+<div class="modal-section student-section">
+
+  <div class="section-title-row compact">
+    <div>
+      <span class="kicker">ALUNNI</span>
+      <h4>Nomi e cognomi</h4>
+    </div>
+  </div>
+
+  <div id="studentRows"></div>
+
+  <button
+    id="addStudentRow"
+    type="button"
+    class="btn secondary small-btn add-student-bottom"
+  >
+    + Aggiungi alunno
+  </button>
+
+</div>
 <div class="modal-section"><span class="kicker">LIVELLI SPORTIVI</span><div id="sportLevelGrid" class="level-grid"></div></div>
 <div class="class-form-actions"><button id="deleteClassBtn" class="btn danger hidden" type="button">Elimina classe</button><button id="classSaveBtn" class="btn primary" type="submit">Salva classe</button></div><small id="classMsg" class="form-message"></small>
 </form></dialog>
