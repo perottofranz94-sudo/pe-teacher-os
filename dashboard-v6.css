@@ -630,3 +630,39 @@ body{
     margin-top:70px !important;
   }
 }
+/* =========================================================
+   DASHBOARD HERO — LOGO E CLAIM DEFINITIVI
+   ========================================================= */
+
+#view-dashboard .dashboard-brand-image{
+  width:min(620px,88%) !important;
+  max-width:620px !important;
+  height:auto !important;
+  display:block !important;
+  margin:0 auto !important;
+  object-fit:contain !important;
+}
+
+#view-dashboard .dashboard-brand-claim{
+  margin:28px auto 0 !important;
+  max-width:760px !important;
+  text-align:center !important;
+  line-height:1.45 !important;
+}
+
+/* iPhone / smartphone */
+@media (max-width:700px){
+
+  #view-dashboard .dashboard-brand-image{
+    width:96% !important;
+    max-width:430px !important;
+  }
+
+  #view-dashboard .dashboard-brand-claim{
+    margin-top:32px !important;
+    padding:0 12px !important;
+    max-width:390px !important;
+    line-height:1.45 !important;
+  }
+
+}
