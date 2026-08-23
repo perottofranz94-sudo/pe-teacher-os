@@ -1065,3 +1065,144 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
   }
 
 }
+/* =========================================================
+   PLANNER — ARGOMENTI DELLE LEZIONI
+   ========================================================= */
+
+.plan-topics-section{
+  margin:18px 0;
+  padding:18px;
+
+  border-radius:20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(10,54,103,.52),
+      rgba(7,39,77,.38)
+    );
+
+  border:1px solid rgba(103,169,240,.18);
+}
+
+.plan-topics-heading{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:15px;
+
+  margin-bottom:15px;
+}
+
+.plan-topics-heading h4{
+  margin:3px 0 0;
+}
+
+.plan-topics-heading small{
+  opacity:.65;
+  text-align:right;
+}
+
+.plan-topics-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.plan-topic-row{
+  display:grid;
+  grid-template-columns:72px 1fr;
+  gap:12px;
+  align-items:center;
+
+  padding:12px;
+
+  border-radius:16px;
+
+  background:rgba(4,31,64,.42);
+
+  border:1px solid rgba(110,172,235,.12);
+}
+
+.plan-topic-number{
+  min-height:58px;
+
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+
+  border-radius:14px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(41,111,226,.40),
+      rgba(24,177,185,.25)
+    );
+}
+
+.plan-topic-number span{
+  font-size:9px;
+  letter-spacing:1.2px;
+  opacity:.7;
+}
+
+.plan-topic-number strong{
+  font-size:23px;
+}
+
+.plan-topic-field{
+  min-width:0;
+}
+
+.plan-topic-field > span{
+  display:block;
+  margin-bottom:6px;
+
+  font-size:12px;
+  opacity:.72;
+}
+
+.plan-topic-select{
+  width:100%;
+  min-width:0;
+}
+
+
+/* iPHONE */
+
+@media(max-width:700px){
+
+  .plan-topics-section{
+    padding:14px;
+  }
+
+  .plan-topics-heading{
+    display:block;
+  }
+
+  .plan-topics-heading small{
+    display:block;
+
+    margin-top:5px;
+
+    text-align:left;
+  }
+
+  .plan-topic-row{
+    grid-template-columns:58px minmax(0,1fr);
+
+    padding:10px;
+  }
+
+  .plan-topic-number{
+    min-height:56px;
+  }
+
+  .plan-topic-select{
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+}
