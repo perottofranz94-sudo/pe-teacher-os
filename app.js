@@ -1974,7 +1974,195 @@ $('#adaptCancelBtn').onclick=()=>{
 };
 
 $('#adaptContinueBtn').onclick=()=>{
-  toast('Parametri adattamento acquisiti');
+
+  if(!adaptLessonCtx?.reason){
+    toast('Seleziona prima cosa è cambiato');
+    return;
+  }
+
+  const lesson=adaptLessonCtx.lesson;
+  const reason=adaptLessonCtx.reason;
+
+  /*
+   * Oggetto che conterrà tutti i vincoli
+   * dell'adattamento.
+   */
+  const constraints={
+    reason,
+
+    originalDuration:
+      Number(lesson.duration_min||0),
+
+    newDuration:
+      Number(lesson.duration_min||0),
+
+    originalStudents:
+      Number(
+        lesson.pe_classes?.student_count||0
+      ),
+
+    newStudents:
+      Number(
+        lesson.pe_classes?.student_count||0
+      ),
+
+    space:null,
+
+    missingMaterial:[],
+
+    classIssue:null,
+
+    otherText:null
+  };
+
+
+  /* =====================================================
+     NUMERO ALUNNI
+     ===================================================== */
+
+  if(
+    reason==='fewer_students' ||
+    reason==='more_students'
+  ){
+
+    const value=
+      Number($('#adaptStudentCount')?.value);
+
+    if(!value || value<1){
+
+      toast('Inserisci il numero di alunni presenti');
+      return;
+
+    }
+
+    constraints.newStudents=value;
+  }
+
+
+  /* =====================================================
+     TEMPO DISPONIBILE
+     ===================================================== */
+
+  if(reason==='less_time'){
+
+    const value=
+      Number($('#adaptMinutes')?.value);
+
+    if(!value || value<20){
+
+      toast('Inserisci una durata valida');
+      return;
+
+    }
+
+    if(value>=constraints.originalDuration){
+
+      toast(
+        'La nuova durata deve essere inferiore a quella originale'
+      );
+
+      return;
+    }
+
+    constraints.newDuration=value;
+  }
+
+
+  /* =====================================================
+     SPAZIO
+     ===================================================== */
+
+  if(
+    reason==='no_gym' ||
+    reason==='no_outdoor'
+  ){
+
+    constraints.space=
+      $('#adaptSpace')?.value||null;
+  }
+
+
+  /* =====================================================
+     MATERIALE MANCANTE
+     ===================================================== */
+
+  if(reason==='missing_material'){
+
+    const raw=
+      $('#adaptMissingMaterial')
+        ?.value
+        ?.trim();
+
+    if(!raw){
+
+      toast('Indica quale materiale non hai');
+      return;
+
+    }
+
+    constraints.missingMaterial=
+      raw
+        .split(',')
+        .map(x=>x.trim())
+        .filter(Boolean);
+  }
+
+
+  /* =====================================================
+     CLASSE DIFFICILE DA GESTIRE
+     ===================================================== */
+
+  if(reason==='difficult_class'){
+
+    constraints.classIssue=
+      $('#adaptClassIssue')?.value||null;
+  }
+
+
+  /* =====================================================
+     ALTRO
+     ===================================================== */
+
+  if(reason==='other'){
+
+    const text=
+      $('#adaptOtherText')
+        ?.value
+        ?.trim();
+
+    if(!text){
+
+      toast('Descrivi brevemente cosa è cambiato');
+      return;
+
+    }
+
+    constraints.otherText=text;
+  }
+
+
+  /*
+   * Salviamo i vincoli nel contesto temporaneo.
+   * NON viene ancora modificato nulla nel database.
+   */
+  adaptLessonCtx.constraints=
+    constraints;
+
+
+  console.log(
+    '⚡ AttivaMente · vincoli adattamento',
+    {
+      lessonId:lesson.id,
+      classId:lesson.class_id,
+      sportId:lesson.pe_sports?.id||null,
+      learningGoal:lesson.learning_goal||null,
+      constraints
+    }
+  );
+
+
+  toast('Imprevisto acquisito');
+
 };
 $('#closeAdaptLessonModal').onclick=()=>{
   $('#adaptLessonModal').close();
