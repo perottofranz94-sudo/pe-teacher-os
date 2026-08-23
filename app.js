@@ -2556,6 +2556,69 @@ async function applyAdaptedLesson(){
   const original=adaptLessonCtx.original;
 
   const lessonId=lesson.id;
+  /* =====================================================
+   0. SNAPSHOT PERMANENTE DELLA VERSIONE ORIGINALE
+   ===================================================== */
+
+const snapshotPayload={
+
+  owner_id:st.user.id,
+
+  lesson_id:lessonId,
+
+  reason:
+    adaptLessonCtx.constraints?.reason ||
+    'manual_adaptation',
+
+  original_duration:
+    Number(original.duration||lesson.duration_min||0),
+
+  adapted_duration:
+    Number(proposal.targetMinutes||0),
+
+  original_lesson:{
+    id:lesson.id,
+    module_id:lesson.module_id,
+    class_id:lesson.class_id,
+    sport_id:lesson.sport_id,
+    lesson_date:lesson.lesson_date,
+    sequence_no:lesson.sequence_no,
+    title:lesson.title,
+    duration_min:Number(lesson.duration_min||0),
+    generation_mode:lesson.generation_mode,
+    status:lesson.status,
+    learning_goal:lesson.learning_goal,
+    teacher_notes:lesson.teacher_notes,
+    start_time:lesson.start_time,
+    end_time:lesson.end_time,
+    is_extra:lesson.is_extra
+  },
+
+  original_items:
+    original.items.map(item=>({
+      id:item.id,
+      lesson_id:item.lesson_id,
+      exercise_id:item.exercise_id,
+      primary_game_ref:item.primary_game_ref,
+      phase:item.phase,
+      order_no:item.order_no,
+      duration_min:Number(item.duration_min||0),
+      custom_title:item.custom_title,
+      custom_explanation:item.custom_explanation,
+      selection_reason:item.selection_reason,
+      station_count:item.station_count,
+      players_per_group:item.players_per_group
+    }))
+};
+
+
+const {error:snapshotError}=await db
+  .from('pe_lesson_adaptation_snapshots')
+  .insert(snapshotPayload);
+
+if(snapshotError){
+  throw snapshotError;
+}
 
   /*
    * =====================================================
@@ -2566,8 +2629,23 @@ async function applyAdaptedLesson(){
   const originalNote=
     lesson.teacher_notes||'';
 
-  const adaptationNote=
-    `⚡ Lezione adattata da ${original.duration}' a ${proposal.targetMinutes}'.`;
+  const reasonLabels={
+  less_time:'tempo disponibile ridotto',
+  fewer_students:'meno alunni presenti',
+  more_students:'più alunni presenti',
+  no_gym:'palestra non disponibile',
+  no_outdoor:'attività esterna non disponibile',
+  missing_material:'materiale non disponibile',
+  difficult_class:'gestione della classe',
+  other:'altro imprevisto'
+};
+
+const reasonKey=
+  adaptLessonCtx.constraints?.reason ||
+  'other';
+
+const adaptationNote=
+  `⚡ Lezione adattata da ${original.duration}' a ${proposal.targetMinutes}' · Motivo: ${reasonLabels[reasonKey]||'imprevisto'}.`;
 
   const newTeacherNotes=
     originalNote.includes('⚡ Lezione adattata')
