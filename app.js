@@ -2050,7 +2050,16 @@ function renderAll(){
   renderCalendar();
 }
 
-function renderCalendar(){st.month=clampCalendarMonth(st.month||new Date());const todayIso=todayIsoLocal();let d=st.month,y=d.getFullYear(),m=d.getMonth();$('#monthTitle').textContent=new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(d);let first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7)),html=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<div class="cal-head">${x}</div>`).join('');for(let i=0;i<42;i++){let day=new Date(start);day.setDate(start.getDate()+i);let iso=localISODate(day),ev=st.lessons.filter(x=>x.lesson_date===iso).map(x=>`<div class="cal-event ${x.is_extra?'extra':''}" data-lesson="${x.id}">${x.start_time?`<span class="cal-time">${String(x.start_time).slice(0,5)}</span>`:''}${x.is_extra?'<span class="cal-extra-badge">EXTRA</span>':''}${esc(x.title)}</div>`).join(''),
+function renderCalendar(){st.month=clampCalendarMonth(st.month||new Date());const todayIso=todayIsoLocal();let d=st.month,y=d.getFullYear(),m=d.getMonth();$('#monthTitle').textContent=new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(d);let first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7)),html=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<div class="cal-head">${x}</div>`).join('');for(let i=0;i<42;i++){let day=new Date(start);day.setDate(start.getDate()+i);let iso=localISODate(day),
+ev=st.lessons
+  .filter(x=>x.lesson_date===iso)
+  .sort((a,b)=>{
+    const timeA=String(a.start_time||'99:99').slice(0,5);
+    const timeB=String(b.start_time||'99:99').slice(0,5);
+    return timeA.localeCompare(timeB);
+  })
+  .map(x=>`<div class="cal-event ${x.is_extra?'extra':''}" data-lesson="${x.id}">${x.start_time?`<span class="cal-time">${String(x.start_time).slice(0,5)}</span>`:''}${x.is_extra?'<span class="cal-extra-badge">EXTRA</span>':''}${esc(x.title)}</div>`)
+  .join(''),
 dayExceptions=st.exceptions.filter(x=>iso>=x.exception_date&&iso<=(x.end_date||x.exception_date)),
 schoolClosures=dayExceptions.filter(x=>x.scope==='school'&&x.exception_type!=='school_event'),
 classTrips=dayExceptions.filter(x=>x.scope==='class'&&x.exception_type==='school_event'),
