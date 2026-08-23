@@ -597,3 +597,46 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
   }
 
 }
+/* ===== PLANNER: DATA DI PARTENZA ===== */
+
+.planner-start-row{
+  display:grid;
+  grid-template-columns:minmax(180px,.8fr) minmax(220px,1.2fr);
+  gap:14px;
+  align-items:end;
+}
+
+.planner-date-field,
+.planner-level-field{
+  min-width:0;
+}
+
+#planStart,
+#planLevel{
+  width:100%;
+  box-sizing:border-box;
+  min-height:48px;
+}
+
+#planStart{
+  max-width:230px;
+}
+
+@media (max-width:700px){
+
+  .planner-start-row{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+
+  #planStart{
+    width:100%;
+    max-width:none;
+    min-height:52px;
+  }
+
+  #planLevel{
+    min-height:52px;
+  }
+
+}
