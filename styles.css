@@ -1709,3 +1709,25 @@ dialog.modal{background:radial-gradient(circle at 100% 0%,rgba(21,152,212,.18),t
   }
 
 }
+.adapt-lesson-details{
+  margin-top:16px;
+  padding-top:16px;
+  border-top:1px solid var(--line);
+}
+
+.adapt-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:14px;
+}
+
+.adapt-lesson-details textarea{
+  width:100%;
+  background:#0a1829;
+  border:1px solid var(--line);
+  color:#fff;
+  padding:13px 14px;
+  border-radius:14px;
+  resize:vertical;
+}
