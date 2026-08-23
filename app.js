@@ -793,6 +793,22 @@ async function generatePlan(){
   const cid=$('#planClass').value,sid=$('#planSport').value,msg=$('#plannerMsg'),btn=$('#generatePlanBtn');
   if(!cid||!sid){msg.textContent='Seleziona classe e sport.';return}
   const startDate=$('#planStart').value,lessonCount=Number($('#planWeeks').value),minutes=Number($('#planMinutes').value);
+  const topicSelects=[...document.querySelectorAll('.plan-topic-select')];
+
+if(topicSelects.length!==lessonCount){
+  msg.textContent='Controlla gli argomenti delle lezioni.';
+  return;
+}
+
+const lessonTopics=topicSelects.map((select,index)=>({
+  lesson_no:index+1,
+  category_id:select.value
+}));
+
+if(lessonTopics.some(x=>!x.category_id)){
+  msg.textContent='Scegli un argomento per ogni lezione.';
+  return;
+}
   if(!startDate||!lessonCount||lessonCount<1||!minutes){msg.textContent='Completa data di partenza, numero di lezioni e durata.';return}
   plannerBusy=true;if(btn){btn.disabled=true;btn.textContent='Generazione in corso…'}
   let moduleId=null;
@@ -805,6 +821,22 @@ async function generatePlan(){
     msg.textContent='Creo il modulo…';
     const{data:m,error}=await db.from('pe_sport_modules').insert({owner_id:st.user.id,class_id:cid,sport_id:sid,module_type:'automatic',title:`${sp.name} · ${cl.name}`,start_date:startDate,planned_weeks:lessonCount,lesson_duration_min:minutes,level_override:$('#planLevel').value?+$('#planLevel').value:null,progression_mode:'progressive',status:'planned'}).select().single();
     if(error)throw error;moduleId=m.id;
+    msg.textContent='Salvo gli argomenti delle lezioni…';
+
+const topicsPayload=lessonTopics.map(topic=>({
+  owner_id:st.user.id,
+  module_id:m.id,
+  lesson_no:topic.lesson_no,
+  category_id:topic.category_id
+}));
+
+const {error:topicsError}=await db
+  .from('pe_module_lesson_topics')
+  .insert(topicsPayload);
+
+if(topicsError){
+  throw topicsError;
+}
     msg.textContent='Scelgo attività reali dall’archivio e costruisco la progressione…';
     const{data:generated,error:er}=await db.rpc('pe_generate_module_plan',{p_module_id:m.id,p_regenerate:false});
     if(er)throw er;
