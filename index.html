@@ -154,6 +154,117 @@
 }
 </style>
 
+
+<style id="rubrics-layout-v2">
+/* AttivaMente · Rubriche v2 — layout isolation */
+#view-rubrics{
+  min-width:0;
+  overflow-x:hidden;
+}
+#view-rubrics .rubrics-shell{
+  max-width:1500px;
+  margin:0 auto;
+  padding:0 18px 40px;
+}
+#view-rubrics .rubric-toolbar,
+#view-rubrics .rubric-hero,
+#view-rubrics .rubric-indicator-card{
+  min-width:0;
+}
+#view-rubrics .rubric-indicator-card{
+  overflow:hidden;
+}
+#view-rubrics .rubric-indicator-head{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(300px,38%);
+  gap:22px;
+  align-items:start;
+}
+#view-rubrics .rubric-indicator-copy{
+  min-width:0;
+}
+#view-rubrics .rubric-selected-descriptor{
+  min-width:0;
+  max-width:none !important;
+}
+#view-rubrics .rubric-selected-descriptor p{
+  overflow-wrap:anywhere;
+}
+#view-rubrics .rubric-score-strip{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  gap:7px !important;
+  overflow:visible !important;
+  padding:12px 0 4px !important;
+}
+#view-rubrics .rubric-score-btn{
+  flex:0 0 auto;
+  min-width:48px;
+}
+#view-rubrics .rubric-show-all{
+  margin-top:12px;
+}
+#view-rubrics .rubric-all-descriptors{
+  overflow-x:auto;
+}
+#view-rubrics .rubric-descriptor-table{
+  width:100%;
+  min-width:760px;
+  border-collapse:separate;
+  border-spacing:0;
+}
+#view-rubrics .rubric-descriptor-table th,
+#view-rubrics .rubric-descriptor-table td{
+  vertical-align:top;
+}
+@media (min-width: 901px){
+  body:not(.sidebar-collapsed) #view-rubrics{
+    padding-left:0 !important;
+  }
+}
+@media (max-width: 900px){
+  #view-rubrics .rubric-indicator-head{
+    grid-template-columns:1fr;
+  }
+  #view-rubrics .rubrics-shell{
+    padding-left:12px;
+    padding-right:12px;
+  }
+}
+</style>
+
+
+<style id="sidebar-viewport-fix">
+.sidebar{
+  height:100dvh !important;
+  max-height:100dvh !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  scrollbar-width:thin;
+}
+.sidebar nav,
+.sidebar .nav,
+.sidebar .sidebar-nav{
+  min-height:0 !important;
+}
+.sidebar .sidebar-footer{
+  margin-top:auto;
+  position:static !important;
+}
+@media (min-width:901px){
+  .app-shell,
+  .app{
+    min-width:0;
+  }
+  main,
+  .main,
+  .main-content,
+  .content{
+    min-width:0;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>

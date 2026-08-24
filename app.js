@@ -1379,3 +1379,41 @@ await restoreSessionAtStartup();
 db.auth.onAuthStateChange((event,session)=>{if(!session){st.user=null;$('#appView').classList.add('hidden');$('#authView').classList.remove('hidden');return}if(!st.user&&event!=='SIGNED_IN')setTimeout(()=>enter(session.user),0)});
 addEventListener('online',()=>syncFromCloud());document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastSyncAt>5000)syncFromCloud({quiet:true})});
 if('serviceWorker'in navigator)addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('./service-worker.js?v=7.0',{updateViaCache:'none'});await r.update()}catch(e){console.warn('SW update',e)}});
+
+
+/* =========================================================
+   RUBRICHE DI VALUTAZIONE · LAYOUT V2
+   Solo presentazione: nessun dato o descrittore viene alterato.
+   ========================================================= */
+(function(){
+  function enhanceRubricsLayout(){
+    const view=document.querySelector('#view-rubrics');
+    if(!view)return;
+
+    if(!view.querySelector(':scope > .rubrics-shell')){
+      const shell=document.createElement('div');
+      shell.className='rubrics-shell';
+      while(view.firstChild)shell.appendChild(view.firstChild);
+      view.appendChild(shell);
+    }
+
+    // Evita che qualunque elemento della rubrica possa invadere la sidebar.
+    view.querySelectorAll('*').forEach(el=>{
+      if(el.scrollWidth>el.clientWidth && !el.classList.contains('rubric-all-descriptors')){
+        el.style.maxWidth='100%';
+      }
+    });
+  }
+
+  const rubricObserver=new MutationObserver(()=>{
+    requestAnimationFrame(enhanceRubricsLayout);
+  });
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    const view=document.querySelector('#view-rubrics');
+    if(view){
+      enhanceRubricsLayout();
+      rubricObserver.observe(view,{childList:true,subtree:true});
+    }
+  });
+})();
