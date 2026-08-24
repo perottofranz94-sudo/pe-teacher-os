@@ -1254,6 +1254,38 @@ async function deleteSchoolYear(id){
     await loadCore();st.month=clampCalendarMonth(new Date());renderAll();toast(`Anno ${y.label} eliminato`);
   }catch(err){console.error(err);toast(err.message||'Impossibile eliminare l’anno scolastico')}
 }
+
+function showSchoolYearClosureReminder(){
+  const modal=$('#schoolYearReadyModal');
+  if(!modal)return;
+
+  const close=()=>{
+    try{modal.close()}catch{}
+  };
+
+  const closeBtn=$('#schoolYearReadyClose');
+  const laterBtn=$('#schoolYearLaterBtn');
+  const addBtn=$('#schoolYearAddClosuresBtn');
+
+  if(closeBtn)closeBtn.onclick=close;
+  if(laterBtn)laterBtn.onclick=close;
+
+  if(addBtn){
+    addBtn.onclick=()=>{
+      close();
+      go('settings');
+      setTimeout(()=>openException('school'),120);
+    };
+  }
+
+  modal.oncancel=e=>{
+    e.preventDefault();
+    close();
+  };
+
+  if(!modal.open)modal.showModal();
+}
+
 $('#migrateYearBtn').onclick=()=>openSchoolYearDialog(!st.year);
 $('#migrateForm').onsubmit=async e=>{
   e.preventDefault();const btn=$('#migrateSubmitBtn');btn.disabled=true;btn.textContent='Salvataggio…';
@@ -1279,7 +1311,7 @@ $('#migrateForm').onsubmit=async e=>{
         toast('Nuovo anno creato senza promuovere le classi');
       }
     }
-    $('#migrateModal').close();await loadCore();st.month=clampCalendarMonth(new Date());renderAll();
+    $('#migrateModal').close();await loadCore();st.month=clampCalendarMonth(new Date());renderAll();showSchoolYearClosureReminder();
   }catch(err){console.error(err);toast(err.message||'Impossibile creare l’anno scolastico')}
   finally{btn.disabled=false;btn.textContent=st.year?'Crea nuovo anno scolastico':'Crea anno scolastico'}
 }
