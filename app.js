@@ -15,91 +15,7 @@ const schoolGradeOptions={primary:[['1','Prima primaria'],['2','Seconda primaria
 let classOriginalStudentIds=[];
 const weekdayOptions=[[1,'Lunedì'],[2,'Martedì'],[3,'Mercoledì'],[4,'Giovedì'],[5,'Venerdì'],[6,'Sabato'],[7,'Domenica']];
 function minutesBetween(start,end){if(!start||!end)return 0;const [sh,sm]=start.split(':').map(Number),[eh,em]=end.split(':').map(Number);return (eh*60+em)-(sh*60+sm)}
-function addTimetableRow(weekday=1,start='',end=''){
-  const d=document.createElement('div');
-  d.className='timetable-row';
-
-  d.innerHTML=`
-    <label class="tt-field tt-day-field">
-      Giorno
-      <select class="tt-day">
-        ${weekdayOptions.map(([v,l])=>`
-          <option value="${v}" ${Number(weekday)===v?'selected':''}>
-            ${l}
-          </option>
-        `).join('')}
-      </select>
-    </label>
-
-    <label class="tt-field">
-      Inizio
-      <input
-        class="tt-start"
-        type="time"
-        value="${esc(start||'')}"
-      >
-    </label>
-
-    <label class="tt-field">
-      Fine
-      <input
-        class="tt-end"
-        type="time"
-        value="${esc(end||'')}"
-      >
-    </label>
-
-    <button
-      type="button"
-      class="tt-remove"
-      aria-label="Rimuovi giorno"
-    >×</button>
-  `;
-
-  const startInput=d.querySelector('.tt-start');
-  const endInput=d.querySelector('.tt-end');
-
-  startInput.addEventListener('change',()=>{
-    if(!startInput.value) return;
-
-    const [h,m]=startInput.value.split(':').map(Number);
-
-    const startMinutes=(h*60)+m;
-    const suggestedMinutes=startMinutes+60;
-
-    const endH=Math.floor(suggestedMinutes/60)%24;
-    const endM=suggestedMinutes%60;
-
-    const suggested=
-      `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
-
-    /*
-     * Imposta automaticamente +1 ora solo se:
-     * - Fine è vuota
-     * - oppure Fine è uguale/prima dell'inizio
-     *
-     * Se il docente ha già scelto manualmente un orario valido,
-     * non viene sovrascritto.
-     */
-    if(
-      !endInput.value ||
-      minutesBetween(startInput.value,endInput.value)<=0
-    ){
-      endInput.value=suggested;
-    }
-  });
-
-  d.querySelector('.tt-remove').onclick=()=>{
-    if($$('.timetable-row').length>1){
-      d.remove();
-    }else{
-      startInput.value='';
-      endInput.value='';
-    }
-  };
-
-  $('#timetableRows').appendChild(d);
-}
+function addTimetableRow(weekday=1,start='',end=''){const d=document.createElement('div');d.className='timetable-row';d.innerHTML=`<label>Giorno<select class="tt-day">${weekdayOptions.map(([v,l])=>`<option value="${v}" ${Number(weekday)===v?'selected':''}>${l}</option>`).join('')}</select></label><label>Inizio<input class="tt-start" type="time" value="${esc(start||'')}"></label><label>Fine<input class="tt-end" type="time" value="${esc(end||'')}"></label><button type="button" class="tt-remove" aria-label="Rimuovi giorno">×</button>`;d.querySelector('.tt-remove').onclick=()=>{if($$('.timetable-row').length>1)d.remove();else{d.querySelector('.tt-start').value='';d.querySelector('.tt-end').value=''}};$('#timetableRows').appendChild(d)}
 function collectTimetableRows(){return $$('.timetable-row').map(r=>({weekday:Number(r.querySelector('.tt-day').value),start:r.querySelector('.tt-start').value,end:r.querySelector('.tt-end').value})).filter(x=>x.start||x.end)}
 async function loadClassTimetable(classId){$('#timetableRows').innerHTML='';if(!classId){addTimetableRow(1,'','');return}const{data,error}=await db.from('pe_class_timetable_slots').select('*').eq('class_id',classId).eq('active',true).order('weekday').order('start_time');if(error)throw error;(data||[]).forEach(x=>addTimetableRow(x.weekday,String(x.start_time||'').slice(0,5),String(x.end_time||'').slice(0,5)));if(!(data||[]).length)addTimetableRow(1,'','')}
 async function saveClassTimetable(classId,rows){const{error:delErr}=await db.from('pe_class_timetable_slots').delete().eq('class_id',classId);if(delErr)throw delErr;const payload=rows.map(x=>({owner_id:st.user.id,class_id:classId,weekday:x.weekday,start_time:x.start,end_time:x.end,lesson_minutes:minutesBetween(x.start,x.end),valid_from:st.year?.start_date||null,valid_to:st.year?.end_date||null,active:true}));if(payload.length){const{error}=await db.from('pe_class_timetable_slots').insert(payload);if(error)throw error}}
@@ -107,52 +23,6 @@ async function applyTimetableTimesToModule(moduleId,classId){const[{data:slots,e
 function currentSchoolYearDefaults(){const now=new Date(),startYear=now.getMonth()>=6?now.getFullYear():now.getFullYear()-1;return{label:`${startYear}/${startYear+1}`,start:`${startYear}-09-01`,end:`${startYear+1}-06-30`}}
 function openSchoolYearDialog(initial=!st.year){const d=currentSchoolYearDefaults();$('#migrateModalTitle').textContent=initial?'Crea il primo anno scolastico':'Crea nuovo anno scolastico';$('#promoteClassesWrap').classList.toggle('hidden',initial);$('#migrateSubmitBtn').textContent=initial?'Crea anno scolastico':'Crea nuovo anno scolastico';const yes=document.querySelector('input[name=\"promoteClasses\"][value=\"yes\"]');if(yes)yes.checked=true;if(initial||!$('#newYearLabel').value){$('#newYearLabel').value=d.label;$('#newYearStart').value=d.start;$('#newYearEnd').value=d.end}$('#migrateModal').showModal()}
 function requireSchoolYear(message='Prima devi creare un anno scolastico.'){if(st.year)return true;toast(message);openSchoolYearDialog(true);return false}
-async function openPlannerFromDashboard(){
-
-  // STEP 1 — serve prima un anno scolastico
-  if(!st.year){
-
-    const createYear = await appConfirm({
-      icon:'📅',
-      kicker:'PRIMA CONFIGURAZIONE',
-      title:'Prima creiamo il tuo anno scolastico',
-      message:'Per generare una programmazione AttivaMente deve sapere in quale anno scolastico stai lavorando.',
-      details:'Dopo aver creato l’anno scolastico potrai inserire le tue classi, il loro orario settimanale e successivamente generare automaticamente le lezioni.',
-      confirmText:'Crea anno scolastico',
-      danger:false
-    });
-
-    if(createYear){
-      openSchoolYearDialog(true);
-    }
-
-    return;
-  }
-
-  // STEP 2 — serve almeno una classe
-  if(!st.classes.length){
-
-    const createClass = await appConfirm({
-      icon:'👥',
-      kicker:'MANCA ANCORA UN PASSAGGIO',
-      title:'Ora crea almeno una classe',
-      message:`L’anno scolastico ${st.year.label} è pronto, ma non hai ancora creato nessuna classe.`,
-      details:'La programmazione viene costruita in base alla classe, al numero di alunni, al livello sportivo e all’orario settimanale.',
-      confirmText:'Crea una classe',
-      danger:false
-    });
-
-    if(createClass){
-      go('classes');
-      openClass(null);
-    }
-
-    return;
-  }
-
-  // Tutto pronto
-  go('planner');
-}
 function updateGradeOptions(selected=''){const level=$('#classSchoolLevel').value,opts=schoolGradeOptions[level]||[];$('#classGrade').innerHTML=opts.length?opts.map(([v,l])=>`<option value="${v}" ${String(selected)===v?'selected':''}>${l}</option>`).join(''):'<option value="">Seleziona prima il grado scolastico</option>';$('#schoolLevelHelp').textContent=level?`Percorso: ${schoolLevelLabels[level]}. Potrai cambiare questa impostazione anche in seguito.`:'Seleziona prima il grado scolastico.'}
 
 function appConfirm({
@@ -195,275 +65,27 @@ function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');se
 function openMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');b?.classList.remove('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','true');document.body.classList.add('menu-open')}
 function closeMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.remove('open');m.setAttribute('aria-hidden','true');b?.classList.add('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','false');document.body.classList.remove('menu-open')}
 function go(v){closeMobileMenu();$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${v}`));$$('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));let m={dashboard:['PANORAMICA','Dashboard'],calendar:['ANNO SCOLASTICO','Calendario'],classes:['GESTIONE','Classi'],planner:['MOTORE DIDATTICO','Programmazione'],sports:['MEGA ARCHIVIO','Archivio sport'],tests:['VALUTAZIONE','Test motori'],primarygames:['SCUOLA PRIMARIA','Giochi scuola primaria'],owner:['AREA RISERVATA','Area OWNER'],settings:['CONFIGURAZIONE','Impostazioni']}[v];$('#pageKicker').textContent=m[0];$('#pageTitle').textContent=m[1];if(v==='sports')renderSports();if(v==='primarygames')loadPrimaryGames();if(v==='tests')renderTests();if(v==='calendar')renderCalendar();if(v==='settings')renderSettings()}
-$$('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));$$('[data-jump]').forEach(b=>b.onclick=()=>go(b.dataset.jump));$('#quickPlan').onclick=()=>go('planner');$('#heroSchoolYearBtn')?.addEventListener('click',()=>{
-  openSchoolYearDialog(!st.year);
-});
-
-$('#heroPlannerBtn')?.addEventListener('click',()=>{
-  openPlannerFromDashboard();
-});$$('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).close());
-$('#mobileMenuBtn')?.addEventListener('click',openMobileMenu);
-$('#mobileMoreBtn')?.addEventListener('click',openMobileMenu);
-$('#mobileMenuClose')?.addEventListener('click',closeMobileMenu);
-$('#mobileMenuBackdrop')?.addEventListener('click',closeMobileMenu);
-$('#mobileLogoutBtn')?.addEventListener('click',()=>db.auth.signOut());
+$$('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));$$('[data-jump]').forEach(b=>b.onclick=()=>go(b.dataset.jump));$('#quickPlan').onclick=()=>go('planner');$$('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).close());
+$('#mobileMenuBtn').onclick=openMobileMenu;$('#mobileMoreBtn').onclick=openMobileMenu;$('#mobileMenuClose').onclick=closeMobileMenu;$('#mobileMenuBackdrop').onclick=closeMobileMenu;$('#mobileLogoutBtn').onclick=()=>db.auth.signOut();document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu()});
 
 async function loadCore(){
-
-  const t0=performance.now();
-
-  /*
-   * =======================================================
-   * FASE 1 — DATI ESSENZIALI
-   * Devono arrivare velocemente.
-   * =======================================================
-   */
-
-  const coreResults=await Promise.all([
-
-    db
-      .from('pe_school_years')
-      .select('*')
-      .eq('is_active',true)
-      .maybeSingle(),
-
-    db
-      .from('pe_school_years')
-      .select('*')
-      .order('start_date',{ascending:false}),
-
-    db
-      .from('pe_classes')
-      .select('*')
-      .eq('archived',false)
-      .order('school_level')
-      .order('grade')
-      .order('name'),
-
-    db
-      .from('pe_sports')
-      .select('*')
-      .eq('active',true)
-      .order('name'),
-
-    db
-      .from('pe_lessons')
-      .select(`
-        *,
-        pe_classes!pe_lessons_class_id_fkey(name),
-        pe_sports(name)
-      `)
-      .order('lesson_date')
-      .limit(80)
-
+  const results=await Promise.all([
+    db.from('pe_school_years').select('*').eq('is_active',true).maybeSingle(),
+    db.from('pe_school_years').select('*').order('start_date',{ascending:false}),
+    db.from('pe_classes').select('*').eq('archived',false).order('school_level').order('grade').order('name'),
+    db.from('pe_sports').select('*').eq('active',true).order('name'),
+    db.from('pe_lessons').select('*,pe_classes!pe_lessons_class_id_fkey(name),pe_sports(name)').order('lesson_date').limit(200),
+    db.from('pe_sport_modules').select('*,pe_classes!pe_sport_modules_class_id_fkey(name),pe_sports(name)').order('start_date',{ascending:false}).limit(100),
+    db.from('pe_motor_tests').select('*').eq('active',true).order('name'),
+    db.from('pe_calendar_exceptions').select('*').order('exception_date'),
+    db.from('pe_motor_test_hall_of_fame').select('*').limit(40)
   ]);
-
-  const coreError=coreResults.find(r=>r.error)?.error;
-
-  if(coreError){
-    throw coreError;
-  }
-
-  const [y,ys,c,s,l]=coreResults;
-
-  st.year=y.data||null;
-  st.schoolYears=ys.data||[];
-  st.classes=c.data||[];
-  st.sports=s.data||[];
-  st.lessons=l.data||[];
-
-  /*
-   * Aggiorna SUBITO l'interfaccia.
-   */
-
-  const classOpts=st.classes
-    .map(x=>`<option value="${x.id}">${esc(x.name)}</option>`)
-    .join('');
-
-  ['#extraClass','#manualClass'].forEach(id=>{
-    if($(id)){
-      $(id).innerHTML=classOpts;
-    }
-  });
-
-  if($('#extraAutoSport')){
-    $('#extraAutoSport').innerHTML=st.sports
-      .map(x=>`<option value="${x.id}">${esc(x.name)}</option>`)
-      .join('');
-  }
-
-  populateSelects();
-
-  renderDashboard();
-  renderClasses();
-  renderSports();
-
-  const coreMs=Math.round(performance.now()-t0);
-
-  console.log(
-    `[SYNC V2] dati essenziali pronti in ${coreMs} ms`
-  );
-
-
-  /*
-   * =======================================================
-   * FASE 2 — DATI SECONDARI
-   * NON BLOCCANO l'app.
-   * =======================================================
-   */
-
-  loadSecondaryData()
-    .catch(err=>{
-      console.warn(
-        '[SYNC V2] dati secondari non disponibili',
-        err
-      );
-    });
-
-
-  /*
-   * =======================================================
-   * FASE 3 — CONTEGGI ARCHIVIO
-   * Ancora più in background.
-   * =======================================================
-   */
-
-  loadSportCounts()
-    .catch(err=>{
-      console.warn(
-        '[SYNC V2] conteggi sport non disponibili',
-        err
-      );
-    });
-}
-async function loadSecondaryData(){
-
-  const t0=performance.now();
-
-  const results=await Promise.allSettled([
-
-    db
-      .from('pe_sport_modules')
-      .select(`
-        *,
-        pe_classes!pe_sport_modules_class_id_fkey(name),
-        pe_sports(name)
-      `)
-      .order('start_date',{ascending:false})
-      .limit(100),
-
-    db
-      .from('pe_motor_tests')
-      .select('*')
-      .eq('active',true)
-      .order('name'),
-
-    db
-      .from('pe_calendar_exceptions')
-      .select('*')
-      .order('exception_date'),
-
-    db
-      .from('pe_motor_test_hall_of_fame')
-      .select('*')
-      .limit(40)
-
-  ]);
-
-  /*
-   * Promise.allSettled:
-   * se una query secondaria fallisce,
-   * le altre continuano a funzionare.
-   */
-
-  const modulesResult=results[0];
-  const testsResult=results[1];
-  const exceptionsResult=results[2];
-  const hofResult=results[3];
-
-  if(
-    modulesResult.status==='fulfilled' &&
-    !modulesResult.value.error
-  ){
-    st.modules=modulesResult.value.data||[];
-  }
-
-  if(
-    testsResult.status==='fulfilled' &&
-    !testsResult.value.error
-  ){
-    st.tests=testsResult.value.data||[];
-  }
-
-  if(
-    exceptionsResult.status==='fulfilled' &&
-    !exceptionsResult.value.error
-  ){
-    st.exceptions=exceptionsResult.value.data||[];
-  }
-
-  if(
-    hofResult.status==='fulfilled' &&
-    !hofResult.value.error
-  ){
-    st.hof=hofResult.value.data||[];
-  }
-
-  renderModules();
-  renderTests();
-  renderSettings();
-  renderDashboard();
-  renderCalendar();
-
-  const ms=Math.round(performance.now()-t0);
-
-  console.log(
-    `[SYNC V2] dati secondari pronti in ${ms} ms`
-  );
-}
-async function loadSportCounts(){
-
-  st.sportCounts={};
-
-  const counts=await Promise.all(
-
-    st.sports.map(async sp=>{
-
-      const {count,error}=await db
-        .from('pe_exercises')
-        .select(
-          '*',
-          {
-            count:'exact',
-            head:true
-          }
-        )
-        .eq('sport_id',sp.id)
-        .eq('active',true)
-        .eq('audit_status','VERIFIED');
-
-      if(error){
-
-        console.warn(
-          `Conteggio esercizi non disponibile per ${sp.name}`,
-          error
-        );
-
-        return [sp.id,0];
-      }
-
-      return [
-        sp.id,
-        count||0
-      ];
-    })
-
-  );
-
-  st.sportCounts=Object.fromEntries(counts);
-
-  renderSports();
-  renderDashboard();
+  const firstError=results.find(r=>r.error)?.error;if(firstError)throw firstError;
+  const [y,ys,c,s,l,m,t,e,h]=results;
+  st.year=y.data||null;st.schoolYears=ys.data||[];st.classes=c.data||[];st.sports=s.data||[];st.lessons=l.data||[];st.modules=m.data||[];st.tests=t.data||[];st.exceptions=e.data||[];st.hof=h.data||[];
+  const classOpts=st.classes.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');['#extraClass','#manualClass'].forEach(id=>{if($(id))$(id).innerHTML=classOpts});if($('#extraAutoSport'))$('#extraAutoSport').innerHTML=st.sports.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
+  const counts=await Promise.all(st.sports.map(async sp=>{const{count,error}=await db.from('pe_exercises').select('*',{count:'exact',head:true}).eq('sport_id',sp.id).eq('active',true).eq('audit_status','VERIFIED');if(error)throw error;return[sp.id,count||0]}));
+  st.sportCounts=Object.fromEntries(counts);populateSelects();renderDashboard();renderClasses();renderModules();renderTests();renderSettings();
 }
 
 function populateSelects(){
@@ -478,323 +100,23 @@ function populateSelects(){
 }
 function listItem(a,b,c=''){return`<div class="list-item"><div><strong>${esc(a)}</strong><small>${esc(b)}</small></div>${c}</div>`}
 function renderDashboard(){
-
-  $('#statClasses').textContent=st.classes.length;
-  $('#statSports').textContent=st.sports.length+1;
-  $('#statLessons').textContent=st.lessons.length;
-  $('#statTests').textContent=st.tests.length;
-
-  $('#heroExerciseCount').textContent=
-    Object.values(st.sportCounts).reduce((a,b)=>a+b,0)||1390;
-
-
-  /* =====================================================
-     DATA E ORA ITALIANA
-     ===================================================== */
-
-  const nowItalyParts=
-    new Intl.DateTimeFormat(
-      'it-IT',
-      {
-        timeZone:'Europe/Rome',
-        year:'numeric',
-        month:'2-digit',
-        day:'2-digit',
-        hour:'2-digit',
-        minute:'2-digit',
-        hour12:false
-      }
-    ).formatToParts(new Date());
-
-  const italyPart=type=>
-    nowItalyParts.find(x=>x.type===type)?.value||'';
-
-  const todayItaly=
-    `${italyPart('year')}-${italyPart('month')}-${italyPart('day')}`;
-
-  const currentMinutes=
-    Number(italyPart('hour'))*60+
-    Number(italyPart('minute'));
-
-
-  /* =====================================================
-     LEZIONI DI OGGI
-     ===================================================== */
-
-  const todayLessons=st.lessons
-    .filter(x=>x.lesson_date===todayItaly)
-    .sort((a,b)=>{
-      const timeA=String(a.start_time||'99:99').slice(0,5);
-      const timeB=String(b.start_time||'99:99').slice(0,5);
-      return timeA.localeCompare(timeB);
-    });
-
-  const todaySection=$('#todayLessonsSection');
-  const todayList=$('#todayLessonsList');
-  const todayDate=$('#todayLessonsDate');
-
-
-  if(todayLessons.length){
-
-    todaySection?.classList.remove('hidden');
-
-    if(todayDate){
-
-      todayDate.textContent=
-        new Intl.DateTimeFormat(
-          'it-IT',
-          {
-            timeZone:'Europe/Rome',
-            weekday:'long',
-            day:'numeric',
-            month:'long'
-          }
-        ).format(new Date());
-
-    }
-
-
-    todayList.innerHTML=
-      todayLessons.map(lesson=>{
-
-        const start=
-          String(lesson.start_time||'').slice(0,5);
-
-        const end=
-          String(lesson.end_time||'').slice(0,5);
-
-
-        let status='OGGI';
-        let statusClass='today';
-
-
-        if(start){
-
-          const [sh,sm]=start.split(':').map(Number);
-
-          const startMinutes=
-            sh*60+sm;
-
-          let endMinutes=null;
-
-          if(end){
-
-            const [eh,em]=end.split(':').map(Number);
-
-            endMinutes=
-              eh*60+em;
-
-          }
-
-
-          if(
-            endMinutes!==null &&
-            currentMinutes>=startMinutes &&
-            currentMinutes<endMinutes
-          ){
-
-            status='IN CORSO';
-            statusClass='live';
-
-          }else if(
-            currentMinutes<startMinutes
-          ){
-
-            const diff=
-              startMinutes-currentMinutes;
-
-            if(diff<=60){
-
-              status='TRA POCO';
-              statusClass='soon';
-
-            }else{
-
-              status='PIÙ TARDI';
-              statusClass='later';
-
-            }
-
-          }else if(
-            endMinutes!==null &&
-            currentMinutes>=endMinutes
-          ){
-
-            status='CONCLUSA';
-            statusClass='done';
-
-          }
-
-        }
-
-
-        const when=
-          start
-            ? `${start}${end?' – '+end:''}`
-            : 'Orario non indicato';
-
-
-        return `
-          <article class="today-lesson-card">
-
-            <div class="today-lesson-time">
-              ${esc(when)}
-            </div>
-
-            <div class="today-lesson-main">
-
-              <div class="today-lesson-top">
-
-                <span class="today-status ${statusClass}">
-                  ${status}
-                </span>
-
-                ${lesson.is_extra
-                  ? `<span class="chip">EXTRA</span>`
-                  : ''
-                }
-
-              </div>
-
-              <h4>
-                ${esc(lesson.pe_classes?.name||'Classe')}
-              </h4>
-
-              <p>
-                ${esc(lesson.title)}
-              </p>
-
-            </div>
-
-            <button
-              type="button"
-              class="btn primary today-open-lesson"
-              data-today-lesson="${lesson.id}"
-            >
-              Apri lezione
-            </button>
-
-          </article>
-        `;
-
-      }).join('');
-
-
-    $$('[data-today-lesson]').forEach(
-      b=>b.onclick=
-        ()=>openLesson(
-          b.dataset.todayLesson
-        )
-    );
-
-  }else{
-
-    todaySection?.classList.add('hidden');
-
-    if(todayList){
-      todayList.innerHTML='';
-    }
-
-  }
-
-
-  /* =====================================================
-     PROSSIME LEZIONI
-     ===================================================== */
-
-  const u=st.lessons
-    .filter(x=>x.lesson_date>=todayItaly)
-    .sort((a,b)=>{
-
-      const dateCompare=
-        String(a.lesson_date)
-          .localeCompare(String(b.lesson_date));
-
-      if(dateCompare!==0){
-        return dateCompare;
-      }
-
-      const timeA=
-        String(a.start_time||'99:99').slice(0,5);
-
-      const timeB=
-        String(b.start_time||'99:99').slice(0,5);
-
-      return timeA.localeCompare(timeB);
-
-    })
-    .slice(0,6);
-
-
-  $('#upcomingLessons').innerHTML=
-    u.map(x=>`
-
-      <div
-        class="list-item"
-        data-lesson="${x.id}"
-      >
-
-        <div>
-
-          <strong>
-            ${esc(x.title)}
-          </strong>
-
-          <small>
-            ${esc(x.pe_classes?.name||'')}
-            ·
-            ${fmt(x.lesson_date)}
-            ${x.start_time
-              ? ` · ${String(x.start_time).slice(0,5)}`
-              : ''
-            }
-          </small>
-
-        </div>
-
-        <span class="chip good">
-          ${x.duration_min}'
-        </span>
-
-      </div>
-
-    `).join('')
-    ||
-    listItem(
-      'Nessuna lezione futura',
-      'Programma il primo modulo'
-    );
-
-
-  $$('[data-lesson]').forEach(
-    b=>b.onclick=
-      ()=>openLesson(
-        b.dataset.lesson
-      )
-  );
-
-
-  /* =====================================================
-     HALL OF FAME
-     ===================================================== */
-
-  $('#dashboardHof').innerHTML=
-    st.hof
-      .slice(0,6)
-      .map(x=>
-        listItem(
-          `${x.first_name} ${x.last_name}`,
-          `${x.test_name} · ${x.school_year_label}`,
-          `<span class="chip gold">${x.result_value} ${esc(x.unit)}</span>`
-        )
-      )
-      .join('')
-    ||
-    listItem(
-      'Nessun record ancora',
-      'Inserisci i primi risultati'
-    );
-
+  $('#statClasses').textContent=st.classes.length;$('#statSports').textContent=st.sports.length+1;$('#statLessons').textContent=st.lessons.length;$('#statTests').textContent=st.tests.length;
+  $('#heroExerciseCount').textContent=Object.values(st.sportCounts).reduce((a,b)=>a+b,0)||1390;
+  const parts=new Intl.DateTimeFormat('it-IT',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
+  const part=t=>parts.find(x=>x.type===t)?.value||'';
+  const todayItaly=`${part('year')}-${part('month')}-${part('day')}`,currentMinutes=Number(part('hour'))*60+Number(part('minute'));
+  const todayLessons=st.lessons.filter(x=>x.lesson_date===todayItaly).sort((a,b)=>String(a.start_time||'99:99').slice(0,5).localeCompare(String(b.start_time||'99:99').slice(0,5)));
+  const section=$('#todayLessonsSection'),list=$('#todayLessonsList'),date=$('#todayLessonsDate');
+  if(todayLessons.length&&section&&list){
+    section.classList.remove('hidden');
+    if(date)date.textContent=new Intl.DateTimeFormat('it-IT',{timeZone:'Europe/Rome',weekday:'long',day:'numeric',month:'long'}).format(new Date());
+    list.innerHTML=todayLessons.map(lesson=>{const start=String(lesson.start_time||'').slice(0,5),end=String(lesson.end_time||'').slice(0,5);let status='OGGI',statusClass='today';if(start){const[sh,sm]=start.split(':').map(Number),startM=sh*60+sm;let endM=null;if(end){const[eh,em]=end.split(':').map(Number);endM=eh*60+em}if(endM!==null&&currentMinutes>=startM&&currentMinutes<endM){status='IN CORSO';statusClass='live'}else if(currentMinutes<startM){if(startM-currentMinutes<=60){status='TRA POCO';statusClass='soon'}else{status='PIÙ TARDI';statusClass='later'}}else if(endM!==null&&currentMinutes>=endM){status='CONCLUSA';statusClass='done'}}const when=start?`${start}${end?' – '+end:''}`:'Orario non indicato';return`<article class="today-lesson-card"><div class="today-lesson-time">${esc(when)}</div><div class="today-lesson-main"><div class="today-lesson-top"><span class="today-status ${statusClass}">${status}</span>${lesson.is_extra?'<span class="chip">EXTRA</span>':''}</div><h4>${esc(lesson.pe_classes?.name||'Classe')}</h4><p>${esc(lesson.title)}</p></div><button type="button" class="btn primary today-open-lesson" data-today-lesson="${lesson.id}">Apri lezione</button></article>`}).join('');
+    $$('[data-today-lesson]').forEach(b=>b.onclick=()=>openLesson(b.dataset.todayLesson));
+  }else if(section){section.classList.add('hidden');if(list)list.innerHTML=''}
+  const u=st.lessons.filter(x=>x.lesson_date>=todayItaly).sort((a,b)=>String(a.lesson_date).localeCompare(String(b.lesson_date))||String(a.start_time||'99:99').slice(0,5).localeCompare(String(b.start_time||'99:99').slice(0,5))).slice(0,6);
+  $('#upcomingLessons').innerHTML=u.map(x=>`<div class="list-item" data-lesson="${x.id}"><div><strong>${esc(x.title)}</strong><small>${esc(x.pe_classes?.name||'')} · ${fmt(x.lesson_date)}${x.start_time?` · ${String(x.start_time).slice(0,5)}`:''}</small></div><span class="chip good">${x.duration_min}'</span></div>`).join('')||listItem('Nessuna lezione futura','Programma il primo modulo');
+  $$('[data-lesson]').forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));
+  $('#dashboardHof').innerHTML=st.hof.slice(0,6).map(x=>listItem(`${x.first_name} ${x.last_name}`,`${x.test_name} · ${x.school_year_label}`,`<span class="chip gold">${x.result_value} ${esc(x.unit)}</span>`)).join('')||listItem('Nessun record ancora','Inserisci i primi risultati');
 }
 function renderClasses(){
   $('#classesGrid').innerHTML=st.classes.map(c=>`<article class="class-card" data-class="${c.id}">${c.school_level?`<span class="class-school-badge">${esc(schoolLevelLabels[c.school_level]||c.school_level)}</span>`:'<span class="class-school-badge">Grado scolastico da impostare</span>'}<span class="kicker">CLASSE</span><h4>${esc(c.name)}</h4><div class="class-counts"><span class="chip">${c.student_count} alunni</span><span class="chip">♀ ${c.female_count??'—'}</span><span class="chip">♂ ${c.male_count??'—'}</span></div><div class="edit-hint">Apri e modifica →</div></article>`).join('')||`<article class="class-card"><h4>Nessuna classe</h4><p>Creane una per iniziare.</p></article>`;
@@ -807,7 +129,7 @@ async function openClass(id){
   $('#deleteClassBtn').classList.toggle('hidden',!id);
   if(id){
     const c=st.classes.find(x=>x.id===id);if(!c)return toast('Classe non trovata');$('#classModalTitle').textContent=c.name;$('#className').value=c.name;$('#classSchoolLevel').value=c.school_level||'';updateGradeOptions(c.grade);
-    const{data:en,error}=await db.from('pe_student_enrollments').select('*,pe_students!pe_student_enrollments_student_id_fkey(*)').eq('class_id',id).eq('active',true);if(error)return toast(error.message);
+    const{data:en,error}=await db.from('pe_student_enrollments').select('*,pe_students(*)').eq('class_id',id).eq('active',true);if(error)return toast(error.message);
     classOriginalStudentIds=(en||[]).map(x=>x.student_id);(en||[]).forEach(x=>addStudentRow(x.pe_students?.first_name,x.pe_students?.last_name,x.pe_students?.sex,x.pe_students?.id));
   }else{$('#classModalTitle').textContent='Nuova classe';$('#className').value='';$('#classSchoolLevel').value='';updateGradeOptions('')}
   await Promise.all([renderLevelGrid(id),loadClassTimetable(id)]);updateClassAutoCounts();updateSportLevelsVisibility();$('#classModal').showModal();
@@ -833,48 +155,9 @@ async function renderLevelGrid(classId){
   let levels={};if(classId){const{data,error}=await db.from('pe_class_sport_levels').select('*').eq('class_id',classId);if(error)throw error;(data||[]).forEach(x=>levels[x.sport_id]=x.level)}
   $('#sportLevelGrid').innerHTML=st.sports.map(s=>`<div class="level-item"><span>${iconMap[s.slug]||'●'} ${esc(s.name)}</span><select data-sport-level="${s.id}"><option value="">Non impostato</option>${[1,2,3,4,5].map(n=>`<option value="${n}" ${levels[s.id]==n?'selected':''}>${n} · ${['','Principiante','Base','Intermedio','Avanzato','Molto avanzato'][n]}</option>`).join('')}</select></div>`).join('');
 }
-function updateSportLevelsVisibility(){
-
-  const schoolLevel = $('#classSchoolLevel').value;
-  const grade = Number($('#classGrade').value || 0);
-
-  const grid = $('#sportLevelGrid');
-
-  if(!grid) return;
-
-  /*
-   * 1ª, 2ª e 3ª primaria:
-   * niente livelli specifici per sport.
-   */
-  const hideSportLevels =
-    schoolLevel === 'primary' &&
-    grade >= 1 &&
-    grade <= 3;
-
-  /*
-   * Cerchiamo il contenitore della sezione partendo
-   * dalla griglia dei livelli.
-   */
-  const section =
-    grid.closest('.sport-level-section') ||
-    grid.closest('.form-section') ||
-    grid.parentElement;
-
-  if(section){
-    section.classList.toggle('hidden', hideSportLevels);
-  }
-}
-
-
-$('#classSchoolLevel').onchange=()=>{
-  updateGradeOptions('');
-  updateSportLevelsVisibility();
-};
-
-$('#classGrade').onchange=()=>{
-  updateSportLevelsVisibility();
-};
-
+function updateSportLevelsVisibility(){const level=$('#classSchoolLevel').value,grade=Number($('#classGrade').value||0),grid=$('#sportLevelGrid');if(!grid)return;const hide=level==='primary'&&grade>=1&&grade<=3;const section=grid.closest('.sport-level-section')||grid.closest('.form-section')||grid.parentElement;if(section)section.classList.toggle('hidden',hide)}
+$('#classSchoolLevel').onchange=()=>{updateGradeOptions('');updateSportLevelsVisibility()};
+$('#classGrade').onchange=()=>updateSportLevelsVisibility();
 
 $('#deleteClassBtn').onclick=async()=>{
   const id=$('#classId').value;if(!id)return;
@@ -986,2334 +269,289 @@ async function deleteModuleBlock(moduleId){
   toast(`Blocco ${sportName} eliminato da ${className}`);await loadCore();renderModules();renderCalendar();
 }
 let plannerBusy=false;
+
 async function renderPlanTopics(){
-
-  const sportId=$('#planSport')?.value;
-  const lessonCount=Math.max(
-    1,
-    Number($('#planWeeks')?.value||1)
-  );
-
-  const box=$('#planTopicsList');
-  const section=$('#planTopicsSection');
-
-  if(!box || !section)return;
-
-  if(!sportId){
-    box.innerHTML='';
-    section.classList.add('hidden');
-    return;
-  }
-
-  section.classList.remove('hidden');
-
-  box.innerHTML=`
-    <div class="plan-topics-loading">
-      Carico gli argomenti…
-    </div>
-  `;
-
-  const {data,error}=await db
-  .from('pe_categories')
-  .select('id,name,sort_order')
-  .eq('sport_id',sportId)
-  .order('sort_order')
-  .order('name');
-
-  if(error){
-    box.innerHTML=`
-      <div class="plan-topics-empty">
-        Impossibile caricare gli argomenti.
-      </div>
-    `;
-    return;
-  }
-
-  /*
-   * Categorie che NON devono essere selezionabili
-   * come argomento didattico.
-   */
-  const excluded=[
-    'warm up',
-    'warm-up',
-    'warmup',
-    'attivazione',
-    'riscaldamento',
-    'gioco',
-    'giochi',
-    'partita',
-    'ssg',
-    'small sided games',
-    'valutazione',
-    'assessment',
-    'test',
-    'cooldown',
-    'defaticamento',
-    'chiusura'
-  ];
-
-  const categories=(data||[])
-  .filter(x=>x?.id && x?.name)
-  .filter(x=>{
-    const c=String(x.name).toLowerCase().trim();
-
-    return !excluded.some(ex=>
-      c===ex ||
-      c.includes(ex)
-    );
-  });
-
-  if(!categories.length){
-
-    box.innerHTML=`
-      <div class="plan-topics-empty">
-        Nessun argomento disponibile per questo sport.
-      </div>
-    `;
-
-    return;
-  }
-
-  /*
-   * Manteniamo le scelte già effettuate
-   * quando cambia il numero di lezioni.
-   */
-  const previous=
-    [...box.querySelectorAll('.plan-topic-select')]
-      .map(x=>x.value);
-
-  box.innerHTML='';
-
-  for(let i=0;i<lessonCount;i++){
-
-    const row=document.createElement('div');
-
-    row.className='plan-topic-row';
-
-    const previousValue=previous[i]||'';
-
-    row.innerHTML=`
-
-      <div class="plan-topic-number">
-        <span>LEZIONE</span>
-        <strong>${i+1}</strong>
-      </div>
-
-      <label class="plan-topic-field">
-
-        <span>Argomento</span>
-
-        <select
-          class="plan-topic-select"
-          data-lesson-index="${i}"
-          required
-        >
-
-          <option value="">
-            Seleziona argomento…
-          </option>
-
-          ${categories.map(cat=>`
-  <option
-    value="${esc(cat.id)}"
-    ${previousValue===cat.id?'selected':''}
-  >
-    ${esc(cat.name)}
-  </option>
-`).join('')}
-
-        </select>
-
-      </label>
-
-    `;
-
-    box.appendChild(row);
-  }
+  const sportId=$('#planSport')?.value,lessonCount=Math.max(1,Number($('#planWeeks')?.value||1)),box=$('#planTopicsList'),section=$('#planTopicsSection');
+  if(!box||!section)return;if(!sportId){box.innerHTML='';section.classList.add('hidden');return}section.classList.remove('hidden');box.innerHTML='<div class="plan-topics-loading">Carico gli argomenti…</div>';
+  const{data,error}=await db.from('pe_categories').select('id,name,sort_order').eq('sport_id',sportId).order('sort_order').order('name');if(error){box.innerHTML='<div class="plan-topics-empty">Impossibile caricare gli argomenti.</div>';return}
+  const excluded=['warm up','warm-up','warmup','attivazione','riscaldamento','gioco','giochi','partita','ssg','small sided games','valutazione','assessment','test','cooldown','defaticamento','chiusura'];
+  const categories=(data||[]).filter(x=>x?.id&&x?.name).filter(x=>{const c=String(x.name).toLowerCase().trim();return!excluded.some(e=>c===e||c.includes(e))});
+  if(!categories.length){box.innerHTML='<div class="plan-topics-empty">Nessun argomento disponibile per questo sport.</div>';return}
+  const previous=[...box.querySelectorAll('.plan-topic-select')].map(x=>x.value);box.innerHTML='';
+  for(let i=0;i<lessonCount;i++){const row=document.createElement('div');row.className='plan-topic-row';row.innerHTML=`<div class="plan-topic-number"><span>LEZIONE</span><strong>${i+1}</strong></div><label class="plan-topic-field"><span>Argomento</span><select class="plan-topic-select" data-lesson-index="${i}" required><option value="">Seleziona argomento…</option>${categories.map(c=>`<option value="${esc(c.id)}" ${previous[i]===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>`;box.appendChild(row)}
 }
-$('#planSport')?.addEventListener(
-  'change',
-  renderPlanTopics
-);
 
-$('#planWeeks')?.addEventListener(
-  'input',
-  renderPlanTopics
-);
 async function generatePrimaryGamesPlan(){
-
-  const classId=$('#planClass').value;
-  const cl=st.classes.find(x=>x.id===classId);
-
-  const msg=$('#plannerMsg');
-  const btn=$('#generatePlanBtn');
-
-  if(!cl){
-    msg.textContent='Seleziona una classe.';
-    return;
-  }
-
-  btn.disabled=true;
-  btn.textContent='Creo la programmazione…';
-
-  let moduleId=null;
-
+  const classId=$('#planClass').value,cl=st.classes.find(x=>x.id===classId),msg=$('#plannerMsg'),btn=$('#generatePlanBtn');if(!cl){msg.textContent='Seleziona una classe.';return}
+  btn.disabled=true;btn.textContent='Creo la programmazione…';let moduleId=null;
   try{
-
-    msg.textContent='Carico il Libro dei giochi…';
-
-    await loadPrimaryGames();
-
-    const games=(st.primaryGames||[])
-      .filter(g=>Number(g.difficulty)>=1)
-      .filter(g=>Number(g.difficulty)<=5);
-
-    if(games.length<3){
-      throw new Error('Non ci sono abbastanza giochi disponibili.');
-    }
-
-    const [{data:slots,error:slotsError},{data:exceptions,error:exceptionsError}]
-      =await Promise.all([
-
-        db
-          .from('pe_class_timetable_slots')
-          .select('*')
-          .eq('class_id',classId)
-          .eq('active',true)
-          .order('weekday')
-          .order('start_time'),
-
-        db
-          .from('pe_calendar_exceptions')
-          .select('*')
-          .or(
-            `class_id.eq.${classId},school_year_id.eq.${cl.school_year_id}`
-          )
-
-      ]);
-
-    if(slotsError)throw slotsError;
-    if(exceptionsError)throw exceptionsError;
-
-    if(!(slots||[]).length){
-      throw new Error('La classe non ha ancora un orario settimanale.');
-    }
-
-    const startDate=
-      $('#planStart').value ||
-      st.year?.start_date;
-
-    const endDate=st.year?.end_date;
-
-    if(!startDate || !endDate){
-      throw new Error('Anno scolastico o data di partenza non disponibili.');
-    }
-
-    const exceptionRanges=(exceptions||[]).map(x=>({
-      start:x.exception_date,
-      end:x.end_date||x.exception_date
-    }));
-
-    const isException=dateStr=>
-      exceptionRanges.some(x=>
-        dateStr>=x.start &&
-        dateStr<=x.end
-      );
-
-    const availableDates=[];
-
-    let cursor=new Date(startDate+'T12:00:00');
-    const end=new Date(endDate+'T12:00:00');
-
-    while(cursor<=end && availableDates.length<40){
-
-      const jsDay=cursor.getDay();
-      const weekday=jsDay===0 ? 7 : jsDay;
-
-      const dateStr=localISODate(cursor);
-
-      const daySlots=(slots||[])
-        .filter(s=>
-          Number(s.weekday)===weekday &&
-          (!s.valid_from || dateStr>=s.valid_from) &&
-          (!s.valid_to || dateStr<=s.valid_to)
-        )
-        .sort((a,b)=>
-          String(a.start_time)
-            .localeCompare(String(b.start_time))
-        );
-
-      if(daySlots.length && !isException(dateStr)){
-        availableDates.push({
-          date:dateStr,
-          start_time:daySlots[0].start_time,
-          end_time:daySlots[0].end_time
-        });
-      }
-
-      cursor.setDate(cursor.getDate()+1);
-    }
-
-    const scope=$('#planPrimaryScope')?.value||'year';
-
-    let requestedCount=
-      scope==='custom'
-        ? Number($('#planPrimaryCount')?.value||1)
-        : availableDates.length;
-
-    requestedCount=Math.max(
-      1,
-      Math.min(40,requestedCount,availableDates.length)
-    );
-
-    const lessonMinutes=
-      Number($('#planMinutes').value)||120;
-
-    const {data:module,error:moduleError}=await db
-      .from('pe_sport_modules')
-      .insert({
-        owner_id:st.user.id,
-        class_id:classId,
-        sport_id:null,
-        module_type:'manual',
-        title:`Libro dei giochi · ${cl.name}`,
-        start_date:availableDates[0].date,
-        planned_weeks:requestedCount,
-        lesson_duration_min:lessonMinutes,
-        progression_mode:'progressive',
-        status:'planned',
-        notes:'Programmazione automatica progressiva dal Libro dei giochi AttivaMente.'
-      })
-      .select()
-      .single();
-
-    if(moduleError)throw moduleError;
-
-    moduleId=module.id;
-
-    const grade=Number(cl.grade);
-
-    function allowedDifficulties(index,total){
-
-      const progress=
-        total<=1 ? 1 : index/(total-1);
-
-      const secondHalf=progress>=0.50;
-
-      if(grade===1){
-        return secondHalf ? [1,2] : [1];
-      }
-
-      if(grade===2){
-        return secondHalf ? [1,2,3] : [1,2];
-      }
-
-      if(grade===3){
-        return secondHalf ? [1,2,3,4] : [1,2,3];
-      }
-
-      if(grade===4){
-        return secondHalf ? [1,2,3,4,5] : [1,2,3,4];
-      }
-
-      return [1,2,3,4,5];
-    }
-
-    const lastUsed=new Map();
-
-    function chooseGames(lessonIndex,totalLessons,amount=3){
-
-      const allowed=
-        allowedDifficulties(
-          lessonIndex,
-          totalLessons
-        );
-
-      let candidates=games
-        .filter(g=>
-          allowed.includes(Number(g.difficulty))
-        )
-        .map(g=>{
-
-          const previous=
-            lastUsed.has(g.id)
-              ? lastUsed.get(g.id)
-              : -999;
-
-          const distance=
-            lessonIndex-previous;
-
-          const recentPenalty=
-            distance<=4 ? 1000 : 0;
-
-          return{
-            game:g,
-            score:
-              recentPenalty
-              - Number(g.difficulty)*3
-              - Math.random()*5
-          };
-
-        })
-        .sort((a,b)=>a.score-b.score);
-
-      const chosen=
-        candidates
-          .slice(0,amount)
-          .map(x=>x.game);
-
-      chosen.forEach(g=>
-        lastUsed.set(g.id,lessonIndex)
-      );
-
-      return chosen;
-    }
-
-    msg.textContent=`Creo ${requestedCount} lezioni…`;
-
-    for(let i=0;i<requestedCount;i++){
-
-      const slot=availableDates[i];
-
-      const selectedGames=
-        chooseGames(
-          i,
-          requestedCount,
-          3
-        );
-
-      const {data:lesson,error:lessonError}=await db
-        .from('pe_lessons')
-        .insert({
-          owner_id:st.user.id,
-          module_id:module.id,
-          class_id:classId,
-          sport_id:null,
-          lesson_date:slot.date,
-          sequence_no:i+1,
-          title:`Libro dei giochi — Lezione ${i+1}/${requestedCount}`,
-          duration_min:lessonMinutes,
-          generation_mode:'automatic',
-          status:'planned',
-          learning_goal:'Sviluppo motorio globale attraverso giochi progressivi.',
-          teacher_notes:`Programmazione Libro dei giochi · ${cl.name}.`,
-          start_time:slot.start_time,
-          end_time:slot.end_time,
-          is_extra:false
-        })
-        .select()
-        .single();
-
-      if(lessonError)throw lessonError;
-
-      const gameTime=
-        Math.floor(
-          lessonMinutes*0.88/3
-        );
-
-      const used=
-        gameTime*3;
-
-      const closing=
-        Math.max(
-          5,
-          lessonMinutes-used
-        );
-
-      const payload=
-        selectedGames.map((g,index)=>{
-
-          const marker=
-            g.is_custom
-              ? `PRIMARY_GAME:CUSTOM:${g.id}`
-              : `PRIMARY_GAME:BOOK:${g.source_page}`;
-
-          return{
-            owner_id:st.user.id,
-            lesson_id:lesson.id,
-            exercise_id:null,
-            phase:
-              index===0
-                ? 'activation'
-                : index===2
-                ? 'final'
-                : 'main',
-            order_no:index+1,
-            duration_min:gameTime,
-            custom_title:g.title,
-            custom_explanation:g.description||'',
-            custom_field_dimensions:g.material_spaces||null,
-            primary_game_ref:marker,
-            station_count:1,
-            players_per_group:cl.student_count,
-            selection_reason:
-              `Libro dei giochi · difficoltà ${g.difficulty}/5 · progressione automatica per ${cl.name}.`
-          };
-        });
-
-      payload.push({
-        owner_id:st.user.id,
-        lesson_id:lesson.id,
-        exercise_id:null,
-        phase:'closing',
-        order_no:4,
-        duration_min:closing,
-        custom_title:'Chiusura, acqua e feedback',
-        custom_explanation:'Recupero materiale, breve pausa, feedback finale e saluto.',
-        station_count:1,
-        players_per_group:cl.student_count,
-        selection_reason:'Tempo flessibile per una gestione realistica della lezione.'
-      });
-
-      const {error:itemsError}=await db
-        .from('pe_lesson_exercises')
-        .insert(payload);
-
-      if(itemsError)throw itemsError;
-    }
-
-    const {error:statusError}=await db
-      .from('pe_sport_modules')
-      .update({status:'generated'})
-      .eq('id',module.id);
-
-    if(statusError)throw statusError;
-
-    msg.textContent='Programmazione creata!';
-
-    toast(`${requestedCount} lezioni dal Libro dei giochi create`);
-
-    await loadCore();
-
-    renderCalendar();
-    renderModules();
-
-  }catch(err){
-
-    console.error(err);
-
-    if(moduleId){
-      await db
-        .from('pe_sport_modules')
-        .delete()
-        .eq('id',moduleId);
-    }
-
-    msg.textContent=
-      'Errore: '+
-      (err.message||'generazione non riuscita');
-
-    toast('Programmazione non riuscita');
-
-  }finally{
-
-    btn.disabled=false;
-    btn.textContent='✦ Genera programmazione';
-  }
+    await loadPrimaryGames();const games=(st.primaryGames||[]).filter(g=>Number(g.difficulty)>=1&&Number(g.difficulty)<=5);if(games.length<3)throw new Error('Non ci sono abbastanza giochi disponibili.');
+    const[{data:slots,error:se},{data:exceptions,error:ee}]=await Promise.all([db.from('pe_class_timetable_slots').select('*').eq('class_id',classId).eq('active',true).order('weekday').order('start_time'),db.from('pe_calendar_exceptions').select('*').or(`class_id.eq.${classId},school_year_id.eq.${cl.school_year_id}`)]);if(se||ee)throw(se||ee);if(!(slots||[]).length)throw new Error('La classe non ha ancora un orario settimanale.');
+    const startDate=$('#planStart').value||st.year?.start_date,endDate=st.year?.end_date;if(!startDate||!endDate)throw new Error('Anno scolastico o data di partenza non disponibili.');
+    const ranges=(exceptions||[]).map(x=>({start:x.exception_date,end:x.end_date||x.exception_date})),isException=d=>ranges.some(x=>d>=x.start&&d<=x.end),available=[];let cursor=new Date(startDate+'T12:00:00'),end=new Date(endDate+'T12:00:00');
+    while(cursor<=end&&available.length<40){const weekday=cursor.getDay()===0?7:cursor.getDay(),date=localISODate(cursor),daySlots=(slots||[]).filter(s=>Number(s.weekday)===weekday&&(!s.valid_from||date>=s.valid_from)&&(!s.valid_to||date<=s.valid_to)).sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time)));if(daySlots.length&&!isException(date))available.push({date,start_time:daySlots[0].start_time,end_time:daySlots[0].end_time});cursor.setDate(cursor.getDate()+1)}
+    if(!available.length)throw new Error('Non ci sono date utili disponibili.');
+    const scope=$('#planPrimaryScope')?.value||'year';let count=scope==='custom'?Number($('#planPrimaryCount')?.value||1):available.length;count=Math.max(1,Math.min(40,count,available.length));const minutes=Number($('#planMinutes').value)||120;
+    const{data:module,error:me}=await db.from('pe_sport_modules').insert({owner_id:st.user.id,class_id:classId,sport_id:null,module_type:'manual',title:`Libro dei giochi · ${cl.name}`,start_date:available[0].date,planned_weeks:count,lesson_duration_min:minutes,progression_mode:'progressive',status:'planned',notes:'Programmazione automatica progressiva dal Libro dei giochi AttivaMente.'}).select().single();if(me)throw me;moduleId=module.id;
+    const grade=Number(cl.grade),lastUsed=new Map();
+    const allowed=(i,total)=>{const second=total<=1||i/(total-1)>=.5;if(grade===1)return second?[1,2]:[1];if(grade===2)return second?[1,2,3]:[1,2];if(grade===3)return second?[1,2,3,4]:[1,2,3];if(grade===4)return second?[1,2,3,4,5]:[1,2,3,4];return[1,2,3,4,5]};
+    const choose=(i,total,n=3)=>{const ok=allowed(i,total);const candidates=games.filter(g=>ok.includes(Number(g.difficulty))).map(g=>({g,score:((i-(lastUsed.get(g.id)??-999))<=4?1000:0)-Number(g.difficulty)*3-Math.random()*5})).sort((a,b)=>a.score-b.score).slice(0,n).map(x=>x.g);candidates.forEach(g=>lastUsed.set(g.id,i));return candidates};
+    for(let i=0;i<count;i++){const slot=available[i],selected=choose(i,count,3);const{data:lesson,error:le}=await db.from('pe_lessons').insert({owner_id:st.user.id,module_id:module.id,class_id:classId,sport_id:null,lesson_date:slot.date,sequence_no:i+1,title:`Libro dei giochi — Lezione ${i+1}/${count}`,duration_min:minutes,generation_mode:'automatic',status:'planned',learning_goal:'Sviluppo motorio globale attraverso giochi progressivi.',teacher_notes:`Programmazione Libro dei giochi · ${cl.name}.`,start_time:slot.start_time,end_time:slot.end_time,is_extra:false}).select().single();if(le)throw le;const gameTime=Math.floor(minutes*.88/3),used=gameTime*3,closing=Math.max(5,minutes-used);const rows=selected.map((g,k)=>({owner_id:st.user.id,lesson_id:lesson.id,exercise_id:null,phase:k===0?'activation':k===2?'final':'main',order_no:k+1,duration_min:gameTime,custom_title:g.title,custom_explanation:g.description||'',custom_field_dimensions:g.material_spaces||null,primary_game_ref:g.is_custom?`PRIMARY_GAME:CUSTOM:${g.id}`:`PRIMARY_GAME:BOOK:${g.source_page}`,station_count:1,players_per_group:cl.student_count,selection_reason:`Libro dei giochi · difficoltà ${g.difficulty}/5 · progressione automatica per ${cl.name}.`}));rows.push({owner_id:st.user.id,lesson_id:lesson.id,exercise_id:null,phase:'closing',order_no:4,duration_min:closing,custom_title:'Chiusura, acqua e feedback',custom_explanation:'Recupero materiale, breve pausa, feedback finale e saluto.',station_count:1,players_per_group:cl.student_count,selection_reason:'Tempo flessibile per una gestione realistica della lezione.'});const{error:ie}=await db.from('pe_lesson_exercises').insert(rows);if(ie)throw ie}
+    await db.from('pe_sport_modules').update({status:'generated'}).eq('id',module.id);toast(`${count} lezioni dal Libro dei giochi create`);await loadCore();renderCalendar();renderModules();
+  }catch(err){console.error(err);if(moduleId)await db.from('pe_sport_modules').delete().eq('id',moduleId);msg.textContent='Errore: '+(err.message||'generazione non riuscita');toast('Programmazione non riuscita')}
+  finally{btn.disabled=false;btn.textContent='✦ Genera programmazione'}
 }
+
 async function generatePlan(){
-  if(plannerBusy)return;
-  const selectedClass=
-  st.classes.find(
-    x=>x.id===$('#planClass').value
-  );
-
-const primaryMode=
-  selectedClass?.school_level==='primary' &&
-  (
-    Number(selectedClass.grade)<=3 ||
-    $('#planMode')?.value==='primary_games'
-  );
-
-if(primaryMode){
-  await generatePrimaryGamesPlan();
-  return;
+  if(plannerBusy)return;const selectedClass=st.classes.find(x=>x.id===$('#planClass').value);const primaryMode=selectedClass?.school_level==='primary'&&(Number(selectedClass.grade)<=3||$('#planMode')?.value==='primary_games');if(primaryMode)return generatePrimaryGamesPlan();
+  const cid=$('#planClass').value,sid=$('#planSport').value,msg=$('#plannerMsg'),btn=$('#generatePlanBtn');if(!cid||!sid){msg.textContent='Seleziona classe e sport.';return}const startDate=$('#planStart').value,lessonCount=Number($('#planWeeks').value),minutes=Number($('#planMinutes').value),topicSelects=[...document.querySelectorAll('.plan-topic-select')];if(topicSelects.length!==lessonCount||topicSelects.some(x=>!x.value)){msg.textContent='Scegli un argomento per ogni lezione.';return}if(!startDate||!lessonCount||lessonCount<1||!minutes){msg.textContent='Completa data di partenza, numero di lezioni e durata.';return}
+  plannerBusy=true;btn.disabled=true;btn.textContent='Generazione in corso…';let moduleId=null;
+  try{const sp=st.sports.find(x=>x.id===sid),cl=st.classes.find(x=>x.id===cid);const{data:slots,error:slotErr}=await db.from('pe_class_timetable_slots').select('id,weekday,start_time,end_time').eq('class_id',cid).eq('active',true);if(slotErr)throw slotErr;if(!(slots||[]).length)throw new Error('Dati insufficienti: questa classe non ha giorni e orari di lezione.');const{data:m,error}=await db.from('pe_sport_modules').insert({owner_id:st.user.id,class_id:cid,sport_id:sid,module_type:'automatic',title:`${sp.name} · ${cl.name}`,start_date:startDate,planned_weeks:lessonCount,lesson_duration_min:minutes,level_override:$('#planLevel').value?+$('#planLevel').value:null,progression_mode:'progressive',status:'planned'}).select().single();if(error)throw error;moduleId=m.id;const topics=topicSelects.map((x,i)=>({owner_id:st.user.id,module_id:m.id,lesson_no:i+1,category_id:x.value}));const{error:te}=await db.from('pe_module_lesson_topics').insert(topics);if(te)throw te;const{data:generated,error:ge}=await db.rpc('pe_generate_module_plan',{p_module_id:m.id,p_regenerate:false});if(ge)throw ge;try{await applyTimetableTimesToModule(m.id,cid)}catch(e){console.warn(e)}msg.textContent=`Programmazione creata: ${generated?.generated_lessons||lessonCount} lezioni complete.`;toast('Programmazione generata');await loadCore();renderCalendar();renderModules()}catch(err){console.error(err);if(moduleId)await db.from('pe_sport_modules').delete().eq('id',moduleId);msg.textContent='Errore: '+(err.message||'generazione non riuscita');toast('Programmazione non generata')}finally{plannerBusy=false;btn.disabled=false;btn.textContent='✦ Genera programmazione'}
 }
-  const cid=$('#planClass').value,sid=$('#planSport').value,msg=$('#plannerMsg'),btn=$('#generatePlanBtn');
-  if(!cid||!sid){msg.textContent='Seleziona classe e sport.';return}
-  const startDate=$('#planStart').value,lessonCount=Number($('#planWeeks').value),minutes=Number($('#planMinutes').value);
-  const topicSelects=[...document.querySelectorAll('.plan-topic-select')];
-
-if(topicSelects.length!==lessonCount){
-  msg.textContent='Controlla gli argomenti delle lezioni.';
-  return;
-}
-
-const lessonTopics=topicSelects.map((select,index)=>({
-  lesson_no:index+1,
-  category_id:select.value
-}));
-
-if(lessonTopics.some(x=>!x.category_id)){
-  msg.textContent='Scegli un argomento per ogni lezione.';
-  return;
-}
-  if(!startDate||!lessonCount||lessonCount<1||!minutes){msg.textContent='Completa data di partenza, numero di lezioni e durata.';return}
-  plannerBusy=true;if(btn){btn.disabled=true;btn.textContent='Generazione in corso…'}
-  let moduleId=null;
-  try{
-    const sp=st.sports.find(x=>x.id===sid),cl=st.classes.find(x=>x.id===cid);
-    msg.textContent='Controllo giorni e orari della classe…';
-    const{data:slots,error:slotErr}=await db.from('pe_class_timetable_slots').select('id,weekday,start_time,end_time').eq('class_id',cid).eq('active',true);
-    if(slotErr)throw slotErr;
-    if(!(slots||[]).length)throw new Error('Dati insufficienti: questa classe non ha giorni e orari di lezione. Apri Classi → modifica → Orario settimanale.');
-    msg.textContent='Creo il modulo…';
-    const{data:m,error}=await db.from('pe_sport_modules').insert({owner_id:st.user.id,class_id:cid,sport_id:sid,module_type:'automatic',title:`${sp.name} · ${cl.name}`,start_date:startDate,planned_weeks:lessonCount,lesson_duration_min:minutes,level_override:$('#planLevel').value?+$('#planLevel').value:null,progression_mode:'progressive',status:'planned'}).select().single();
-    if(error)throw error;moduleId=m.id;
-    msg.textContent='Salvo gli argomenti delle lezioni…';
-
-const topicsPayload=lessonTopics.map(topic=>({
-  owner_id:st.user.id,
-  module_id:m.id,
-  lesson_no:topic.lesson_no,
-  category_id:topic.category_id
-}));
-
-const {error:topicsError}=await db
-  .from('pe_module_lesson_topics')
-  .insert(topicsPayload);
-
-if(topicsError){
-  throw topicsError;
-}
-    msg.textContent='Scelgo attività reali dall’archivio e costruisco la progressione…';
-    const{data:generated,error:er}=await db.rpc('pe_generate_module_plan',{p_module_id:m.id,p_regenerate:false});
-    if(er)throw er;
-    try{await applyTimetableTimesToModule(m.id,cid)}catch(timeErr){console.warn('Orari modulo non applicati',timeErr)}
-    msg.textContent=`Programmazione creata: ${generated?.generated_lessons||lessonCount} lezioni complete, progressive e collegate all’archivio verificato.`;
-    toast('Programmazione generata');await loadCore();renderCalendar();renderModules();
-  }catch(err){
-    console.error('Generazione modulo',err);
-    if(moduleId)try{await db.from('pe_sport_modules').delete().eq('id',moduleId)}catch(_e){}
-    msg.textContent='Errore: '+(err?.message||'generazione non riuscita');toast('Programmazione non generata');
-  }finally{plannerBusy=false;if(btn){btn.disabled=false;btn.textContent='✦ Genera programmazione'}}
-}
-/* =========================================================
-   PLANNER ADATTIVO IN BASE ALLA CLASSE
-   1ª-3ª primaria -> Libro dei giochi
-   4ª-5ª primaria -> Libro dei giochi oppure Sport
-   Medie/superiori -> Sport
-   ========================================================= */
 
 function updatePlannerForSelectedClass(){
-
-  const planWeeksField = $('#planWeeksField');
-  const planMinutesField = $('#planMinutesField');
-  const classId = $('#planClass')?.value;
-  const cl = st.classes.find(x => x.id === classId);
-
-  const sportField = $('#planSportField');
-  const modeField = $('#planModeField');
-  const primaryChoice = $('#planPrimaryChoice');
-  const primarySettings = $('#planPrimarySettings');
-  const primaryChoiceText = $('#planPrimaryChoiceText');
-
-  const topics = $('#planTopicsSection');
-  const levelField = document.querySelector('.planner-level-field');
-
-  /* Nessuna classe selezionata */
-  if(!cl){
-
-    primaryChoice?.classList.add('hidden');
-    modeField?.classList.add('hidden');
-
-    sportField?.classList.remove('hidden');
-    topics?.classList.remove('hidden');
-    levelField?.classList.remove('hidden');
-
-    return;
-  }
-
-  const isPrimary = cl.school_level === 'primary';
-  const grade = Number(cl.grade || 0);
-
-
-  /* =====================================================
-     PRIMA - SECONDA - TERZA PRIMARIA
-     ===================================================== */
-
-  if(isPrimary && grade >= 1 && grade <= 3){
-
-    primaryChoice?.classList.remove('hidden');
-    primarySettings?.classList.remove('hidden');
-
-    modeField?.classList.add('hidden');
-    sportField?.classList.add('hidden');
-    topics?.classList.add('hidden');
-    levelField?.classList.add('hidden');
-    planWeeksField?.classList.add('hidden');
-    planMinutesField?.classList.remove('hidden');
-
-    if($('#planSport')){
-      $('#planSport').value = '';
-    }
-
-    if($('#planTopicsList')){
-      $('#planTopicsList').innerHTML = '';
-    }
-
-    if(primaryChoiceText){
-
-      if(grade === 1){
-
-        primaryChoiceText.textContent =
-          'Per la prima primaria AttivaMente consiglia il Libro dei giochi: si parte dai giochi di livello 1 e, dalla seconda parte dell’anno, vengono introdotti progressivamente anche giochi di livello 2.';
-
-      }else if(grade === 2){
-
-        primaryChoiceText.textContent =
-          'Per la seconda primaria AttivaMente consiglia il Libro dei giochi: vengono utilizzati soprattutto giochi di livello 1 e 2, introducendo progressivamente il livello 3 dalla seconda parte dell’anno.';
-
-      }else{
-
-        primaryChoiceText.textContent =
-          'Per la terza primaria AttivaMente consiglia il Libro dei giochi: la programmazione utilizza progressivamente giochi di livello 1, 2 e 3, introducendo attività più complesse durante l’anno.';
-
-      }
-
-    }
-
-    return;
-  }
-
-
-  /* =====================================================
-     QUARTA - QUINTA PRIMARIA
-     ===================================================== */
-
-  if(isPrimary && grade >= 4 && grade <= 5){
-
-    primaryChoice?.classList.add('hidden');
-
-    modeField?.classList.remove('hidden');
-
-    updatePlannerPrimaryMode();
-
-    return;
-  }
-
-
-  /* =====================================================
-     MEDIE / SUPERIORI
-     ===================================================== */
-
-  primaryChoice?.classList.add('hidden');
-  modeField?.classList.add('hidden');
-  primarySettings?.classList.add('hidden');
-  planWeeksField?.classList.remove('hidden');
-  planMinutesField?.classList.remove('hidden');
-
-  sportField?.classList.remove('hidden');
-  levelField?.classList.remove('hidden');
-
-  if($('#planSport')?.value){
-    topics?.classList.remove('hidden');
-    renderPlanTopics();
-  }else{
-    topics?.classList.add('hidden');
-  }
+  const cl=st.classes.find(x=>x.id===$('#planClass')?.value),sportField=$('#planSportField'),modeField=$('#planModeField'),primaryChoice=$('#planPrimaryChoice'),primarySettings=$('#planPrimarySettings'),topics=$('#planTopicsSection'),levelField=document.querySelector('.planner-level-field'),weeks=$('#planWeeksField'),minutes=$('#planMinutesField');
+  if(!cl){primaryChoice?.classList.add('hidden');modeField?.classList.add('hidden');sportField?.classList.remove('hidden');weeks?.classList.remove('hidden');minutes?.classList.remove('hidden');levelField?.classList.remove('hidden');return}
+  const primary=cl.school_level==='primary',grade=Number(cl.grade||0);
+  if(primary&&grade<=3){primaryChoice?.classList.remove('hidden');primarySettings?.classList.remove('hidden');modeField?.classList.add('hidden');sportField?.classList.add('hidden');topics?.classList.add('hidden');levelField?.classList.add('hidden');weeks?.classList.add('hidden');minutes?.classList.remove('hidden');$('#planSport').value='';const t=$('#planPrimaryChoiceText');if(t)t.textContent=grade===1?'Per la prima primaria AttivaMente consiglia il Libro dei giochi: livello 1 e, dalla seconda parte dell’anno, progressivamente livello 2.':grade===2?'Per la seconda primaria: soprattutto livelli 1 e 2, con introduzione progressiva del livello 3.':'Per la terza primaria: progressione dai livelli 1–3, introducendo attività più complesse durante l’anno.';return}
+  if(primary&&grade>=4){primaryChoice?.classList.add('hidden');modeField?.classList.remove('hidden');updatePlannerPrimaryMode();return}
+  primaryChoice?.classList.add('hidden');modeField?.classList.add('hidden');primarySettings?.classList.add('hidden');sportField?.classList.remove('hidden');weeks?.classList.remove('hidden');minutes?.classList.remove('hidden');levelField?.classList.remove('hidden');if($('#planSport')?.value){topics?.classList.remove('hidden');renderPlanTopics()}else topics?.classList.add('hidden')
 }
-
-
-/* =========================================================
-   QUARTA / QUINTA PRIMARIA
-   Scelta Libro dei giochi oppure Sport
-   ========================================================= */
-
-function updatePlannerPrimaryMode(){
-
-  const mode = $('#planMode')?.value || 'primary_games';
-
-  const sportField = $('#planSportField');
-  const topics = $('#planTopicsSection');
-  const levelField = document.querySelector('.planner-level-field');
-  const primarySettings = $('#planPrimarySettings');
-  const planWeeksField = $('#planWeeksField');
-  const planMinutesField = $('#planMinutesField');
-
-  if(mode === 'primary_games'){
-    primarySettings?.classList.remove('hidden');
-
-    sportField?.classList.add('hidden');
-    topics?.classList.add('hidden');
-    levelField?.classList.add('hidden');
-    planWeeksField?.classList.add('hidden');
-    planMinutesField?.classList.remove('hidden');
-
-    if($('#planSport')){
-      $('#planSport').value = '';
-    }
-
-    if($('#planTopicsList')){
-      $('#planTopicsList').innerHTML = '';
-    }
-
-  }else{
-primarySettings?.classList.add('hidden');
-    sportField?.classList.remove('hidden');
-    levelField?.classList.remove('hidden');
-    planWeeksField?.classList.remove('hidden');
-    planMinutesField?.classList.remove('hidden');
-
-    if($('#planSport')?.value){
-
-      topics?.classList.remove('hidden');
-      renderPlanTopics();
-
-    }else{
-
-      topics?.classList.add('hidden');
-
-    }
-  }
-}
-
-
-/* =========================================================
-   EVENTI DEL PLANNER
-   ========================================================= */
-
-$('#planClass')?.addEventListener(
-  'change',
-  updatePlannerForSelectedClass
-);
-
-$('#planMode')?.addEventListener(
-  'change',
-  updatePlannerPrimaryMode
-);
-$$('[data-plan-mode]').forEach(btn=>{
-
-  btn.addEventListener('click',()=>{
-
-    const mode=btn.dataset.planMode;
-
-    $('#planMode').value=mode;
-
-    $$('[data-plan-mode]').forEach(x=>{
-      x.classList.toggle(
-        'active',
-        x.dataset.planMode===mode
-      );
-    });
-
-    updatePlannerPrimaryMode();
-  });
-
-});
-$('#planPrimaryScope')?.addEventListener('change',()=>{
-
-  const custom =
-    $('#planPrimaryScope').value === 'custom';
-
-  $('#planPrimaryCountField')
-    ?.classList.toggle('hidden', !custom);
-
-});
-$('#plannerForm').onsubmit=e=>{e.preventDefault();generatePlan()};
-$('#generatePlanBtn').onclick=e=>{e.preventDefault();generatePlan()};
+function updatePlannerPrimaryMode(){const mode=$('#planMode')?.value||'primary_games',sportField=$('#planSportField'),topics=$('#planTopicsSection'),levelField=document.querySelector('.planner-level-field'),primarySettings=$('#planPrimarySettings'),weeks=$('#planWeeksField'),minutes=$('#planMinutesField');if(mode==='primary_games'){primarySettings?.classList.remove('hidden');sportField?.classList.add('hidden');topics?.classList.add('hidden');levelField?.classList.add('hidden');weeks?.classList.add('hidden');minutes?.classList.remove('hidden');$('#planSport').value='';$('#planTopicsList').innerHTML=''}else{primarySettings?.classList.add('hidden');sportField?.classList.remove('hidden');levelField?.classList.remove('hidden');weeks?.classList.remove('hidden');minutes?.classList.remove('hidden');if($('#planSport')?.value){topics?.classList.remove('hidden');renderPlanTopics()}else topics?.classList.add('hidden')}}
+$('#planSport')?.addEventListener('change',renderPlanTopics);$('#planWeeks')?.addEventListener('input',renderPlanTopics);$('#planClass')?.addEventListener('change',updatePlannerForSelectedClass);$('#planMode')?.addEventListener('change',updatePlannerPrimaryMode);$$('[data-plan-mode]').forEach(btn=>btn.addEventListener('click',()=>{$('#planMode').value=btn.dataset.planMode;$$('[data-plan-mode]').forEach(x=>x.classList.toggle('active',x===btn));updatePlannerPrimaryMode()}));$('#planPrimaryScope')?.addEventListener('change',()=>$('#planPrimaryCountField')?.classList.toggle('hidden',$('#planPrimaryScope').value!=='custom'));
+$('#plannerForm').onsubmit=e=>{e.preventDefault();generatePlan()};$('#generatePlanBtn').onclick=e=>{e.preventDefault();generatePlan()};
 let replaceCtx=null;
 function primaryMarker(ref=''){const m=String(ref||'').match(/PRIMARY_GAME:(BOOK:(\d+)|CUSTOM:([0-9a-f-]+))/i);if(!m)return null;return m[2]?`book-${m[2]}`:m[3]}
+
 let adaptLessonCtx=null;
+
+function adaptPhaseType(item){
+  const phase=String(item?.phase||'').toLowerCase();
+  if(phase.includes('warm')||phase.includes('attiv')||phase.includes('riscal'))return 'warmup';
+  if(phase.includes('final')||phase.includes('game')||phase.includes('partita')||phase.includes('small')||phase.includes('ssg'))return 'game';
+  if(phase.includes('cool')||phase.includes('defatic')||phase.includes('chius'))return 'closing';
+  return 'main';
+}
+
 function buildShorterLessonProposal(items,targetMinutes){
-
-  const original=(items||[])
-    .map((item,index)=>({
-      ...item,
-      _originalIndex:index,
-      _originalDuration:Number(item.duration_min||0)
-    }))
-    .filter(item=>item._originalDuration>0);
-
-  if(!original.length){
-    return {
-      ok:false,
-      error:'La lezione non contiene attività utilizzabili.'
-    };
-  }
-
-  const originalTotal=
-    original.reduce(
-      (sum,item)=>sum+item._originalDuration,
-      0
-    );
-
+  const original=(items||[]).map((item,index)=>({...item,_originalIndex:index,_originalDuration:Number(item.duration_min||0),_type:adaptPhaseType(item)})).filter(x=>x._originalDuration>0);
+  const originalTotal=original.reduce((s,x)=>s+x._originalDuration,0);
   targetMinutes=Number(targetMinutes);
+  if(!original.length)return{ok:false,error:'La lezione non contiene attività utilizzabili.'};
+  if(!targetMinutes||targetMinutes<20)return{ok:false,error:'Durata disponibile non valida.'};
+  if(targetMinutes>=originalTotal)return{ok:false,error:'La nuova durata deve essere inferiore a quella originale.'};
 
-  if(!targetMinutes || targetMinutes<20){
-    return {
-      ok:false,
-      error:'Durata disponibile non valida.'
-    };
-  }
+  let warmupTarget=Math.max(5,Math.round(targetMinutes*.15));
+  let closingTarget=Math.max(0,Math.round(targetMinutes*.08));
+  if(targetMinutes<=45){warmupTarget=Math.min(warmupTarget,7);closingTarget=Math.min(closingTarget,3)}
+  if(targetMinutes<=30){warmupTarget=5;closingTarget=0}
 
-  if(targetMinutes>=originalTotal){
-    return {
-      ok:false,
-      error:'La nuova durata deve essere inferiore alla durata originale.'
-    };
-  }
-
-
-  /* =====================================================
-     RICONOSCIMENTO DELLE FASI
-     ===================================================== */
-
-  const phaseType=item=>{
-
-    const phase=
-      String(item.phase||'').toLowerCase();
-
-    if(
-      phase.includes('warm') ||
-      phase.includes('attiv') ||
-      phase.includes('riscal')
-    ){
-      return 'warmup';
-    }
-
-    if(
-      phase.includes('final') ||
-      phase.includes('game') ||
-      phase.includes('partita') ||
-      phase.includes('small') ||
-      phase.includes('ssg')
-    ){
-      return 'game';
-    }
-
-    if(
-      phase.includes('cool') ||
-      phase.includes('defatic') ||
-      phase.includes('chius')
-    ){
-      return 'closing';
-    }
-
-    return 'main';
-  };
-
-
-  const enriched=
-    original.map(item=>({
-      ...item,
-      _type:phaseType(item)
-    }));
-
-
-  /* =====================================================
-     QUANTO TEMPO RISERVIAMO ALLE VARIE PARTI
-     ===================================================== */
-
-  let warmupTarget=
-    Math.max(
-      5,
-      Math.round(targetMinutes*0.15)
-    );
-
-  let closingTarget=
-    Math.max(
-      0,
-      Math.round(targetMinutes*0.08)
-    );
-
-  /*
-   * Su lezioni molto corte evitiamo di consumare
-   * troppi minuti nella chiusura.
-   */
-  if(targetMinutes<=45){
-    warmupTarget=Math.min(warmupTarget,7);
-    closingTarget=Math.min(closingTarget,3);
-  }
-
-  if(targetMinutes<=30){
-    warmupTarget=5;
-    closingTarget=0;
-  }
-
-
-  /* =====================================================
-     SELEZIONE ATTIVITÀ DA MANTENERE
-     ===================================================== */
-
-  const warmups=
-    enriched.filter(x=>x._type==='warmup');
-
-  const mains=
-    enriched.filter(x=>x._type==='main');
-
-  const games=
-    enriched.filter(x=>x._type==='game');
-
-  const closings=
-    enriched.filter(x=>x._type==='closing');
-
-
+  const warmups=original.filter(x=>x._type==='warmup');
+  const mains=original.filter(x=>x._type==='main');
+  const games=original.filter(x=>x._type==='game');
+  const closings=original.filter(x=>x._type==='closing');
   const selected=[];
+  if(warmups.length)selected.push({...warmups[0],_newDuration:Math.min(warmups[0]._originalDuration,warmupTarget),_adaptReason:'Attivazione mantenuta e abbreviata'});
+  mains.forEach(x=>selected.push({...x,_newDuration:x._originalDuration,_adaptReason:'Attività centrale'}));
+  if(games.length){const x=games[games.length-1];selected.push({...x,_newDuration:x._originalDuration,_adaptReason:'Applicazione finale mantenuta'})}
+  if(closings.length&&closingTarget>0){const x=closings[closings.length-1];selected.push({...x,_newDuration:Math.min(x._originalDuration,closingTarget),_adaptReason:'Chiusura abbreviata'})}
+  selected.sort((a,b)=>a._originalIndex-b._originalIndex);
+  const total=()=>selected.reduce((s,x)=>s+Number(x._newDuration||0),0);
 
+  const ratio=targetMinutes/originalTotal;
+  let minMainDuration=10;
+  if(ratio<=.35)minMainDuration=7; else if(ratio<=.60)minMainDuration=8;
 
-  /*
-   * Manteniamo un warm-up.
-   */
-  if(warmups.length){
-    selected.push({
-      ...warmups[0],
-      _newDuration:
-        Math.min(
-          warmups[0]._originalDuration,
-          warmupTarget
-        ),
-      _adaptReason:'Attivazione mantenuta e abbreviata'
-    });
-  }
-
-
-  /*
-   * Manteniamo le attività centrali nell'ordine
-   * didattico originale.
-   */
-  mains.forEach(item=>{
-
-    selected.push({
-      ...item,
-      _newDuration:item._originalDuration,
-      _adaptReason:'Attività centrale'
-    });
-
-  });
-
-
-  /*
-   * Se esiste una partita/applicazione finale,
-   * cerchiamo di conservarne almeno una.
-   */
-  if(games.length){
-
-    const game=games[games.length-1];
-
-    selected.push({
-      ...game,
-      _newDuration:game._originalDuration,
-      _adaptReason:'Applicazione finale mantenuta'
-    });
-
-  }
-
-
-  /*
-   * Manteniamo la chiusura solo se c'è abbastanza tempo.
-   */
-  if(
-    closings.length &&
-    closingTarget>0
-  ){
-
-    const closing=closings[closings.length-1];
-
-    selected.push({
-      ...closing,
-      _newDuration:
-        Math.min(
-          closing._originalDuration,
-          closingTarget
-        ),
-      _adaptReason:'Chiusura abbreviata'
-    });
-
-  }
-
-
-  /* =====================================================
-     ORDINE ORIGINALE
-     ===================================================== */
-
-  selected.sort(
-    (a,b)=>
-      a._originalIndex-b._originalIndex
-  );
-
-
-  /* =====================================================
-     RIDUZIONE FINO AL TARGET
-     ===================================================== */
-
-  const total=()=>selected.reduce(
-    (sum,item)=>
-      sum+Number(item._newDuration||0),
-    0
-  );
-
-
-  /*
- * =====================================================
- * RIDUZIONE DIDATTICAMENTE INTELLIGENTE
- * =====================================================
- *
- * Se il tempo disponibile è molto inferiore
- * all'originale, è meglio proporre meno attività
- * ma con un tempo realmente utilizzabile.
- */
-
-const compressionRatio=
-  targetMinutes/originalTotal;
-
-
-/*
- * Tempo minimo sensato per un'attività centrale.
- *
- * Riduzione molto forte  -> almeno 7'
- * Riduzione media        -> almeno 8'
- * Riduzione leggera      -> almeno 10'
- */
-let minMainDuration=10;
-
-if(compressionRatio<=0.35){
-  minMainDuration=7;
-}else if(compressionRatio<=0.60){
-  minMainDuration=8;
-}
-
-
-/*
- * Se mantenere tutte le attività centrali
- * costringerebbe a renderle troppo brevi,
- * ne eliminiamo alcune.
- *
- * Manteniamo preferibilmente quelle iniziali
- * della progressione.
- */
-while(total()>targetMinutes){
-
-  const currentMains=
-    selected.filter(
-      x=>x._type==='main'
-    );
-
-  const reducible=
-    currentMains
-      .filter(
-        x=>x._newDuration>minMainDuration
-      )
-      .sort(
-        (a,b)=>
-          b._newDuration-a._newDuration
-      );
-
-
-  /*
-   * Possiamo ancora accorciare senza rendere
-   * l'attività troppo breve.
-   */
-  if(reducible.length){
-
-    reducible[0]._newDuration--;
-
-    reducible[0]._adaptReason=
-      'Attività centrale abbreviata';
-
-    continue;
-  }
-
-
-  /*
-   * Tutte hanno raggiunto il minimo sensato.
-   * A questo punto eliminiamo un'attività,
-   * invece di trasformarle tutte in micro-attività.
-   */
-  if(currentMains.length>1){
-
-    const remove=
-      currentMains[currentMains.length-1];
-
-    const index=
-      selected.indexOf(remove);
-
-    if(index>=0){
-      selected.splice(index,1);
-    }
-
-    continue;
-  }
-
-
-  break;
-}
-
-
-  /*
-   * Poi riduciamo l'eventuale gioco finale,
-   * ma cerchiamo di lasciargli almeno 8 minuti.
-   */
   while(total()>targetMinutes){
-
-    const game=
-      selected.find(
-        x=>
-          x._type==='game' &&
-          x._newDuration>8
-      );
-
-    if(!game)break;
-
-    game._newDuration--;
-
-    game._adaptReason=
-      'Applicazione finale abbreviata';
-  }
-  /*
-   * Ultimo aggiustamento:
-   * riduciamo l'attività centrale rimasta.
-   */
-  while(total()>targetMinutes){
-
-    const main=
-      selected.find(
-        x=>
-          x._type==='main' &&
-          x._newDuration>5
-      );
-
-    if(!main)break;
-
-    main._newDuration--;
-
-    main._adaptReason=
-      'Attività centrale abbreviata';
-  }
-
-
-  /* =====================================================
-     SE RESTANO MINUTI LIBERI
-     ===================================================== */
-
-  while(total()<targetMinutes){
-
-    /*
-     * Diamo prima i minuti alle attività centrali.
-     */
-    const main=
-      selected.find(
-        x=>
-          x._type==='main' &&
-          x._newDuration<x._originalDuration
-      );
-
-    if(main){
-
-      main._newDuration++;
-      continue;
-
-    }
-
-
-    /*
-     * Poi all'applicazione finale.
-     */
-    const game=
-      selected.find(
-        x=>
-          x._type==='game' &&
-          x._newDuration<x._originalDuration
-      );
-
-    if(game){
-
-      game._newDuration++;
-      continue;
-
-    }
-
-
-    /*
-     * Se non possiamo più espandere nulla,
-     * interrompiamo.
-     */
+    const currentMains=selected.filter(x=>x._type==='main');
+    const reducible=currentMains.filter(x=>x._newDuration>minMainDuration).sort((a,b)=>b._newDuration-a._newDuration);
+    if(reducible.length){reducible[0]._newDuration--;reducible[0]._adaptReason='Attività centrale abbreviata';continue}
+    if(currentMains.length>1){const remove=currentMains[currentMains.length-1];selected.splice(selected.indexOf(remove),1);continue}
     break;
   }
-
+  while(total()>targetMinutes){const x=selected.find(x=>x._type==='game'&&x._newDuration>8);if(!x)break;x._newDuration--;x._adaptReason='Applicazione finale abbreviata'}
+  while(total()>targetMinutes){const x=selected.find(x=>x._type==='main'&&x._newDuration>5);if(!x)break;x._newDuration--;x._adaptReason='Attività centrale abbreviata'}
+  while(total()>targetMinutes){const x=selected.find(x=>x._type==='warmup'&&x._newDuration>5)||selected.find(x=>x._type==='closing'&&x._newDuration>2)||selected.find(x=>x._newDuration>3);if(!x)break;x._newDuration--;x._adaptReason='Durata abbreviata'}
+  while(total()<targetMinutes){const x=selected.find(x=>x._type==='main'&&x._newDuration<x._originalDuration)||selected.find(x=>x._type==='game'&&x._newDuration<x._originalDuration)||selected.find(x=>x._newDuration<x._originalDuration);if(!x)break;x._newDuration++}
 
   const finalTotal=total();
-
-
-  return {
-
-    ok:finalTotal===targetMinutes,
-
-    originalTotal,
-
-    targetMinutes,
-
-    finalTotal,
-
-    removed:
-      enriched.filter(
-        originalItem=>
-          !selected.some(
-            selectedItem=>
-              selectedItem.id===originalItem.id
-          )
-      ),
-
-    items:selected
-
-  };
+  return{ok:finalTotal===targetMinutes,mode:'less_time',originalTotal,targetMinutes,finalTotal,removed:original.filter(o=>!selected.some(x=>x.id===o.id)),items:selected};
 }
+
+async function buildLongerLessonProposal(lesson,items,targetMinutes){
+  const original=(items||[]).map((item,index)=>({...item,_originalIndex:index,_originalDuration:Number(item.duration_min||0),_newDuration:Number(item.duration_min||0),_type:adaptPhaseType(item),_adaptReason:'Mantenuta'})).filter(x=>x._originalDuration>0);
+  const originalTotal=original.reduce((s,x)=>s+x._originalDuration,0);
+  targetMinutes=Number(targetMinutes);
+  if(!original.length)return{ok:false,error:'La lezione non contiene attività utilizzabili.'};
+  if(!targetMinutes||targetMinutes<=originalTotal)return{ok:false,error:'La nuova durata deve essere superiore a quella originale.'};
+  if(targetMinutes>300)return{ok:false,error:'Per sicurezza la durata massima è 300 minuti.'};
+
+  const selected=[...original];
+  let remaining=targetMinutes-originalTotal;
+  const expandable=selected.filter(x=>x._type==='main'||x._type==='game').concat(selected.filter(x=>x._type==='warmup')).concat(selected.filter(x=>x._type==='closing'));
+  for(const item of expandable){
+    if(remaining<=0)break;
+    const declaredMax=Number(item.pe_exercises?.duration_max||0);
+    const sensibleMax=declaredMax>item._originalDuration?declaredMax:item._originalDuration+Math.max(5,Math.round(item._originalDuration*.35));
+    const room=Math.max(0,sensibleMax-item._newDuration);
+    const add=Math.min(remaining,room);
+    if(add>0){item._newDuration+=add;remaining-=add;item._adaptReason=`Tempo aumentato da ${item._originalDuration}' a ${item._newDuration}'`}
+  }
+
+  const usedExerciseIds=new Set(selected.map(x=>x.exercise_id).filter(Boolean));
+  const usedPrimaryRefs=new Set(selected.map(x=>x.primary_game_ref).filter(Boolean));
+  const addNewItem=(obj,dur,reason)=>{
+    selected.push({...obj,id:null,_isNew:true,_originalDuration:0,_newDuration:dur,_adaptReason:reason,_type:adaptPhaseType(obj)});
+    remaining-=dur;
+  };
+
+  if(remaining>0&&lesson.sport_id){
+    const categories=[...new Set(selected.map(x=>x.pe_exercises?.category_id).filter(Boolean))];
+    let q=db.from('pe_exercises').select('*').eq('sport_id',lesson.sport_id).eq('active',true).eq('audit_status','VERIFIED').limit(300);
+    const{data,error}=await q;if(error)throw error;
+    const avgDiff=selected.map(x=>Number(x.pe_exercises?.difficulty)).filter(Number.isFinite).reduce((a,b,_,arr)=>a+b/arr.length,0)||3;
+    const candidates=(data||[]).filter(e=>!usedExerciseIds.has(e.id)).sort((a,b)=>{
+      const ca=categories.includes(a.category_id)?0:1,cb=categories.includes(b.category_id)?0:1;
+      if(ca!==cb)return ca-cb;
+      return Math.abs(Number(a.difficulty||3)-avgDiff)-Math.abs(Number(b.difficulty||3)-avgDiff);
+    });
+    for(const e of candidates){
+      if(remaining<6)break;
+      const min=Math.max(6,Number(e.duration_min||10));
+      const max=Math.max(min,Number(e.duration_max||min));
+      const dur=Math.min(remaining,Math.max(min,Math.min(max,20)));
+      if(dur<6)continue;
+      addNewItem({exercise_id:e.id,pe_exercises:e,phase:'main',custom_title:null,custom_explanation:null,custom_field_dimensions:null,primary_game_ref:null,station_count:null,players_per_group:null},dur,'Nuova attività coerente aggiunta dall’archivio verificato');
+      usedExerciseIds.add(e.id);
+      if(remaining<=0)break;
+    }
+  }
+
+  if(remaining>0&&!lesson.sport_id){
+    await loadPrimaryGames();
+    const cl=st.classes.find(x=>x.id===lesson.class_id),grade=Number(cl?.grade||3);
+    const maxDiff=Math.min(5,Math.max(1,grade+1));
+    const games=(st.primaryGames||[]).filter(g=>Number(g.difficulty)<=maxDiff).filter(g=>{
+      const marker=g.is_custom?`PRIMARY_GAME:CUSTOM:${g.id}`:`PRIMARY_GAME:BOOK:${g.source_page}`;
+      return !usedPrimaryRefs.has(marker);
+    });
+    for(const g of games){
+      if(remaining<6)break;
+      const dur=Math.min(remaining,Math.max(10,Math.min(20,remaining)));
+      const marker=g.is_custom?`PRIMARY_GAME:CUSTOM:${g.id}`:`PRIMARY_GAME:BOOK:${g.source_page}`;
+      addNewItem({exercise_id:null,phase:'main',primary_game_ref:marker,custom_title:g.title,custom_explanation:g.description||'',custom_field_dimensions:g.material_spaces||null,station_count:1,players_per_group:cl?.student_count||null},dur,'Nuovo gioco coerente aggiunto dal Libro dei giochi');
+      usedPrimaryRefs.add(marker);
+    }
+  }
+
+  while(remaining>0){
+    const x=selected.find(x=>x._type==='game')||selected.find(x=>x._type==='main')||selected[0];
+    if(!x)break;
+    x._newDuration++;remaining--;
+    x._adaptReason=x._isNew?x._adaptReason:'Tempo extra dedicato ad approfondimento e ripetizioni';
+  }
+  const finalTotal=selected.reduce((s,x)=>s+Number(x._newDuration||0),0);
+  return{ok:finalTotal===targetMinutes,mode:'more_time',originalTotal,targetMinutes,finalTotal,removed:[],items:selected};
+}
+
 function renderAdaptLessonPreview(proposal){
-
-  const preview=$('#adaptLessonPreview');
-
-  if(!preview || !adaptLessonCtx)return;
-
+  const preview=$('#adaptLessonPreview');if(!preview||!adaptLessonCtx)return;
   const original=adaptLessonCtx.items||[];
-
-  const getTitle=item=>{
-    const pm=primaryMarker(item.primary_game_ref);
-
-    return item.custom_title ||
-      item.pe_exercises?.name ||
-      (pm ? 'Gioco motorio' : 'Attività');
-  };
-
-  const getPhase=item=>
-    phaseLabel[item.phase] ||
-    item.phase ||
-    'Attività';
-
-
-  /* =====================================================
-     VERSIONE ORIGINALE
-     ===================================================== */
-
-  const originalHtml=original.map(item=>{
-
-    const wasRemoved=
-      proposal.removed.some(
-        x=>x.id===item.id
-      );
-
-    return `
-      <div class="adapt-preview-item ${wasRemoved?'will-remove':''}">
-
-        <div class="adapt-preview-minutes">
-          ${Number(item.duration_min||0)}'
-        </div>
-
-        <div class="adapt-preview-copy">
-
-          <span class="kicker">
-            ${esc(getPhase(item))}
-          </span>
-
-          <strong>
-            ${esc(getTitle(item))}
-          </strong>
-
-          ${wasRemoved
-            ? `<small class="adapt-remove-label">
-                 Verrà rimossa nella versione adattata
-               </small>`
-            : ''
-          }
-
-        </div>
-
-      </div>
-    `;
-
-  }).join('');
-
-
-  /* =====================================================
-     VERSIONE ADATTATA
-     ===================================================== */
-
-  const adaptedHtml=proposal.items.map(item=>{
-
-    const changed=
-      Number(item._newDuration)!==
-      Number(item._originalDuration);
-
-    return `
-      <div class="adapt-preview-item adapted">
-
-        <div class="adapt-preview-minutes">
-          ${item._newDuration}'
-        </div>
-
-        <div class="adapt-preview-copy">
-
-          <span class="kicker">
-            ${esc(getPhase(item))}
-          </span>
-
-          <strong>
-            ${esc(getTitle(item))}
-          </strong>
-
-          <small class="${changed?'adapt-change-label':'adapt-keep-label'}">
-            ${
-              changed
-                ? `Da ${item._originalDuration}' a ${item._newDuration}'`
-                : 'Mantenuta'
-            }
-          </small>
-
-          ${
-            item._adaptReason
-              ? `<small class="adapt-reason-note">
-                   ✦ ${esc(item._adaptReason)}
-                 </small>`
-              : ''
-          }
-
-        </div>
-
-      </div>
-    `;
-
-  }).join('');
-
-
-  /* =====================================================
-     CONFRONTO
-     ===================================================== */
-
-  preview.innerHTML=`
-
-    <div class="adapt-preview-heading">
-
-      <div>
-        <span class="kicker">
-          PROPOSTA ATTIVAMENTE
-        </span>
-
-        <h3>
-          Ecco come adatterei la lezione
-        </h3>
-
-        <p>
-          L'obiettivo didattico rimane invariato.
-          AttivaMente ha ridistribuito il tempo disponibile
-          senza modificare il resto della programmazione.
-        </p>
-      </div>
-
-    </div>
-
-
-    <div class="adapt-comparison">
-
-      <section class="adapt-comparison-column original">
-
-        <div class="adapt-column-head">
-
-          <div>
-            <span class="kicker">
-              ORIGINALE
-            </span>
-
-            <strong>
-              ${proposal.originalTotal} minuti
-            </strong>
-          </div>
-
-        </div>
-
-        <div class="adapt-preview-list">
-          ${originalHtml}
-        </div>
-
-      </section>
-
-
-      <div class="adapt-comparison-arrow">
-        →
-      </div>
-
-
-      <section class="adapt-comparison-column adapted">
-
-        <div class="adapt-column-head">
-
-          <div>
-            <span class="kicker">
-              ⚡ VERSIONE ADATTATA
-            </span>
-
-            <strong>
-              ${proposal.finalTotal} minuti
-            </strong>
-          </div>
-
-        </div>
-
-        <div class="adapt-preview-list">
-          ${adaptedHtml}
-        </div>
-
-      </section>
-
-    </div>
-
-
-    <div class="adapt-preview-actions">
-
-      <button
-        type="button"
-        class="btn secondary"
-        id="keepOriginalLessonBtn"
-      >
-        Mantieni originale
-      </button>
-
-      <button
-        type="button"
-        class="btn adapt-confirm-btn"
-        id="confirmAdaptedLessonBtn"
-      >
-        ⚡ Usa versione adattata
-      </button>
-
-    </div>
-
-    <small class="adapt-save-warning">
-      Nessuna modifica è stata ancora salvata.
-    </small>
-
-  `;
-
-
+  const getTitle=item=>item.custom_title||item.pe_exercises?.name||(primaryMarker(item.primary_game_ref)?'Gioco motorio':'Attività');
+  const getPhase=item=>phaseLabel[item.phase]||item.phase||'Attività';
+  const originalHtml=original.map(item=>{const removed=(proposal.removed||[]).some(x=>x.id===item.id);return`<div class="adapt-preview-item ${removed?'will-remove':''}"><div class="adapt-preview-minutes">${Number(item.duration_min||0)}'</div><div class="adapt-preview-copy"><span class="kicker">${esc(getPhase(item))}</span><strong>${esc(getTitle(item))}</strong>${removed?'<small class="adapt-remove-label">Verrà rimossa nella versione adattata</small>':''}</div></div>`}).join('');
+  const adaptedHtml=(proposal.items||[]).map(item=>{const isNew=!!item._isNew,changed=isNew||Number(item._newDuration)!==Number(item._originalDuration);return`<div class="adapt-preview-item adapted ${isNew?'adapt-new-item':''}"><div class="adapt-preview-minutes">${item._newDuration}'</div><div class="adapt-preview-copy"><span class="kicker">${esc(getPhase(item))}</span><strong>${esc(getTitle(item))}</strong><small class="${isNew?'adapt-new-label':changed?'adapt-change-label':'adapt-keep-label'}">${isNew?'＋ Nuova attività':changed?`Da ${item._originalDuration}' a ${item._newDuration}'`:'Mantenuta'}</small>${item._adaptReason?`<small class="adapt-reason-note">✦ ${esc(item._adaptReason)}</small>`:''}</div></div>`}).join('');
+  preview.innerHTML=`<div class="adapt-preview-heading"><div><span class="kicker">PROPOSTA ATTIVAMENTE</span><h3>Ecco come adatterei la lezione</h3><p>L’obiettivo didattico rimane invariato. La modifica riguarda soltanto il tempo disponibile per questa singola lezione.</p></div></div><div class="adapt-comparison"><section class="adapt-comparison-column original"><div class="adapt-column-head"><div><span class="kicker">LEZIONE NORMALE</span><strong>${proposal.originalTotal} minuti</strong></div></div><div class="adapt-preview-list">${originalHtml}</div></section><div class="adapt-comparison-arrow">→</div><section class="adapt-comparison-column adapted"><div class="adapt-column-head"><div><span class="kicker">⚡ LEZIONE ADATTATA</span><strong>${proposal.finalTotal} minuti</strong></div></div><div class="adapt-preview-list">${adaptedHtml}</div></section></div><div class="adapt-preview-actions"><button type="button" class="btn secondary" id="keepOriginalLessonBtn">Mantieni lezione normale</button><button type="button" class="btn adapt-confirm-btn" id="confirmAdaptedLessonBtn">⚡ Usa versione adattata</button></div><small class="adapt-save-warning">Nessuna modifica è stata ancora salvata.</small>`;
   preview.classList.remove('hidden');
-
-
-  /* =====================================================
-     PER ORA NON SALVIAMO NULLA
-     ===================================================== */
-
-  $('#keepOriginalLessonBtn').onclick=()=>{
-
-    preview.classList.add('hidden');
-
-    toast('Lezione originale mantenuta');
-
-  };
-
-
-  $('#confirmAdaptedLessonBtn').onclick=async()=>{
-
-  if(!adaptLessonCtx?.proposal){
-    toast('Nessuna versione adattata disponibile');
-    return;
-  }
-
-  const btn=$('#confirmAdaptedLessonBtn');
-
-  if(btn){
-    btn.disabled=true;
-    btn.textContent='Preparazione...';
-  }
-
-  try{
-
-    await applyAdaptedLesson();
-
-  }catch(err){
-
-    console.error(
-      'Errore adattamento lezione',
-      err
-    );
-
-    toast(
-      err?.message ||
-      'Impossibile applicare la versione adattata'
-    );
-
-  }finally{
-
-    if(btn){
-      btn.disabled=false;
-      btn.textContent='⚡ Usa versione adattata';
-    }
-
-  }
-
-};
-
+  $('#keepOriginalLessonBtn').onclick=()=>{preview.classList.add('hidden');toast('Lezione normale mantenuta')};
+  $('#confirmAdaptedLessonBtn').onclick=async()=>{const btn=$('#confirmAdaptedLessonBtn');if(!adaptLessonCtx?.proposal)return;btn.disabled=true;btn.textContent='Salvataggio…';try{await applyAdaptedLesson()}catch(err){console.error(err);toast(err?.message||'Impossibile applicare la versione adattata')}finally{btn.disabled=false;btn.textContent='⚡ Usa versione adattata'}};
 }
+
 async function applyAdaptedLesson(){
+  if(!adaptLessonCtx?.lesson||!adaptLessonCtx?.proposal||!adaptLessonCtx?.original)throw new Error('Dati adattamento incompleti.');
+  const lesson=adaptLessonCtx.lesson,proposal=adaptLessonCtx.proposal,original=adaptLessonCtx.original,lessonId=lesson.id;
+  const snapshotPayload={owner_id:st.user.id,lesson_id:lessonId,reason:adaptLessonCtx.constraints?.reason||'time_adaptation',original_duration:Number(original.duration||lesson.duration_min||0),adapted_duration:Number(proposal.targetMinutes||0),original_lesson:{id:lesson.id,module_id:lesson.module_id,class_id:lesson.class_id,sport_id:lesson.sport_id,lesson_date:lesson.lesson_date,sequence_no:lesson.sequence_no,title:lesson.title,duration_min:Number(lesson.duration_min||0),generation_mode:lesson.generation_mode,status:lesson.status,learning_goal:lesson.learning_goal,teacher_notes:lesson.teacher_notes,start_time:lesson.start_time,end_time:lesson.end_time,is_extra:lesson.is_extra},original_items:original.items.map(item=>({id:item.id,lesson_id:item.lesson_id,exercise_id:item.exercise_id,primary_game_ref:item.primary_game_ref,phase:item.phase,order_no:item.order_no,duration_min:Number(item.duration_min||0),custom_title:item.custom_title,custom_explanation:item.custom_explanation,custom_field_dimensions:item.custom_field_dimensions,custom_equipment:item.custom_equipment,selection_reason:item.selection_reason,station_count:item.station_count,players_per_group:item.players_per_group}))};
+  const{error:snapshotError}=await db.from('pe_lesson_adaptation_snapshots').insert(snapshotPayload);if(snapshotError)throw snapshotError;
+  const reasonKey=adaptLessonCtx.constraints?.reason||proposal.mode;
+  const reasonLabel=reasonKey==='more_time'?'più tempo disponibile':'meno tempo disponibile';
+  const baseNote=String(lesson.teacher_notes||'').replace(/\n*⚡ Lezione adattata[^\n]*/g,'').trim();
+  const adaptationNote=`⚡ Lezione adattata da ${original.duration}' a ${proposal.targetMinutes}' · Motivo: ${reasonLabel}.`;
+  const{error:lessonError}=await db.from('pe_lessons').update({duration_min:proposal.targetMinutes,teacher_notes:`${baseNote}${baseNote?'\n\n':''}${adaptationNote}`}).eq('id',lessonId).eq('owner_id',st.user.id);if(lessonError)throw lessonError;
 
-  if(
-    !adaptLessonCtx?.lesson ||
-    !adaptLessonCtx?.proposal ||
-    !adaptLessonCtx?.original
-  ){
-    throw new Error('Dati adattamento incompleti.');
+  const keptIds=new Set(proposal.items.map(x=>x.id).filter(Boolean));
+  const removedIds=original.items.filter(x=>!keptIds.has(x.id)).map(x=>x.id).filter(Boolean);
+  if(removedIds.length){const{error}=await db.from('pe_lesson_exercises').delete().eq('lesson_id',lessonId).eq('owner_id',st.user.id).in('id',removedIds);if(error)throw error}
+
+  for(let index=0;index<proposal.items.length;index++){
+    const item=proposal.items[index],reason=item._adaptReason?`⚡ ${item._adaptReason}`:'⚡ Attività mantenuta nella versione adattata';
+    if(item.id){const previous=item.selection_reason||'';const{error}=await db.from('pe_lesson_exercises').update({duration_min:Number(item._newDuration),order_no:index+1,selection_reason:previous?`${previous} · ${reason}`:reason}).eq('id',item.id).eq('lesson_id',lessonId).eq('owner_id',st.user.id);if(error)throw error}
+    else{const payload={owner_id:st.user.id,lesson_id:lessonId,exercise_id:item.exercise_id||null,phase:item.phase||'main',order_no:index+1,duration_min:Number(item._newDuration),custom_title:item.custom_title||null,custom_explanation:item.custom_explanation||null,custom_field_dimensions:item.custom_field_dimensions||null,custom_equipment:item.custom_equipment||null,primary_game_ref:item.primary_game_ref||null,station_count:item.station_count||null,players_per_group:item.players_per_group||null,selection_reason:reason};const{error}=await db.from('pe_lesson_exercises').insert(payload);if(error)throw error}
   }
-
-  const lesson=adaptLessonCtx.lesson;
-  const proposal=adaptLessonCtx.proposal;
-  const original=adaptLessonCtx.original;
-
-  const lessonId=lesson.id;
-  /* =====================================================
-   0. SNAPSHOT PERMANENTE DELLA VERSIONE ORIGINALE
-   ===================================================== */
-
-const snapshotPayload={
-
-  owner_id:st.user.id,
-
-  lesson_id:lessonId,
-
-  reason:
-    adaptLessonCtx.constraints?.reason ||
-    'manual_adaptation',
-
-  original_duration:
-    Number(original.duration||lesson.duration_min||0),
-
-  adapted_duration:
-    Number(proposal.targetMinutes||0),
-
-  original_lesson:{
-    id:lesson.id,
-    module_id:lesson.module_id,
-    class_id:lesson.class_id,
-    sport_id:lesson.sport_id,
-    lesson_date:lesson.lesson_date,
-    sequence_no:lesson.sequence_no,
-    title:lesson.title,
-    duration_min:Number(lesson.duration_min||0),
-    generation_mode:lesson.generation_mode,
-    status:lesson.status,
-    learning_goal:lesson.learning_goal,
-    teacher_notes:lesson.teacher_notes,
-    start_time:lesson.start_time,
-    end_time:lesson.end_time,
-    is_extra:lesson.is_extra
-  },
-
-  original_items:
-    original.items.map(item=>({
-      id:item.id,
-      lesson_id:item.lesson_id,
-      exercise_id:item.exercise_id,
-      primary_game_ref:item.primary_game_ref,
-      phase:item.phase,
-      order_no:item.order_no,
-      duration_min:Number(item.duration_min||0),
-      custom_title:item.custom_title,
-      custom_explanation:item.custom_explanation,
-      selection_reason:item.selection_reason,
-      station_count:item.station_count,
-      players_per_group:item.players_per_group
-    }))
-};
-
-
-const {error:snapshotError}=await db
-  .from('pe_lesson_adaptation_snapshots')
-  .insert(snapshotPayload);
-
-if(snapshotError){
-  throw snapshotError;
+  await loadCore();$('#adaptLessonModal').close();$('#lessonModal').close();toast(`Lezione adattata a ${proposal.targetMinutes} minuti`);await openLesson(lessonId);
 }
 
-  /*
-   * =====================================================
-   * 1. AGGIORNIAMO SOLO LA DURATA DELLA SINGOLA LEZIONE
-   * =====================================================
-   */
-
-  const originalNote=
-    lesson.teacher_notes||'';
-
-  const reasonLabels={
-  less_time:'tempo disponibile ridotto',
-  fewer_students:'meno alunni presenti',
-  more_students:'più alunni presenti',
-  no_gym:'palestra non disponibile',
-  no_outdoor:'attività esterna non disponibile',
-  missing_material:'materiale non disponibile',
-  difficult_class:'gestione della classe',
-  other:'altro imprevisto'
-};
-
-const reasonKey=
-  adaptLessonCtx.constraints?.reason ||
-  'other';
-
-const adaptationNote=
-  `⚡ Lezione adattata da ${original.duration}' a ${proposal.targetMinutes}' · Motivo: ${reasonLabels[reasonKey]||'imprevisto'}.`;
-
-  const newTeacherNotes=
-    originalNote.includes('⚡ Lezione adattata')
-      ? originalNote
-      : `${originalNote}${originalNote ? '\n\n' : ''}${adaptationNote}`;
-
-  const {error:lessonError}=await db
-    .from('pe_lessons')
-    .update({
-      duration_min:proposal.targetMinutes,
-      teacher_notes:newTeacherNotes
-    })
-    .eq('id',lessonId)
-    .eq('owner_id',st.user.id);
-
-  if(lessonError){
-    throw lessonError;
-  }
-
-
-  /*
-   * =====================================================
-   * 2. QUALI ATTIVITÀ RESTANO?
-   * =====================================================
-   */
-
-  const keptIds=
-    new Set(
-      proposal.items
-        .map(x=>x.id)
-        .filter(Boolean)
-    );
-
-
-  /*
-   * =====================================================
-   * 3. ELIMINIAMO SOLO LE ATTIVITÀ RIMOSSE
-   * =====================================================
-   */
-
-  const removedIds=
-    original.items
-      .filter(x=>!keptIds.has(x.id))
-      .map(x=>x.id)
-      .filter(Boolean);
-
-  if(removedIds.length){
-
-    const {error:deleteError}=await db
-      .from('pe_lesson_exercises')
-      .delete()
-      .eq('lesson_id',lessonId)
-      .eq('owner_id',st.user.id)
-      .in('id',removedIds);
-
-    if(deleteError){
-      throw deleteError;
-    }
-  }
-
-
-  /*
-   * =====================================================
-   * 4. AGGIORNIAMO DURATA E ORDINE DELLE ATTIVITÀ RIMASTE
-   * =====================================================
-   */
-
-  for(
-    let index=0;
-    index<proposal.items.length;
-    index++
-  ){
-
-    const item=proposal.items[index];
-
-    if(!item.id)continue;
-
-    const previousReason=
-      item.selection_reason||'';
-
-    const adaptReason=
-      item._adaptReason
-        ? `⚡ ${item._adaptReason}`
-        : '⚡ Attività mantenuta nella versione adattata';
-
-    const selectionReason=
-      previousReason
-        ? `${previousReason} · ${adaptReason}`
-        : adaptReason;
-
-
-    const {error:updateError}=await db
-      .from('pe_lesson_exercises')
-      .update({
-        duration_min:Number(item._newDuration),
-        order_no:index+1,
-        selection_reason:selectionReason
-      })
-      .eq('id',item.id)
-      .eq('lesson_id',lessonId)
-      .eq('owner_id',st.user.id);
-
-    if(updateError){
-      throw updateError;
-    }
-  }
-
-
-  /*
-   * =====================================================
-   * 5. CONTROLLO FINALE
-   * =====================================================
-   */
-
-  const {data:check,error:checkError}=await db
-    .from('pe_lesson_exercises')
-    .select('id,duration_min')
-    .eq('lesson_id',lessonId)
-    .eq('owner_id',st.user.id);
-
-  if(checkError){
-    throw checkError;
-  }
-
-  const finalMinutes=
-    (check||[])
-      .reduce(
-        (sum,x)=>
-          sum+Number(x.duration_min||0),
-        0
-      );
-
-  if(finalMinutes!==proposal.targetMinutes){
-
-    console.warn(
-      'Durata adattata non coerente',
-      {
-        expected:proposal.targetMinutes,
-        actual:finalMinutes
-      }
-    );
-  }
-
-
-  /*
-   * =====================================================
-   * 6. AGGIORNIAMO SUBITO L'APP
-   * =====================================================
-   */
-
-  await loadCore();
-
-  $('#adaptLessonModal').close();
-  $('#lessonModal').close();
-
-  toast(
-    `Lezione adattata a ${proposal.targetMinutes} minuti`
-  );
-
-  await openLesson(lessonId);
+async function getActiveLessonSnapshot(lessonId){
+  const{data,error}=await db.from('pe_lesson_adaptation_snapshots').select('*').eq('lesson_id',lessonId).eq('owner_id',st.user.id).is('restored_at',null).order('created_at',{ascending:true}).limit(1).maybeSingle();
+  if(error)throw error;return data||null;
 }
+
+async function restoreOriginalLesson(lessonId){
+  const snapshot=await getActiveLessonSnapshot(lessonId);if(!snapshot)return toast('Non trovo una versione originale da ripristinare');
+  const ok=await appConfirm({icon:'↶',kicker:'RIPRISTINA LEZIONE',title:'Ripristinare la versione originale?',message:`La lezione tornerà a ${snapshot.original_duration} minuti.`,details:'Verranno ripristinate le attività e i tempi salvati prima del primo adattamento. Il resto della programmazione non verrà modificato.',confirmText:'Ripristina originale',danger:false});if(!ok)return;
+  const items=Array.isArray(snapshot.original_items)?snapshot.original_items:[];
+  const{error:delErr}=await db.from('pe_lesson_exercises').delete().eq('lesson_id',lessonId).eq('owner_id',st.user.id);if(delErr)throw delErr;
+  if(items.length){const payload=items.map((x,i)=>({id:x.id||undefined,owner_id:st.user.id,lesson_id:lessonId,exercise_id:x.exercise_id||null,phase:x.phase||'main',order_no:Number(x.order_no||i+1),duration_min:Number(x.duration_min||10),custom_title:x.custom_title||null,custom_explanation:x.custom_explanation||null,custom_field_dimensions:x.custom_field_dimensions||null,custom_equipment:x.custom_equipment||null,primary_game_ref:x.primary_game_ref||null,selection_reason:x.selection_reason||null,station_count:x.station_count||null,players_per_group:x.players_per_group||null}));const{error}=await db.from('pe_lesson_exercises').insert(payload);if(error)throw error}
+  const ol=snapshot.original_lesson||{};
+  const{error:lessonErr}=await db.from('pe_lessons').update({duration_min:Number(snapshot.original_duration||ol.duration_min||0),teacher_notes:ol.teacher_notes||null}).eq('id',lessonId).eq('owner_id',st.user.id);if(lessonErr)throw lessonErr;
+  const{error:snapErr}=await db.from('pe_lesson_adaptation_snapshots').update({restored_at:new Date().toISOString()}).eq('lesson_id',lessonId).eq('owner_id',st.user.id).is('restored_at',null);if(snapErr)throw snapErr;
+  await loadCore();$('#lessonModal').close();toast('Versione originale ripristinata');await openLesson(lessonId);
+}
+
 function openAdaptLessonModal(lesson,items){
-
-  adaptLessonCtx={
-  lesson,
-  items,
-
-  original:{
-    duration:Number(lesson.duration_min||0),
-
-    items:(items||[]).map(item=>({
-      id:item.id,
-      lesson_id:item.lesson_id,
-      exercise_id:item.exercise_id,
-      primary_game_ref:item.primary_game_ref,
-      phase:item.phase,
-      order_no:item.order_no,
-      duration_min:Number(item.duration_min||0),
-      custom_title:item.custom_title,
-      custom_explanation:item.custom_explanation,
-      selection_reason:item.selection_reason,
-      station_count:item.station_count,
-      players_per_group:item.players_per_group
-    }))
-  }
-};
-  const details=$('#adaptLessonDetails');
-const status=$('#adaptStatusMsg');
-const generateBtn=$('#adaptGenerateBtn');
-  const preview=$('#adaptLessonPreview');
-  preview?.classList.add('hidden');
-
-if(preview){
-  preview.innerHTML='';
-}
-
-details?.classList.add('hidden');
-status?.classList.add('hidden');
-generateBtn?.classList.add('hidden');
-
-$$('[data-adapt-reason]').forEach(x=>
-  x.classList.remove('selected')
-);
-
-  const className=
-    lesson.pe_classes?.name||'Classe';
-
-  const sportName=
-    lesson.pe_sports?.name||'Educazione fisica';
-
-  const time=
-    lesson.start_time
-      ? String(lesson.start_time).slice(0,5)
-      : '';
-
-  $('#adaptLessonContext').innerHTML=`
-    <div>
-      <span class="kicker">LEZIONE DA ADATTARE</span>
-      <strong>${esc(className)}</strong>
-      <small>
-        ${esc(sportName)}
-        · ${fmt(lesson.lesson_date)}
-        ${time ? ` · ${esc(time)}` : ''}
-        · ${lesson.duration_min}'
-      </small>
-    </div>
-  `;
-
+  adaptLessonCtx={lesson,items,original:{duration:Number(lesson.duration_min||0),items:(items||[]).map(item=>({...item,duration_min:Number(item.duration_min||0)}))}};
+  $('#adaptLessonPreview')?.classList.add('hidden');if($('#adaptLessonPreview'))$('#adaptLessonPreview').innerHTML='';
+  $('#adaptLessonDetails')?.classList.add('hidden');$('#adaptStatusMsg')?.classList.add('hidden');
+  $$('[data-adapt-time-mode]').forEach(x=>x.classList.remove('selected'));
+  const className=lesson.pe_classes?.name||'Classe',sportName=lesson.pe_sports?.name||'Educazione fisica',time=lesson.start_time?String(lesson.start_time).slice(0,5):'';
+  $('#adaptLessonContext').innerHTML=`<div><span class="kicker">LEZIONE DA ADATTARE</span><strong>${esc(className)}</strong><small>${esc(sportName)} · ${fmt(lesson.lesson_date)}${time?` · ${esc(time)}`:''} · ${lesson.duration_min}'</small></div>`;
   $('#adaptLessonModal').showModal();
 }
-$$('[data-adapt-reason]').forEach(btn=>{
 
-  btn.onclick=()=>{
-
-    $$('[data-adapt-reason]').forEach(x=>
-      x.classList.remove('selected')
-    );
-
-    btn.classList.add('selected');
-
-    const reason=btn.dataset.adaptReason;
-
-    adaptLessonCtx.reason=reason;
-
-    const box=$('#adaptLessonDetails');
-    const field=$('#adaptDynamicField');
-
-    box.classList.remove('hidden');
-
-    if(reason==='fewer_students' || reason==='more_students'){
-
-      field.innerHTML=`
-        <label>
-          Quanti alunni ci sono oggi?
-          <input
-            id="adaptStudentCount"
-            type="number"
-            min="1"
-            max="100"
-            value="${adaptLessonCtx.lesson?.pe_classes?.student_count||''}"
-          >
-        </label>
-      `;
-
-    }else if(reason==='less_time'){
-
-      field.innerHTML=`
-        <label>
-          Quanti minuti hai a disposizione?
-          <input
-            id="adaptMinutes"
-            type="number"
-            min="20"
-            max="${adaptLessonCtx.lesson.duration_min}"
-            value="${Math.min(60,adaptLessonCtx.lesson.duration_min)}"
-          >
-        </label>
-      `;
-
-    }else if(reason==='no_gym'){
-
-      field.innerHTML=`
-        <label>
-          Che spazio hai a disposizione?
-          <select id="adaptSpace">
-            <option value="small_room">Aula grande / spazio ridotto</option>
-            <option value="corridor">Corridoio</option>
-            <option value="outdoor_small">Piccolo spazio esterno</option>
-            <option value="other">Altro</option>
-          </select>
-        </label>
-      `;
-
-    }else if(reason==='no_outdoor'){
-
-      field.innerHTML=`
-        <label>
-          Dove puoi svolgere la lezione?
-          <select id="adaptSpace">
-            <option value="gym">Palestra</option>
-            <option value="small_room">Aula grande / spazio ridotto</option>
-            <option value="corridor">Corridoio</option>
-          </select>
-        </label>
-      `;
-
-    }else if(reason==='missing_material'){
-
-      field.innerHTML=`
-        <label>
-          Quale materiale non hai?
-          <textarea
-            id="adaptMissingMaterial"
-            rows="3"
-            placeholder="Es. palloni, cerchi, racchette..."
-          ></textarea>
-        </label>
-      `;
-
-    }else if(reason==='difficult_class'){
-
-      field.innerHTML=`
-        <label>
-          Che tipo di difficoltà stai incontrando?
-          <select id="adaptClassIssue">
-            <option value="attention">Poca attenzione</option>
-            <option value="chaos">Troppa confusione</option>
-            <option value="conflict">Conflitti tra alunni</option>
-            <option value="low_motivation">Scarsa motivazione</option>
-          </select>
-        </label>
-      `;
-
-    }else{
-
-      field.innerHTML=`
-        <label>
-          Descrivi cosa è cambiato
-          <textarea
-            id="adaptOtherText"
-            rows="4"
-            placeholder="Es. palestra occupata e ho solo metà campo..."
-          ></textarea>
-        </label>
-      `;
-    }
-
-  };
-
+$$('[data-adapt-time-mode]').forEach(btn=>btn.onclick=()=>{
+  if(!adaptLessonCtx)return;
+  $$('[data-adapt-time-mode]').forEach(x=>x.classList.remove('selected'));btn.classList.add('selected');
+  const reason=btn.dataset.adaptTimeMode;adaptLessonCtx.reason=reason;adaptLessonCtx.constraints=null;adaptLessonCtx.proposal=null;
+  const current=Number(adaptLessonCtx.lesson.duration_min||0),more=reason==='more_time';
+  $('#adaptDynamicField').innerHTML=`<div class="adapt-minute-panel"><label class="adapt-minutes-field"><span>Minuti totali a disposizione oggi</span><input id="adaptMinutes" type="number" min="20" max="300" step="5" value="${more?Math.min(300,current+30):Math.max(20,current-30)}"><small>Durata normale: ${current} minuti.</small></label></div>`;
+  $('#adaptLessonDetails').classList.remove('hidden');$('#adaptLessonPreview').classList.add('hidden');$('#adaptStatusMsg').classList.add('hidden');
 });
-$('#adaptCancelBtn').onclick=()=>{
-  $('#adaptLessonModal').close();
-};
 
-$('#adaptContinueBtn').onclick=()=>{
-
-  if(!adaptLessonCtx?.reason){
-    toast('Seleziona prima cosa è cambiato');
-    return;
-  }
-
-  const lesson=adaptLessonCtx.lesson;
-  const reason=adaptLessonCtx.reason;
-
-  /*
-   * Oggetto che conterrà tutti i vincoli
-   * dell'adattamento.
-   */
-  const constraints={
-    reason,
-
-    originalDuration:
-      Number(lesson.duration_min||0),
-
-    newDuration:
-      Number(lesson.duration_min||0),
-
-    originalStudents:
-      Number(
-        lesson.pe_classes?.student_count||0
-      ),
-
-    newStudents:
-      Number(
-        lesson.pe_classes?.student_count||0
-      ),
-
-    space:null,
-
-    missingMaterial:[],
-
-    classIssue:null,
-
-    otherText:null
-  };
-
-
-  /* =====================================================
-     NUMERO ALUNNI
-     ===================================================== */
-
-  if(
-    reason==='fewer_students' ||
-    reason==='more_students'
-  ){
-
-    const value=
-      Number($('#adaptStudentCount')?.value);
-
-    if(!value || value<1){
-
-      toast('Inserisci il numero di alunni presenti');
-      return;
-
-    }
-
-    constraints.newStudents=value;
-  }
-
-
-  /* =====================================================
-     TEMPO DISPONIBILE
-     ===================================================== */
-
-  if(reason==='less_time'){
-
-    const value=
-      Number($('#adaptMinutes')?.value);
-
-    if(!value || value<20){
-
-      toast('Inserisci una durata valida');
-      return;
-
-    }
-
-    if(value>=constraints.originalDuration){
-
-      toast(
-        'La nuova durata deve essere inferiore a quella originale'
-      );
-
-      return;
-    }
-
-    constraints.newDuration=value;
-  }
-
-
-  /* =====================================================
-     SPAZIO
-     ===================================================== */
-
-  if(
-    reason==='no_gym' ||
-    reason==='no_outdoor'
-  ){
-
-    constraints.space=
-      $('#adaptSpace')?.value||null;
-  }
-
-
-  /* =====================================================
-     MATERIALE MANCANTE
-     ===================================================== */
-
-  if(reason==='missing_material'){
-
-    const raw=
-      $('#adaptMissingMaterial')
-        ?.value
-        ?.trim();
-
-    if(!raw){
-
-      toast('Indica quale materiale non hai');
-      return;
-
-    }
-
-    constraints.missingMaterial=
-      raw
-        .split(',')
-        .map(x=>x.trim())
-        .filter(Boolean);
-  }
-
-
-  /* =====================================================
-     CLASSE DIFFICILE DA GESTIRE
-     ===================================================== */
-
-  if(reason==='difficult_class'){
-
-    constraints.classIssue=
-      $('#adaptClassIssue')?.value||null;
-  }
-
-
-  /* =====================================================
-     ALTRO
-     ===================================================== */
-
-  if(reason==='other'){
-
-    const text=
-      $('#adaptOtherText')
-        ?.value
-        ?.trim();
-
-    if(!text){
-
-      toast('Descrivi brevemente cosa è cambiato');
-      return;
-
-    }
-
-    constraints.otherText=text;
-  }
-
-
-  /*
-   * Salviamo i vincoli nel contesto temporaneo.
-   * NON viene ancora modificato nulla nel database.
-   */
-  adaptLessonCtx.constraints=
-    constraints;
-
-
-  console.log(
-    '⚡ AttivaMente · vincoli adattamento',
-    {
-      lessonId:lesson.id,
-      classId:lesson.class_id,
-      sportId:lesson.pe_sports?.id||null,
-      learningGoal:lesson.learning_goal||null,
-      constraints
-    }
-  );
-
-
- const statusMsg=$('#adaptStatusMsg');
-
-if(statusMsg){
-
-  statusMsg.textContent=
-    reason==='less_time'
-      ? `✓ Adattamento impostato: ${constraints.newDuration} minuti disponibili.`
-      : reason==='fewer_students' || reason==='more_students'
-      ? `✓ Adattamento impostato: ${constraints.newStudents} alunni presenti.`
-      : '✓ Imprevisto acquisito. AttivaMente può preparare una versione adattata.';
-
-  statusMsg.classList.remove('hidden');
-  const generateBtn=$('#adaptGenerateBtn');
-
-if(generateBtn){
-
-  if(reason==='less_time'){
-    generateBtn.classList.remove('hidden');
-  }else{
-    generateBtn.classList.add('hidden');
-  }
-
+$('#adaptCancelBtn')?.addEventListener('click',()=>$('#adaptLessonModal').close());
+$('#closeAdaptLessonModal')?.addEventListener('click',()=>$('#adaptLessonModal').close());
+$('#adaptGenerateBtn')?.addEventListener('click',async()=>{
+  if(!adaptLessonCtx?.reason)return toast('Scegli prima se oggi hai più o meno tempo');
+  const current=Number(adaptLessonCtx.lesson.duration_min||0),value=Number($('#adaptMinutes')?.value),reason=adaptLessonCtx.reason;
+  if(!value||value<20||value>300)return toast('Inserisci una durata valida tra 20 e 300 minuti');
+  if(reason==='less_time'&&value>=current)return toast('Per “meno tempo” inserisci una durata inferiore a quella normale');
+  if(reason==='more_time'&&value<=current)return toast('Per “più tempo” inserisci una durata superiore a quella normale');
+  adaptLessonCtx.constraints={reason,originalDuration:current,newDuration:value};
+  const status=$('#adaptStatusMsg');status.textContent='AttivaMente sta preparando la proposta…';status.classList.remove('hidden');
+  try{const proposal=reason==='less_time'?buildShorterLessonProposal(adaptLessonCtx.items,value):await buildLongerLessonProposal(adaptLessonCtx.lesson,adaptLessonCtx.items,value);if(!proposal.ok)throw new Error(proposal.error||'Non riesco a costruire una proposta coerente');adaptLessonCtx.proposal=proposal;renderAdaptLessonPreview(proposal);status.innerHTML=`✓ Versione da <strong>${proposal.targetMinutes} minuti</strong> preparata. Nessuna modifica è stata ancora applicata.`}catch(err){console.error(err);status.textContent=err.message||'Impossibile preparare la versione adattata';toast(status.textContent)}
+});
+
+async function openLesson(id){
+  const [{data:l,error:lessonErr},{data:it,error:itemErr},{data:snapshot,error:snapshotErr}]=await Promise.all([
+    db.from('pe_lessons').select('*,pe_classes!pe_lessons_class_id_fkey(name),pe_sports(id,name)').eq('id',id).single(),
+    db.from('pe_lesson_exercises').select('*,pe_exercises!pe_lesson_exercises_exercise_id_fkey(*)').eq('lesson_id',id).order('order_no'),
+    db.from('pe_lesson_adaptation_snapshots').select('id,original_duration,adapted_duration,reason,created_at').eq('lesson_id',id).eq('owner_id',st.user.id).is('restored_at',null).order('created_at',{ascending:true}).limit(1).maybeSingle()
+  ]);
+  if(lessonErr)return toast(lessonErr.message);if(itemErr)return toast(itemErr.message);if(snapshotErr)console.warn('Snapshot adattamento',snapshotErr);
+  $('#lessonModalTitle').textContent=l.title;const when=l.start_time?`${String(l.start_time).slice(0,5)}${l.end_time?'–'+String(l.end_time).slice(0,5):''}`:'';
+  const adaptedBanner=snapshot?`<div class="lesson-adapted-banner"><div><span class="kicker">⚡ LEZIONE ADATTATA</span><strong>${snapshot.original_duration}' → ${l.duration_min}'</strong><small>Questa modifica riguarda solo la durata della lezione.</small></div><button type="button" class="btn secondary restore-original-btn" id="restoreOriginalLessonBtn">↶ Ripristina originale</button></div>`:'';
+  $('#lessonBody').innerHTML=`<div class="lesson-summary-hero"><div><span class="kicker">LEZIONE PROGRAMMATA</span><h4>${esc(l.pe_sports?.name||'Educazione fisica')}</h4><p>${esc(l.learning_goal||'Progressione didattica generata dall’archivio verificato.')}</p></div><div class="lesson-summary-chips"><span class="chip">${esc(l.pe_classes?.name)}</span><span class="chip">${fmt(l.lesson_date)}</span>${when?`<span class="chip">${when}</span>`:''}<span class="chip good">${l.duration_min}' totali</span></div></div>${adaptedBanner}<div class="lesson-timeline">${(it||[]).map(x=>{const pm=primaryMarker(x.primary_game_ref),ex=x.pe_exercises,clickable=x.exercise_id||pm;return`<div class="lesson-row ${clickable?'lesson-row-clickable':''}" ${x.exercise_id?`data-card-ex="${x.exercise_id}"`:pm?`data-card-primary="${pm}"`:''}><div class="lesson-time">${x.duration_min}'</div><div><span class="kicker">${phaseLabel[x.phase]||x.phase}</span><strong>${esc(x.custom_title||ex?.name||'Attività')}</strong><p>${esc(x.custom_explanation||ex?.student_explanation||'')}</p><div class="category-pills">${ex?.difficulty?`<span class="chip">Liv. ${ex.difficulty}/5</span>`:''}${ex?.field_dimensions?`<span class="chip">Campo ${esc(ex.field_dimensions)}</span>`:''}${x.station_count?`<span class="chip">${x.station_count} campi/stazioni</span><span class="chip">${x.players_per_group} alunni/gruppo</span>`:''}</div>${x.selection_reason?`<small class="selection-reason">✦ ${esc(x.selection_reason)}</small>`:''}</div><div class="lesson-actions">${x.exercise_id?`<button class="btn secondary small-btn" data-open-ex="${x.exercise_id}">Apri scheda</button>`:pm?`<button class="btn secondary small-btn" data-open-primary="${pm}">Apri scheda</button>`:''}<button class="btn primary small-btn" data-replace-item="${x.id}">Cambia</button></div></div>`}).join('')}</div><div class="lesson-management"><span class="kicker">GESTISCI LEZIONE</span><div class="lesson-management-grid"><button class="btn adapt-lesson-btn" id="adaptLessonBtn">⚡ Adatta lezione</button>${snapshot?'<button class="btn secondary restore-original-btn" id="restoreOriginalLessonBtnBottom">↶ Ripristina originale</button>':''}<button class="btn secondary" id="moveLessonBtn">📅 Sposta a data scelta</button>${l.module_id?`<button class="btn secondary" id="shiftLessonBtn">↪ Slitta questa e le successive</button>`:''}<button class="btn danger" id="deleteLessonBtn">🗑 Elimina lezione</button></div><small class="muted">“Adatta lezione” modifica soltanto il tempo di questa singola lezione. Spostamenti e altre lezioni del modulo restano intatti.</small></div>`;
+  $$('[data-open-ex]').forEach(b=>b.onclick=e=>{e.stopPropagation();openExercise(b.dataset.openEx)});$$('[data-open-primary]').forEach(b=>b.onclick=async e=>{e.stopPropagation();await loadPrimaryGames();openPrimaryGame(b.dataset.openPrimary)});$$('[data-card-ex]').forEach(r=>r.onclick=e=>{if(e.target.closest('button'))return;openExercise(r.dataset.cardEx)});$$('[data-card-primary]').forEach(r=>r.onclick=async e=>{if(e.target.closest('button'))return;await loadPrimaryGames();openPrimaryGame(r.dataset.cardPrimary)});$$('[data-replace-item]').forEach(b=>b.onclick=e=>{e.stopPropagation();startReplacement(b.dataset.replaceItem,l,it||[])});
+  $('#adaptLessonBtn').onclick=()=>openAdaptLessonModal(l,it||[]);$('#restoreOriginalLessonBtn')?.addEventListener('click',()=>restoreOriginalLesson(l.id));$('#restoreOriginalLessonBtnBottom')?.addEventListener('click',()=>restoreOriginalLesson(l.id));$('#moveLessonBtn').onclick=()=>moveLessonToChosenDate(l);if($('#shiftLessonBtn'))$('#shiftLessonBtn').onclick=()=>shiftLessonChain(l);$('#deleteLessonBtn').onclick=()=>deleteSingleLesson(l);$('#lessonModal').showModal();
 }
-}
-
-};
-$('#adaptGenerateBtn').onclick=()=>{
-
-  if(!adaptLessonCtx?.constraints){
-    toast('Prima conferma il nuovo imprevisto');
-    return;
-  }
-
-  const constraints=
-    adaptLessonCtx.constraints;
-
-  if(constraints.reason!=='less_time'){
-    toast('Questo adattamento non è ancora disponibile');
-    return;
-  }
-
-  const proposal=
-    buildShorterLessonProposal(
-      adaptLessonCtx.items,
-      constraints.newDuration
-    );
-
-  if(!proposal.ok){
-
-    console.warn(
-      '⚡ Proposta adattamento non valida',
-      proposal
-    );
-
-    toast(
-      'Non riesco ancora ad adattare correttamente questa lezione'
-    );
-
-    return;
-  }
-
-  /*
-   * Conserviamo la proposta solamente in memoria.
-   * Supabase NON viene toccato.
-   */
-  adaptLessonCtx.proposal=
-    proposal;
-  renderAdaptLessonPreview(proposal);
-
-  console.log(
-    '⚡ AttivaMente · proposta lezione adattata',
-    proposal
-  );
-
-  const status=$('#adaptStatusMsg');
-
-  if(status){
-
-    status.innerHTML=`
-      ✓ Versione da
-      <strong>${proposal.targetMinutes} minuti</strong>
-      preparata.
-      Nessuna modifica è stata ancora applicata.
-    `;
-
-    status.classList.remove('hidden');
-  }
-
-};
-$('#closeAdaptLessonModal').onclick=()=>{
-  $('#adaptLessonModal').close();
-};
-async function openLesson(id){let{data:l,error:lessonErr}=await db.from('pe_lessons').select('*,pe_classes!pe_lessons_class_id_fkey(name),pe_sports(id,name)').eq('id',id).single(),{data:it,error:itemErr}=await db.from('pe_lesson_exercises').select('*,pe_exercises!pe_lesson_exercises_exercise_id_fkey(*)').eq('lesson_id',id).order('order_no');if(lessonErr)return toast(lessonErr.message);if(itemErr)return toast(itemErr.message);$('#lessonModalTitle').textContent=l.title;const when=l.start_time?`${String(l.start_time).slice(0,5)}${l.end_time?'–'+String(l.end_time).slice(0,5):''}`:'';$('#lessonBody').innerHTML=`<div class="lesson-summary-hero"><div><span class="kicker">LEZIONE PROGRAMMATA</span><h4>${esc(l.pe_sports?.name||'Educazione fisica')}</h4><p>${esc(l.learning_goal||'Progressione didattica generata dall’archivio verificato.')}</p></div><div class="lesson-summary-chips"><span class="chip">${esc(l.pe_classes?.name)}</span><span class="chip">${fmt(l.lesson_date)}</span>${when?`<span class="chip">${when}</span>`:''}<span class="chip good">${l.duration_min}' totali</span></div></div><div class="lesson-timeline">${(it||[]).map(x=>{const pm=primaryMarker(x.primary_game_ref),ex=x.pe_exercises;const clickable=x.exercise_id||pm;return`<div class="lesson-row ${clickable?'lesson-row-clickable':''}" ${x.exercise_id?`data-card-ex="${x.exercise_id}"`:pm?`data-card-primary="${pm}"`:''}><div class="lesson-time">${x.duration_min}'</div><div><span class="kicker">${phaseLabel[x.phase]||x.phase}</span><strong>${esc(x.custom_title||ex?.name||'Attività')}</strong><p>${esc(x.custom_explanation||ex?.student_explanation||'')}</p><div class="category-pills">${ex?.difficulty?`<span class="chip">Liv. ${ex.difficulty}/5</span>`:''}${ex?.field_dimensions?`<span class="chip">Campo ${esc(ex.field_dimensions)}</span>`:''}${x.station_count?`<span class="chip">${x.station_count} campi/stazioni</span><span class="chip">${x.players_per_group} alunni/gruppo</span>`:''}</div>${x.selection_reason?`<small class="selection-reason">✦ ${esc(x.selection_reason)}</small>`:''}</div><div class="lesson-actions">${x.exercise_id?`<button class="btn secondary small-btn" data-open-ex="${x.exercise_id}">Apri scheda</button>`:pm?`<button class="btn secondary small-btn" data-open-primary="${pm}">Apri scheda</button>`:''}<button class="btn primary small-btn" data-replace-item="${x.id}">Cambia</button></div></div>`}).join('')}</div><div class="lesson-management"><span class="kicker">GESTISCI LEZIONE</span><div class="lesson-management-grid">
-
-  <button class="btn adapt-lesson-btn" id="adaptLessonBtn">
-    ⚡ Adatta lezione
-  </button>
-
-  <button class="btn secondary" id="moveLessonBtn">
-    📅 Sposta a data scelta
-  </button>
-
-  ${l.module_id
-    ? `<button class="btn secondary" id="shiftLessonBtn">
-         ↪ Slitta questa e le successive
-       </button>`
-    : ''
-  }
-
-  <button class="btn danger" id="deleteLessonBtn">
-    🗑 Elimina lezione
-  </button>
-
-</div>
-<small class="muted">Spostamento ed eliminazione mantengono intatti gli esercizi delle altre lezioni. Lo slittamento usa le prossime giornate utili dell’orario della classe.</small></div>`;$$('[data-open-ex]').forEach(b=>b.onclick=e=>{e.stopPropagation();openExercise(b.dataset.openEx)});$$('[data-open-primary]').forEach(b=>b.onclick=async e=>{e.stopPropagation();await loadPrimaryGames();openPrimaryGame(b.dataset.openPrimary)});$$('[data-card-ex]').forEach(r=>r.onclick=e=>{if(e.target.closest('button'))return;openExercise(r.dataset.cardEx)});$$('[data-card-primary]').forEach(r=>r.onclick=async e=>{if(e.target.closest('button'))return;await loadPrimaryGames();openPrimaryGame(r.dataset.cardPrimary)});$$('[data-replace-item]').forEach(b=>b.onclick=e=>{e.stopPropagation();startReplacement(b.dataset.replaceItem,l,it||[])});
-  const adapt=$('#adaptLessonBtn'),
-      mv=$('#moveLessonBtn'),
-      sh=$('#shiftLessonBtn'),
-      dl=$('#deleteLessonBtn');
-    if(adapt){
-  adapt.onclick=()=>openAdaptLessonModal(l,it||[]);
-}                          
-  if(mv)mv.onclick=()=>moveLessonToChosenDate(l);
-  if(sh)sh.onclick=()=>shiftLessonChain(l);
-  if(dl)dl.onclick=()=>deleteSingleLesson(l);
-  $('#lessonModal').showModal()}
 
 async function deleteSingleLesson(lesson){
   const extra=lesson.module_id?'Le lezioni successive del blocco verranno rinumerate automaticamente.':'La lezione verrà rimossa dal calendario.';
@@ -3330,371 +568,15 @@ async function deleteSingleLesson(lesson){
   $('#lessonModal').close();toast('Lezione eliminata');await loadCore();renderCalendar();renderModules();
 }
 async function moveLessonToChosenDate(lesson){
-
-  const modal=document.createElement('dialog');
-  modal.className='modal move-lesson-date-modal';
-
-  modal.innerHTML=`
-    <div class="modal-head">
-      <div>
-        <span class="kicker">SPOSTA LEZIONE</span>
-        <h3>Scegli la nuova data</h3>
-      </div>
-
-      <button
-        type="button"
-        class="move-date-close"
-        aria-label="Chiudi"
-      >×</button>
-    </div>
-
-    <div class="move-date-content">
-
-      <div class="move-date-icon">📅</div>
-
-      <p>
-        Seleziona dal calendario il giorno in cui vuoi svolgere
-        <strong>${esc(lesson.title||'questa lezione')}</strong>.
-      </p>
-
-      <label class="move-date-field">
-        Nuova data
-        <input
-          id="moveLessonDateInput"
-          type="date"
-          value="${esc(lesson.lesson_date||'')}"
-          min="${esc(st.year?.start_date||'')}"
-          max="${esc(st.year?.end_date||'')}"
-        >
-      </label>
-
-      <div class="move-date-current">
-        <span>Data attuale</span>
-        <strong>${fmt(lesson.lesson_date)}</strong>
-      </div>
-
-      <div class="move-date-actions">
-        <button
-          type="button"
-          class="btn secondary move-date-cancel"
-        >
-          Annulla
-        </button>
-
-        <button
-          type="button"
-          class="btn primary move-date-confirm"
-        >
-          Continua
-        </button>
-      </div>
-
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  const close=()=>{
-    try{modal.close()}catch{}
-    modal.remove();
-  };
-
-  modal.querySelector('.move-date-close').onclick=close;
-  modal.querySelector('.move-date-cancel').onclick=close;
-
-  modal.oncancel=e=>{
-    e.preventDefault();
-    close();
-  };
-
-  modal.querySelector('.move-date-confirm').onclick=async()=>{
-
-    const date=modal.querySelector('#moveLessonDateInput').value;
-
-    if(!date){
-      toast('Seleziona una nuova data');
-      return;
-    }
-
-    if(date===lesson.lesson_date){
-      toast('Hai selezionato la stessa data');
-      return;
-    }
-
-    /*
-     * Controlliamo se questa lezione appartiene a un modulo
-     * e se esistono lezioni successive dello stesso modulo.
-     */
-    let hasFollowingLessons=false;
-    let followingCount=0;
-
-    if(lesson.module_id){
-
-      const {data:following,error:followingError}=await db
-        .from('pe_lessons')
-        .select('id,sequence_no')
-        .eq('module_id',lesson.module_id)
-        .gt('sequence_no',lesson.sequence_no);
-
-      if(followingError){
-        toast('Errore nel controllo delle lezioni successive');
-        return;
-      }
-
-      followingCount=(following||[]).length;
-      hasFollowingLessons=followingCount>0;
-    }
-
-    /*
-     * Se è l'ultima lezione del modulo,
-     * non serve chiedere nulla:
-     * spostiamo soltanto questa.
-     */
-    if(!hasFollowingLessons){
-
-      const btn=modal.querySelector('.move-date-confirm');
-
-      btn.disabled=true;
-      btn.textContent='Spostamento…';
-
-      const {error}=await db.rpc(
-        'pe_move_lesson_date',
-        {
-          p_lesson_id:lesson.id,
-          p_new_date:date
-        }
-      );
-
-      if(error){
-        btn.disabled=false;
-        btn.textContent='Continua';
-        toast('Errore: '+error.message);
-        return;
-      }
-
-      close();
-
-      $('#lessonModal').close();
-
-      toast('Lezione spostata');
-
-      await loadCore();
-
-      renderCalendar();
-      renderModules();
-
-      return;
-    }
-
-    /*
-     * Ci sono lezioni successive.
-     * Chiudiamo il calendario e chiediamo cosa fare.
-     */
-    close();
-
-    const choiceModal=document.createElement('dialog');
-    choiceModal.className='modal move-chain-choice-modal';
-
-    choiceModal.innerHTML=`
-      <div class="modal-head">
-        <div>
-          <span class="kicker">GESTISCI LA PROGRESSIONE</span>
-          <h3>Come vuoi spostare la lezione?</h3>
-        </div>
-
-        <button
-          type="button"
-          class="move-chain-close"
-          aria-label="Chiudi"
-        >×</button>
-      </div>
-
-      <div class="move-chain-content">
-
-        <div class="move-chain-icon">↪</div>
-
-        <p>
-          Dopo questa lezione ci sono ancora
-          <strong>
-            ${followingCount}
-            ${followingCount===1?'lezione':'lezioni'}
-          </strong>
-          dello stesso modulo.
-        </p>
-
-        <p class="move-chain-question">
-          Vuoi modificare solamente questa data oppure
-          ripianificare automaticamente anche le successive?
-        </p>
-
-        <div class="move-chain-options">
-
-          <button
-            type="button"
-            class="move-chain-option move-only-one"
-          >
-            <span class="move-option-icon">📅</span>
-
-            <span class="move-option-copy">
-              <strong>Sposta solo questa</strong>
-              <small>
-                Le altre lezioni manterranno le date attuali.
-              </small>
-            </span>
-
-            <span class="move-option-arrow">→</span>
-          </button>
-
-          <button
-            type="button"
-            class="move-chain-option recommended move-all-next"
-          >
-            <span class="move-option-icon">↪</span>
-
-            <span class="move-option-copy">
-              <strong>Questa e le successive</strong>
-              <small>
-                AttivaMente ripianificherà le lezioni successive
-                sulle prossime giornate utili della classe.
-              </small>
-            </span>
-
-            <span class="move-option-arrow">→</span>
-          </button>
-
-        </div>
-
-        <div class="move-chain-date-summary">
-          <span>Nuova data scelta</span>
-          <strong>${fmt(date)}</strong>
-        </div>
-
-        <button
-          type="button"
-          class="btn ghost move-chain-cancel"
-        >
-          Annulla
-        </button>
-
-      </div>
-    `;
-
-    document.body.appendChild(choiceModal);
-
-    const closeChoice=()=>{
-      try{choiceModal.close()}catch{}
-      choiceModal.remove();
-    };
-
-    choiceModal.querySelector('.move-chain-close').onclick=closeChoice;
-    choiceModal.querySelector('.move-chain-cancel').onclick=closeChoice;
-
-    choiceModal.oncancel=e=>{
-      e.preventDefault();
-      closeChoice();
-    };
-
-    /*
-     * OPZIONE 1
-     * Sposta soltanto questa lezione.
-     */
-    choiceModal.querySelector('.move-only-one').onclick=async()=>{
-
-      const buttons=choiceModal.querySelectorAll('button');
-
-      buttons.forEach(b=>b.disabled=true);
-
-      const {error}=await db.rpc(
-        'pe_move_lesson_date',
-        {
-          p_lesson_id:lesson.id,
-          p_new_date:date
-        }
-      );
-
-      if(error){
-        buttons.forEach(b=>b.disabled=false);
-        toast('Errore: '+error.message);
-        return;
-      }
-
-      closeChoice();
-
-      $('#lessonModal').close();
-
-      toast('Lezione spostata');
-
-      await loadCore();
-
-      renderCalendar();
-      renderModules();
-    };
-
-    /*
-     * OPZIONE 2
-     * Sposta questa e ripianifica tutte le successive
-     * dello stesso modulo.
-     */
-    choiceModal.querySelector('.move-all-next').onclick=async()=>{
-
-      const buttons=choiceModal.querySelectorAll('button');
-
-      buttons.forEach(b=>b.disabled=true);
-
-      const selected=
-        choiceModal.querySelector('.move-all-next strong');
-
-      if(selected){
-        selected.textContent='Ripianificazione…';
-      }
-
-      const {data,error}=await db.rpc(
-        'pe_move_lesson_chain_to_date',
-        {
-          p_lesson_id:lesson.id,
-          p_new_date:date
-        }
-      );
-
-      if(error){
-
-        buttons.forEach(b=>b.disabled=false);
-
-        if(selected){
-          selected.textContent='Questa e le successive';
-        }
-
-        toast('Errore: '+error.message);
-
-        return;
-      }
-
-      closeChoice();
-
-      $('#lessonModal').close();
-
-      toast(
-        `${data?.moved_lessons||followingCount+1} lezioni ripianificate`
-      );
-
-      await loadCore();
-
-      renderCalendar();
-      renderModules();
-    };
-
-    choiceModal.showModal();
-  };
-
-  modal.showModal();
-
-  const input=modal.querySelector('#moveLessonDateInput');
-
-  setTimeout(()=>{
-    try{
-      input.showPicker?.();
-    }catch{}
-  },150);
+  const modal=document.createElement('dialog');modal.className='modal move-lesson-date-modal';
+  modal.innerHTML=`<div class="modal-head"><div><span class="kicker">SPOSTA LEZIONE</span><h3>Scegli la nuova data</h3></div><button type="button" class="move-date-close" aria-label="Chiudi">×</button></div><div class="move-date-content"><div class="move-date-icon">📅</div><p>Seleziona dal calendario il giorno in cui vuoi svolgere <strong>${esc(lesson.title||'questa lezione')}</strong>.</p><label class="move-date-field">Nuova data<input id="moveLessonDateInput" type="date" value="${esc(lesson.lesson_date||'')}" min="${esc(st.year?.start_date||'')}" max="${esc(st.year?.end_date||'')}"></label><div class="move-date-current"><span>Data attuale</span><strong>${fmt(lesson.lesson_date)}</strong></div><div class="move-date-actions"><button type="button" class="btn secondary move-date-cancel">Annulla</button><button type="button" class="btn primary move-date-confirm">Continua</button></div></div>`;
+  document.body.appendChild(modal);const close=()=>{try{modal.close()}catch{}modal.remove()};modal.querySelector('.move-date-close').onclick=close;modal.querySelector('.move-date-cancel').onclick=close;modal.oncancel=e=>{e.preventDefault();close()};
+  modal.querySelector('.move-date-confirm').onclick=async()=>{const date=modal.querySelector('#moveLessonDateInput').value;if(!date)return toast('Seleziona una nuova data');if(date===lesson.lesson_date)return toast('Hai selezionato la stessa data');let followingCount=0;if(lesson.module_id){const{data,error}=await db.from('pe_lessons').select('id,sequence_no').eq('module_id',lesson.module_id).gt('sequence_no',lesson.sequence_no);if(error)return toast('Errore nel controllo delle lezioni successive');followingCount=(data||[]).length}
+    if(!followingCount){const btn=modal.querySelector('.move-date-confirm');btn.disabled=true;btn.textContent='Spostamento…';const{error}=await db.rpc('pe_move_lesson_date',{p_lesson_id:lesson.id,p_new_date:date});if(error){btn.disabled=false;btn.textContent='Continua';return toast('Errore: '+error.message)}close();$('#lessonModal').close();toast('Lezione spostata');await loadCore();renderCalendar();renderModules();return}
+    close();const choice=document.createElement('dialog');choice.className='modal move-chain-choice-modal';choice.innerHTML=`<div class="modal-head"><div><span class="kicker">GESTISCI LA PROGRESSIONE</span><h3>Come vuoi spostare la lezione?</h3></div><button type="button" class="move-chain-close">×</button></div><div class="move-chain-content"><div class="move-chain-icon">↪</div><p>Dopo questa lezione ci sono ancora <strong>${followingCount} ${followingCount===1?'lezione':'lezioni'}</strong> dello stesso modulo.</p><p class="move-chain-question">Vuoi modificare solamente questa data oppure ripianificare automaticamente anche le successive?</p><div class="move-chain-options"><button type="button" class="move-chain-option move-only-one"><span class="move-option-icon">📅</span><span class="move-option-copy"><strong>Sposta solo questa</strong><small>Le altre lezioni manterranno le date attuali.</small></span><span class="move-option-arrow">→</span></button><button type="button" class="move-chain-option recommended move-all-next"><span class="move-option-icon">↪</span><span class="move-option-copy"><strong>Questa e le successive</strong><small>AttivaMente ripianificherà le lezioni successive sulle prossime giornate utili della classe.</small></span><span class="move-option-arrow">→</span></button></div><div class="move-chain-date-summary"><span>Nuova data scelta</span><strong>${fmt(date)}</strong></div><button type="button" class="btn ghost move-chain-cancel">Annulla</button></div>`;document.body.appendChild(choice);const cc=()=>{try{choice.close()}catch{}choice.remove()};choice.querySelector('.move-chain-close').onclick=cc;choice.querySelector('.move-chain-cancel').onclick=cc;choice.oncancel=e=>{e.preventDefault();cc()};
+    choice.querySelector('.move-only-one').onclick=async()=>{choice.querySelectorAll('button').forEach(b=>b.disabled=true);const{error}=await db.rpc('pe_move_lesson_date',{p_lesson_id:lesson.id,p_new_date:date});if(error){choice.querySelectorAll('button').forEach(b=>b.disabled=false);return toast('Errore: '+error.message)}cc();$('#lessonModal').close();toast('Lezione spostata');await loadCore();renderCalendar();renderModules()};
+    choice.querySelector('.move-all-next').onclick=async()=>{choice.querySelectorAll('button').forEach(b=>b.disabled=true);const{data,error}=await db.rpc('pe_move_lesson_chain_to_date',{p_lesson_id:lesson.id,p_new_date:date});if(error){choice.querySelectorAll('button').forEach(b=>b.disabled=false);return toast('Errore: '+error.message)}cc();$('#lessonModal').close();toast(`${data?.moved_lessons||followingCount+1} lezioni ripianificate`);await loadCore();renderCalendar();renderModules()};choice.showModal();
+  };modal.showModal();setTimeout(()=>{try{modal.querySelector('#moveLessonDateInput').showPicker?.()}catch{}},150);
 }
 async function shiftLessonChain(lesson){
   const raw=prompt('Di quante occasioni di lezione vuoi slittare questa lezione e tutte le successive?','1');
@@ -3715,337 +597,15 @@ async function shiftLessonChain(lesson){
 }
 
 async function startReplacement(itemId,lesson,items){
-
-  const item=items.find(x=>x.id===itemId);
-  if(!item)return;
-
-  replaceCtx={item,lesson};
-
-  const isPrimaryGame=
-    !!primaryMarker(item.primary_game_ref);
-
-  const sameBtn=$('#replaceSameSport');
-  const freeBtn=$('#replaceFree');
-
-
-  /* =====================================================
-     ATTIVITÀ PROVENIENTE DAL LIBRO DEI GIOCHI
-     ===================================================== */
-
-  if(isPrimaryGame){
-
-    if(sameBtn){
-      sameBtn.innerHTML=`
-        📚 Altro gioco dal Libro dei giochi
-        <small style="display:block;margin-top:5px;opacity:.72">
-          Cerca un altro gioco del tuo archivio primaria
-        </small>
-      `;
-    }
-
-    if(freeBtn){
-      freeBtn.innerHTML=`
-        🏅 Scegli dall'archivio sportivo
-        <small style="display:block;margin-top:5px;opacity:.72">
-          Sostituisci il gioco con un'attività sportiva
-        </small>
-      `;
-    }
-
-  }
-
-
-  /* =====================================================
-     ATTIVITÀ SPORTIVA
-     ===================================================== */
-
-  else{
-
-    if(sameBtn){
-      sameBtn.innerHTML=`
-        ↻ Scegli un'attività simile
-        <small style="display:block;margin-top:5px;opacity:.72">
-          Rimani nello stesso sport
-        </small>
-      `;
-    }
-
-    if(freeBtn){
-      freeBtn.innerHTML=`
-        ✦ Scegli liberamente
-        <small style="display:block;margin-top:5px;opacity:.72">
-          Cerca un'altra attività nell'archivio
-        </small>
-      `;
-    }
-
-  }
-
+  const item=items.find(x=>x.id===itemId);if(!item)return;replaceCtx={item,lesson};const primary=!!primaryMarker(item.primary_game_ref),same=$('#replaceSameSport'),free=$('#replaceFree');
+  if(primary){if(same)same.innerHTML=`📚 Altro gioco dal Libro dei giochi<small style="display:block;margin-top:5px;opacity:.72">Cerca un altro gioco del tuo archivio primaria</small>`;if(free)free.innerHTML=`🏅 Scegli dall'archivio sportivo<small style="display:block;margin-top:5px;opacity:.72">Sostituisci il gioco con un'attività sportiva</small>`}
+  else{if(same)same.innerHTML=`↻ Scegli un'attività simile<small style="display:block;margin-top:5px;opacity:.72">Rimani nello stesso sport</small>`;if(free)free.innerHTML=`✦ Scegli liberamente<small style="display:block;margin-top:5px;opacity:.72">Cerca un'altra attività nell'archivio</small>`}
   $('#replaceModeModal').showModal();
 }
-
-
-/* =========================================================
-   PRIMO PULSANTE
-   ========================================================= */
-
-$('#replaceSameSport').onclick=async()=>{
-
-  if(!replaceCtx)return;
-
-  const item=replaceCtx.item;
-
-  const primaryGame=
-    primaryMarker(item.primary_game_ref);
-
-  $('#replaceModeModal').close();
-
-
-  /*
-   * Se il gioco arriva dal Libro dei giochi,
-   * apro direttamente il Libro dei giochi.
-   */
-  if(primaryGame){
-
-    const cl=st.classes.find(
-      x=>x.id===replaceCtx.lesson.class_id
-    );
-
-    /*
-     * Se conosco la classe primaria,
-     * uso il picker filtrato per difficoltà.
-     */
-    if(cl?.school_level==='primary'){
-
-      await showPrimaryReplacementPickerForClass(cl);
-
-    }else{
-
-      await showPrimaryReplacementPicker();
-
-    }
-
-    return;
-  }
-
-
-  /*
-   * Se invece è un esercizio sportivo,
-   * resto nello stesso sport.
-   */
-  const sportId=
-    item.pe_exercises?.sport_id ||
-    replaceCtx.lesson.pe_sports?.id;
-
-  if(sportId){
-    await showExerciseReplacementPicker(sportId);
-  }
-};
-
-
-/* =========================================================
-   SECONDO PULSANTE
-   ========================================================= */
-
-$('#replaceFree').onclick=()=>{
-
-  if(!replaceCtx)return;
-
-  const isPrimaryGame=
-    !!primaryMarker(
-      replaceCtx.item.primary_game_ref
-    );
-
-  $('#replaceModeModal').close();
-
-
-  /*
-   * Libro dei giochi:
-   * il secondo pulsante significa
-   * "vai nell'archivio sportivo".
-   */
-  if(isPrimaryGame){
-
-    showReplacementSports({
-      includePrimary:false
-    });
-
-    return;
-  }
-
-
-  /*
-   * Attività sportiva:
-   * scelta libera normale.
-   */
-  showReplacementSports({
-    includePrimary:true
-  });
-};
-async function showPrimaryReplacementPickerForClass(cl){
-
-  await loadPrimaryGames();
-
-  const grade=Number(cl.grade||1);
-
-  /*
-   * Livelli consigliati per la classe
-   */
-  let allowed=[1];
-
-  if(grade===1){
-    allowed=[1,2];
-  }
-
-  if(grade===2){
-    allowed=[1,2,3];
-  }
-
-  if(grade===3){
-    allowed=[1,2,3,4];
-  }
-
-  const games=(st.primaryGames||[])
-    .filter(g=>
-      allowed.includes(
-        Number(g.difficulty)
-      )
-    );
-
-  $('#replacePickerTitle').textContent=
-    'Giochi consigliati per '+cl.name;
-
-  $('#replacePickerBody').innerHTML=`
-
-    <div class="primary-replacement-intro">
-
-      <span class="kicker">
-        LIBRO DEI GIOCHI
-      </span>
-
-      <h4>
-        Scegli un altro gioco
-      </h4>
-
-      <p>
-        Ti mostro giochi compatibili con il livello della classe.
-        Puoi comunque scegliere liberamente quello che preferisci.
-      </p>
-
-    </div>
-
-    <div class="replace-exercise-grid">
-
-      ${games.map(g=>`
-
-        <article class="replace-exercise-card">
-
-          <img
-            class="replace-primary-thumb"
-            src="${esc(g._imageUrl||('./'+g.image_path))}"
-            alt=""
-          >
-
-          <h4>
-            ${esc(g.title)}
-          </h4>
-
-          <p>
-            ${esc(g.description||'')}
-          </p>
-
-          <div class="category-pills">
-
-            <span class="chip">
-              Livello ${g.difficulty}/5
-            </span>
-
-            <span class="chip good">
-              Consigliato
-            </span>
-
-          </div>
-
-          <button
-            class="btn primary small-btn"
-            data-choose-primary="${esc(g.id)}"
-          >
-            Scegli questo gioco
-          </button>
-
-        </article>
-
-      `).join('')}
-
-    </div>
-  `;
-
-  $$('[data-choose-primary]').forEach(
-    b=>b.onclick=
-      ()=>applyPrimaryReplacement(
-        b.dataset.choosePrimary
-      )
-  );
-
-  $('#replacePickerModal').showModal();
-}
-function showReplacementSports({includePrimary=true}={}){
-
-  const primaryCount=
-    (st.primaryDefaults?.length||75)+
-    (st.primaryCustom?.length||0);
-
-  $('#replacePickerTitle').textContent='Scegli la disciplina';
-
-  const sportsHtml=
-    st.sports.map(s=>`
-      <button
-        class="replace-picker-sport"
-        data-replace-sport="${s.id}"
-      >
-        <span>${iconMap[s.slug]||'🏅'}</span>
-        <b>${esc(s.name)}</b>
-        <span>${st.sportCounts[s.id]||0} attività verificate</span>
-      </button>
-    `).join('');
-
-  const primaryHtml=
-    includePrimary
-      ? `
-        <button
-          class="replace-picker-sport primary-sport-card"
-          data-replace-primary="1"
-        >
-          <span>✹</span>
-          <b>Giochi Scuola Primaria</b>
-          <span>${primaryCount} giochi</span>
-        </button>
-      `
-      : '';
-
-  $('#replacePickerBody').innerHTML=`
-    <div class="replace-picker-sports">
-      ${sportsHtml}
-      ${primaryHtml}
-    </div>
-  `;
-
-  $$('[data-replace-sport]').forEach(
-    b=>b.onclick=
-      ()=>showExerciseReplacementPicker(
-        b.dataset.replaceSport
-      )
-  );
-
-  const primaryBtn=$('[data-replace-primary]');
-
-  if(primaryBtn){
-    primaryBtn.onclick=
-      ()=>showPrimaryReplacementPicker();
-  }
-
-  $('#replacePickerModal').showModal();
-}
+$('#replaceSameSport').onclick=async()=>{if(!replaceCtx)return;const item=replaceCtx.item,primary=primaryMarker(item.primary_game_ref);$('#replaceModeModal').close();if(primary){const cl=st.classes.find(x=>x.id===replaceCtx.lesson.class_id);if(cl?.school_level==='primary')await showPrimaryReplacementPickerForClass(cl);else await showPrimaryReplacementPicker();return}const sportId=item.pe_exercises?.sport_id||replaceCtx.lesson.pe_sports?.id;if(sportId)await showExerciseReplacementPicker(sportId)};
+$('#replaceFree').onclick=()=>{if(!replaceCtx)return;const primary=!!primaryMarker(replaceCtx.item.primary_game_ref);$('#replaceModeModal').close();showReplacementSports({includePrimary:!primary})};
+async function showPrimaryReplacementPickerForClass(cl){await loadPrimaryGames();const grade=Number(cl.grade||1);let allowed=grade===1?[1,2]:grade===2?[1,2,3]:grade===3?[1,2,3,4]:[1,2,3,4,5];const games=(st.primaryGames||[]).filter(g=>allowed.includes(Number(g.difficulty)));$('#replacePickerTitle').textContent='Giochi consigliati per '+cl.name;$('#replacePickerBody').innerHTML=`<div class="primary-replacement-intro"><span class="kicker">LIBRO DEI GIOCHI</span><h4>Scegli un altro gioco</h4><p>Ti mostro giochi compatibili con il livello della classe.</p></div><div class="replace-exercise-grid">${games.map(g=>`<article class="replace-exercise-card"><img class="replace-primary-thumb" src="${esc(g._imageUrl||('./'+g.image_path))}" alt=""><h4>${esc(g.title)}</h4><p>${esc(g.description||'')}</p><div class="category-pills"><span class="chip">Livello ${g.difficulty}/5</span><span class="chip good">Consigliato</span></div><button class="btn primary small-btn" data-choose-primary="${esc(g.id)}">Scegli questo gioco</button></article>`).join('')}</div>`;$$('[data-choose-primary]').forEach(b=>b.onclick=()=>applyPrimaryReplacement(b.dataset.choosePrimary));$('#replacePickerModal').showModal()}
+function showReplacementSports({includePrimary=true}={}){const primaryCount=(st.primaryDefaults?.length||75)+(st.primaryCustom?.length||0);$('#replacePickerTitle').textContent='Scegli la disciplina';const sports=st.sports.map(s=>`<button class="replace-picker-sport" data-replace-sport="${s.id}"><span>${iconMap[s.slug]||'🏅'}</span><b>${esc(s.name)}</b><span>${st.sportCounts[s.id]||0} attività verificate</span></button>`).join(''),primary=includePrimary?`<button class="replace-picker-sport primary-sport-card" data-replace-primary="1"><span>✹</span><b>Giochi Scuola Primaria</b><span>${primaryCount} giochi</span></button>`:'';$('#replacePickerBody').innerHTML=`<div class="replace-picker-sports">${sports}${primary}</div>`;$$('[data-replace-sport]').forEach(b=>b.onclick=()=>showExerciseReplacementPicker(b.dataset.replaceSport));if($('[data-replace-primary]'))$('[data-replace-primary]').onclick=()=>showPrimaryReplacementPicker();$('#replacePickerModal').showModal()}
 async function showExerciseReplacementPicker(sportId){const sp=st.sports.find(x=>x.id===sportId);$('#replacePickerTitle').textContent=sp?.name||'Attività';$('#replacePickerBody').innerHTML='<p class="muted">Caricamento attività…</p>';$('#replacePickerModal').showModal();let{data,error}=await db.from('pe_exercises').select('id,name,student_explanation,difficulty,duration_min,duration_max').eq('sport_id',sportId).eq('active',true).eq('audit_status','VERIFIED').order('name').limit(500);if(error){toast(error.message);return}$('#replacePickerBody').innerHTML=`<div class="replace-exercise-grid">${(data||[]).map(e=>`<article class="replace-exercise-card"><h4>${esc(e.name)}</h4><p>${esc(e.student_explanation||'')}</p><div class="category-pills"><span class="chip">Liv. ${e.difficulty||'—'}</span><span class="chip">${e.duration_min||'—'}–${e.duration_max||'—'}'</span></div><button class="btn primary small-btn" data-choose-exercise="${e.id}">Scegli</button></article>`).join('')}</div>`;$$('[data-choose-exercise]').forEach(b=>b.onclick=()=>applyExerciseReplacement(b.dataset.chooseExercise))}
 async function showPrimaryReplacementPicker(){await loadPrimaryGames();$('#replacePickerTitle').textContent='Giochi Scuola Primaria';$('#replacePickerBody').innerHTML=`<div class="replace-exercise-grid">${st.primaryGames.map(g=>`<article class="replace-exercise-card"><img class="replace-primary-thumb" src="${esc(g._imageUrl||('./'+g.image_path))}" alt=""><h4>${esc(g.title)}</h4><p>${esc(g.description||'')}</p><div class="category-pills"><span class="chip">Difficoltà ${g.difficulty}/5</span></div><button class="btn primary small-btn" data-choose-primary="${esc(g.id)}">Scegli</button></article>`).join('')}</div>`;$$('[data-choose-primary]').forEach(b=>b.onclick=()=>applyPrimaryReplacement(b.dataset.choosePrimary));$('#replacePickerModal').showModal()}
 async function applyExerciseReplacement(newId){if(!replaceCtx)return;const old=replaceCtx.item.exercise_id||null;const{error}=await db.from('pe_lesson_exercises').update({exercise_id:newId,custom_title:null,custom_explanation:null,custom_field_dimensions:null,custom_equipment:null,primary_game_ref:null,replaced_from_exercise_id:old,replaced_at:new Date().toISOString(),replacement_reason:'manual_change'}).eq('id',replaceCtx.item.id);if(error)return toast(error.message);await db.from('pe_lesson_exercise_replacements').insert({owner_id:st.user.id,lesson_exercise_id:replaceCtx.item.id,old_exercise_id:old,new_exercise_id:newId});const lessonId=replaceCtx.lesson.id;$('#replacePickerModal').close();toast('Attività sostituita');await loadCore();await openLesson(lessonId)}
@@ -4088,7 +648,7 @@ $('#newTestBtn').onclick=()=>$('#testModal').showModal();
 $('#testForm').onsubmit=async e=>{e.preventDefault();const slug=$('#testName').value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Date.now();let{error}=await db.from('pe_motor_tests').insert({owner_id:st.user.id,name:$('#testName').value,slug,unit:$('#testUnit').value,result_direction:$('#testDirection').value,is_default:false,active:true});if(error)return toast(error.message);$('#testModal').close();toast('Test creato');await loadCore()}
 $$('[data-testtab]').forEach(b=>b.onclick=()=>{$$('[data-testtab]').forEach(x=>x.classList.toggle('active',x===b));$$('.testtab').forEach(x=>x.classList.toggle('active',x.id===`testtab-${b.dataset.testtab}`));if(b.dataset.testtab==='rankings')loadRankings();if(b.dataset.testtab==='hof')loadHof()});
 $('#sessionForm').onsubmit=async e=>{e.preventDefault();if(!requireSchoolYear('Crea prima l’anno scolastico per registrare i test.'))return;const cid=$('#sessionClass').value,tid=$('#sessionTest').value,date=$('#sessionDate').value;if(!cid||!tid)return;let test=st.tests.find(x=>x.id===tid);let{data:ses,error}=await db.from('pe_motor_test_sessions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:cid,test_id:tid,session_date:date,title:test.name}).select().single();if(error)return toast(error.message);renderResultEntry(ses,test,cid)}
-async function renderResultEntry(session,test,cid){let{data:en}=await db.from('pe_student_enrollments').select('student_id,pe_students!pe_student_enrollments_student_id_fkey(*)').eq('class_id',cid).eq('active',true);$('#sessionResultsArea').innerHTML=`<div class="panel glass" style="margin-top:14px"><span class="kicker">${esc(test.name)}</span><h3>Inserisci risultati</h3><div id="resultRows">${(en||[]).map(x=>`<div class="ranking-row"><div>${x.pe_students.sex==='F'?'♀':'♂'}</div><div><strong>${esc(x.pe_students.first_name)} ${esc(x.pe_students.last_name)}</strong></div><input style="max-width:120px" type="number" step="0.01" data-result-student="${x.student_id}" placeholder="${esc(test.unit)}"></div>`).join('')}</div><button id="saveResults" class="btn primary" style="margin-top:12px">Salva risultati</button></div>`;$('#saveResults').onclick=async()=>{const rows=[];$$('[data-result-student]').forEach(i=>{if(i.value!=='')rows.push({owner_id:st.user.id,session_id:session.id,student_id:i.dataset.resultStudent,result_value:+i.value})});if(rows.length){let{error}=await db.from('pe_motor_test_results').insert(rows);if(error)return toast(error.message)}toast('Risultati salvati');await loadCore();loadRankings()}}
+async function renderResultEntry(session,test,cid){let{data:en}=await db.from('pe_student_enrollments').select('student_id,pe_students(*)').eq('class_id',cid).eq('active',true);$('#sessionResultsArea').innerHTML=`<div class="panel glass" style="margin-top:14px"><span class="kicker">${esc(test.name)}</span><h3>Inserisci risultati</h3><div id="resultRows">${(en||[]).map(x=>`<div class="ranking-row"><div>${x.pe_students.sex==='F'?'♀':'♂'}</div><div><strong>${esc(x.pe_students.first_name)} ${esc(x.pe_students.last_name)}</strong></div><input style="max-width:120px" type="number" step="0.01" data-result-student="${x.student_id}" placeholder="${esc(test.unit)}"></div>`).join('')}</div><button id="saveResults" class="btn primary" style="margin-top:12px">Salva risultati</button></div>`;$('#saveResults').onclick=async()=>{const rows=[];$$('[data-result-student]').forEach(i=>{if(i.value!=='')rows.push({owner_id:st.user.id,session_id:session.id,student_id:i.dataset.resultStudent,result_value:+i.value})});if(rows.length){let{error}=await db.from('pe_motor_test_results').insert(rows);if(error)return toast(error.message)}toast('Risultati salvati');await loadCore();loadRankings()}}
 function avg(values){const nums=(values||[]).map(Number).filter(Number.isFinite);return nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:null}
 function fmtNum(v,d=2){if(v===null||v===undefined||!Number.isFinite(Number(v)))return '—';return Number(v).toLocaleString('it-IT',{maximumFractionDigits:d})}
 function testEmoji(name=''){const n=String(name).toLowerCase();if(/sprint|corsa|veloc|cooper|navetta|beep|yo-yo/.test(n))return '🏃';if(/salto|jump|cmj|lungo|alto/.test(n))return '🦘';if(/lancio|palla medica|peso|throw/.test(n))return '🥎';if(/forza|push|plank|core|traz|grip|presa|addom/.test(n))return '💪';if(/equilibr|balance/.test(n))return '⚖️';if(/fless|mobil|sit and reach/.test(n))return '🧘';if(/agilit|t-test|505|shuttle/.test(n))return '⚡';if(/corda|rope/.test(n))return '🪢';if(/resist|endurance/.test(n))return '❤️';return '🏅'}
@@ -4202,16 +762,7 @@ function renderAll(){
   renderCalendar();
 }
 
-function renderCalendar(){st.month=clampCalendarMonth(st.month||new Date());const todayIso=todayIsoLocal();let d=st.month,y=d.getFullYear(),m=d.getMonth();$('#monthTitle').textContent=new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(d);let first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7)),html=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<div class="cal-head">${x}</div>`).join('');for(let i=0;i<42;i++){let day=new Date(start);day.setDate(start.getDate()+i);let iso=localISODate(day),
-ev=st.lessons
-  .filter(x=>x.lesson_date===iso)
-  .sort((a,b)=>{
-    const timeA=String(a.start_time||'99:99').slice(0,5);
-    const timeB=String(b.start_time||'99:99').slice(0,5);
-    return timeA.localeCompare(timeB);
-  })
-  .map(x=>`<div class="cal-event ${x.is_extra?'extra':''}" data-lesson="${x.id}">${x.start_time?`<span class="cal-time">${String(x.start_time).slice(0,5)}</span>`:''}${x.is_extra?'<span class="cal-extra-badge">EXTRA</span>':''}${esc(x.title)}</div>`)
-  .join(''),
+function renderCalendar(){st.month=clampCalendarMonth(st.month||new Date());const todayIso=todayIsoLocal();let d=st.month,y=d.getFullYear(),m=d.getMonth();$('#monthTitle').textContent=new Intl.DateTimeFormat('it-IT',{month:'long',year:'numeric'}).format(d);let first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7)),html=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<div class="cal-head">${x}</div>`).join('');for(let i=0;i<42;i++){let day=new Date(start);day.setDate(start.getDate()+i);let iso=localISODate(day),ev=st.lessons.filter(x=>x.lesson_date===iso).sort((a,b)=>String(a.start_time||'99:99').slice(0,5).localeCompare(String(b.start_time||'99:99').slice(0,5))).map(x=>`<div class="cal-event ${x.is_extra?'extra':''}" data-lesson="${x.id}">${x.start_time?`<span class="cal-time">${String(x.start_time).slice(0,5)}</span>`:''}${x.is_extra?'<span class="cal-extra-badge">EXTRA</span>':''}${esc(x.title)}</div>`).join(''),
 dayExceptions=st.exceptions.filter(x=>iso>=x.exception_date&&iso<=(x.end_date||x.exception_date)),
 schoolClosures=dayExceptions.filter(x=>x.scope==='school'&&x.exception_type!=='school_event'),
 classTrips=dayExceptions.filter(x=>x.scope==='class'&&x.exception_type==='school_event'),
@@ -4490,8 +1041,7 @@ function renderPrimaryGames(){
   const q=($('#primaryGameSearch')?.value||'').trim().toLowerCase(),d=$('#primaryDifficulty')?.value||'';
   const all=st.primaryGames||[];
   const rows=all.filter(g=>(!d||String(g.difficulty)===d)&&(!q||[g.title,g.material_spaces,g.description,g.rules,g.variants].join(' ').toLowerCase().includes(q)));
-  const primaryGameCount=$('#primaryGameCount');
-if(primaryGameCount) primaryGameCount.textContent=all.length;
+  $('#primaryGameCount').textContent=all.length;
   $('#primaryGamesGrid').innerHTML=rows.map(g=>`<article class="primary-game-card" data-primary-game="${esc(g.id)}"><img class="primary-game-thumb" src="${esc(g._imageUrl||('./'+g.image_path))}" alt="${esc(g.title)}" loading="lazy"><div class="primary-game-card-body"><div class="primary-game-card-head"><h4>${esc(g.title)}</h4>${diffDots(g.difficulty)}</div><p>${esc(g.description)}</p><div class="primary-game-meta"><span class="primary-source">${g.is_custom?'Creato da te':`Libro · pagina ${g.source_page}`}</span>${g.is_custom?'<span class="primary-custom-badge">PERSONALE</span>':''}</div></div></article>`).join('')||'<article class="panel glass"><h3>Nessun gioco trovato</h3><p class="muted">Prova a cambiare ricerca o difficoltà.</p></article>';
   $$('[data-primary-game]').forEach(x=>x.onclick=()=>openPrimaryGame(x.dataset.primaryGame));
 }
@@ -4510,11 +1060,7 @@ function openPrimaryGameForm(g=null){
   $('#primaryImagePreview').innerHTML=g?`<img src="${esc(g._imageUrl||'')}" alt="Anteprima">`:'';
   $('#primaryGameFormModal').showModal();
 }
-const newPrimaryGameBtn=$('#newPrimaryGameBtn');
-if(newPrimaryGameBtn){
-  newPrimaryGameBtn.classList.toggle('hidden',!isOwner());
-  if(isOwner()) newPrimaryGameBtn.onclick=()=>openPrimaryGameForm();
-}
+$('#newPrimaryGameBtn').onclick=()=>openPrimaryGameForm();
 $('#primaryGameSearch').oninput=renderPrimaryGames;$('#primaryDifficulty').onchange=renderPrimaryGames;
 $('#primaryImage').onchange=e=>{const f=e.target.files?.[0];if(!f){$('#primaryImagePreview').innerHTML='';return}if(f.size>5*1024*1024){toast('Immagine troppo grande: massimo 5 MB');e.target.value='';return}const u=URL.createObjectURL(f);$('#primaryImagePreview').innerHTML=`<img src="${u}" alt="Anteprima nuova immagine">`};
 function primarySlug(v){return v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
@@ -4548,145 +1094,14 @@ async function deletePrimaryGame(g){
 function setSyncState(kind='ok',label='Sincronizzato'){const el=$('#syncStatus');if(!el)return;el.classList.toggle('syncing',kind==='syncing');el.classList.toggle('error',kind==='error');const t=el.querySelector('span');if(t)t.textContent=label}
 let syncPromise=null,lastSyncAt=0;
 async function syncFromCloud({quiet=false}={}){
-
-  if(!st.user) return;
-
-  // Se un Sync è già in corso, tutti gli altri
-  // utilizzano la stessa sincronizzazione.
-  if(syncPromise){
-    return syncPromise;
-  }
-
-  syncPromise=(async()=>{
-
-    if(!quiet){
-      setSyncState('syncing','Sincronizzo…');
-    }
-
-    try{
-
-      await loadCore();
-
-      // I giochi primaria vengono caricati solo quando serve.
-// Non devono rallentare la sincronizzazione generale.
-if($('#view-primarygames')?.classList.contains('active')){
-  loadPrimaryGames().catch(err=>{
-    console.warn('Aggiornamento giochi primaria non riuscito',err);
-  });
+  if(!st.user)return;if(syncPromise)return syncPromise;
+  syncPromise=(async()=>{if(!quiet)setSyncState('syncing','Sincronizzo…');try{await loadCore();if($('#view-primarygames')?.classList.contains('active'))loadPrimaryGames().catch(err=>console.warn('Aggiornamento giochi primaria non riuscito',err));renderSports();renderCalendar();lastSyncAt=Date.now();setSyncState('ok','Sincronizzato')}catch(err){console.error(err);setSyncState('error','Sync non riuscita')}finally{syncPromise=null}})();return syncPromise;
 }
-
-      renderSports();
-      renderCalendar();
-
-      lastSyncAt=Date.now();
-
-      setSyncState('ok','Sincronizzato');
-
-    }catch(err){
-
-      console.error(err);
-      setSyncState('error','Sync non riuscita');
-
-    }finally{
-
-      syncPromise=null;
-
-    }
-
-  })();
-
-  return syncPromise;
-}
-$('#loginForm').onsubmit=async e=>{
-  e.preventDefault();
-  const msg=$('#loginMsg');
-  msg.textContent='Accesso sicuro…';
-
-  const email=$('#email').value.trim();
-  const password=$('#password').value;
- 
-
-  const {data,error}=await db.auth.signInWithPassword({email,password});
-  
-
-  if(error){
-    msg.textContent='Email o password non corrette.';
-    return;
-  }
-
-  msg.textContent='Sincronizzazione dati…';
-
-if(data?.user){
-  await enter(data.user);
-}
-
-  msg.textContent='';
-};
+$('#loginForm').onsubmit=async e=>{e.preventDefault();const msg=$('#loginMsg');msg.textContent='Accesso sicuro…';const email=$('#email').value.trim(),password=$('#password').value;const{data,error}=await db.auth.signInWithPassword({email,password});if(error){msg.textContent='Email o password non corrette.';return}msg.textContent='Sincronizzazione dati…';if(data?.user)await enter(data.user);msg.textContent=''};
 $('#logoutBtn').onclick=()=>db.auth.signOut();
-async function enter(user){
-  st.user=user;
-
-  const ownerNavBtn=document.getElementById('ownerNavBtn');
-  if(ownerNavBtn){
-    ownerNavBtn.classList.toggle('hidden',!isOwner());
-  }
-
-  const newPrimaryGameBtn=document.getElementById('newPrimaryGameBtn');
-  if(newPrimaryGameBtn){
-    newPrimaryGameBtn.classList.toggle('hidden',!isOwner());
-    newPrimaryGameBtn.onclick=isOwner()
-      ? ()=>openPrimaryGameForm()
-      : null;
-  }
-
-  $('#userMail').textContent=user.email||'';
-  $('#authView').classList.add('hidden');
-  $('#appView').classList.remove('hidden');
-
-  await syncFromCloud();
-}
-async function restoreSessionAtStartup(){
-
-  const {
-    data:{session},
-    error
-  }=await db.auth.getSession();
-
-  if(error || !session) return;
-
-  // Una PWA su iPhone può riaprire una sessione salvata
-  // con access token scaduto o non ancora ripristinato.
-  // Prima di interrogare il database forziamo il rinnovo.
-  const {
-    data:refreshed,
-    error:refreshError
-  }=await db.auth.refreshSession();
-
-  if(refreshError || !refreshed?.session){
-    console.warn('Sessione scaduta: nuovo accesso necessario',refreshError);
-    await db.auth.signOut();
-    return;
-  }
-
-  await enter(refreshed.session.user);
-}
-
+async function enter(user){st.user=user;const ownerNavBtn=document.getElementById('ownerNavBtn');if(ownerNavBtn)ownerNavBtn.classList.toggle('hidden',!isOwner());const newPrimaryGameBtn=document.getElementById('newPrimaryGameBtn');if(newPrimaryGameBtn){newPrimaryGameBtn.classList.toggle('hidden',!isOwner());newPrimaryGameBtn.onclick=isOwner()?()=>openPrimaryGameForm():null}$('#userMail').textContent=user.email||'';$('#authView').classList.add('hidden');$('#appView').classList.remove('hidden');await syncFromCloud()}
+async function restoreSessionAtStartup(){const{data:{session},error}=await db.auth.getSession();if(error||!session)return;const{data:refreshed,error:refreshError}=await db.auth.refreshSession();if(refreshError||!refreshed?.session){console.warn('Sessione scaduta: nuovo accesso necessario',refreshError);await db.auth.signOut();return}await enter(refreshed.session.user)}
 await restoreSessionAtStartup();
-db.auth.onAuthStateChange((event,session)=>{
-  if(!session){
-    st.user=null;
-    $('#appView').classList.add('hidden');
-    $('#authView').classList.remove('hidden');
-    return;
-  }
-
-  // LOGIN viene già gestito direttamente da signInWithPassword().
-  // Qui entriamo automaticamente solo quando serve davvero:
-  // riapertura app, refresh pagina o ripristino sessione.
-  if(!st.user && event!=='SIGNED_IN'){
-    setTimeout(()=>enter(session.user),0);
-  }
-});
-addEventListener('online',()=>syncFromCloud());
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastSyncAt>5000)syncFromCloud({quiet:true})});
-if('serviceWorker'in navigator)addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('./service-worker.js?v=5.9',{updateViaCache:'none'});await r.update();}catch(e){console.warn('SW update',e)}});
+db.auth.onAuthStateChange((event,session)=>{if(!session){st.user=null;$('#appView').classList.add('hidden');$('#authView').classList.remove('hidden');return}if(!st.user&&event!=='SIGNED_IN')setTimeout(()=>enter(session.user),0)});
+addEventListener('online',()=>syncFromCloud());document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastSyncAt>5000)syncFromCloud({quiet:true})});
+if('serviceWorker'in navigator)addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('./service-worker.js?v=7.0',{updateViaCache:'none'});await r.update()}catch(e){console.warn('SW update',e)}});
