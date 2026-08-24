@@ -1074,24 +1074,123 @@ $('#exceptionScope').onchange=()=>{$('#exceptionClassWrap').classList.toggle('hi
 $('#exceptionType').onchange=syncExceptionReasonUI;
 $('#closurePreset').onchange=syncExceptionReasonUI;
 let pendingCalendarException=null;
+let exceptionSubmitMode='close';
+
 async function saveCalendarExceptionWithAction(action='none'){
   const p=pendingCalendarException;if(!p)return;
-  const submit=$('#exceptionForm button[type="submit"]');
+  const submit=$('#exceptionSaveCloseBtn')||$('#exceptionForm button[type="submit"]');
+  const addBtn=$('#exceptionSaveAddBtn');
+
   try{
     if(submit)submit.disabled=true;
-    const{error}=await db.rpc('pe_create_calendar_exception_with_action',{p_school_year_id:st.year.id,p_class_id:p.school?null:p.classId,p_exception_date:p.start,p_end_date:p.end,p_scope:p.school?'school':'class',p_exception_type:p.type,p_reason:p.reason||null,p_action:action});
+    if(addBtn)addBtn.disabled=true;
+
+    const{error}=await db.rpc('pe_create_calendar_exception_with_action',{
+      p_school_year_id:st.year.id,
+      p_class_id:p.school?null:p.classId,
+      p_exception_date:p.start,
+      p_end_date:p.end,
+      p_scope:p.school?'school':'class',
+      p_exception_type:p.type,
+      p_reason:p.reason||null,
+      p_action:action
+    });
+
     if(error)throw error;
-    $('#exceptionConflictModal')?.close();$('#exceptionModal').close();pendingCalendarException=null;
-    toast(action==='shift'?'Chiusura salvata · lezioni slittate':action==='cancel'?'Chiusura salvata · lezioni cancellate':'Chiusura salvata');
-    await loadCore();renderCalendar();renderModules();
-  }catch(err){toast(err.message||'Errore calendario')}finally{if(submit)submit.disabled=false}
+
+    $('#exceptionConflictModal')?.close();
+
+    const keepOpen=exceptionSubmitMode==='add';
+
+    toast(
+      action==='shift'
+        ? 'Chiusura salvata · lezioni slittate'
+        : action==='cancel'
+        ? 'Chiusura salvata · lezioni cancellate'
+        : 'Chiusura salvata'
+    );
+
+    await loadCore();
+    renderCalendar();
+    renderModules();
+
+    pendingCalendarException=null;
+
+    if(keepOpen){
+      /*
+       * Manteniamo aperta la scheda e la prepariamo
+       * per inserire una nuova chiusura.
+       */
+      const previousScope=$('#exceptionScope')?.value||'school';
+      const previousType=$('#exceptionType')?.value||'holiday';
+
+      $('#exceptionStart').value='';
+      $('#exceptionEnd').value='';
+      $('#exceptionReason').value='';
+
+      if($('#closurePreset')){
+        $('#closurePreset').value='VACANZE DI NATALE';
+      }
+
+      $('#exceptionScope').value=previousScope;
+      $('#exceptionType').value=previousType;
+
+      $('#exceptionClassWrap')?.classList.toggle(
+        'hidden',
+        previousScope==='school'
+      );
+
+      syncExceptionReasonUI();
+
+      exceptionSubmitMode='close';
+
+      setTimeout(()=>{
+        $('#exceptionStart')?.focus();
+      },80);
+
+    }else{
+      $('#exceptionModal').close();
+      exceptionSubmitMode='close';
+    }
+
+  }catch(err){
+    toast(err.message||'Errore calendario');
+  }finally{
+    if(submit)submit.disabled=false;
+    if(addBtn)addBtn.disabled=false;
+  }
 }
 function renderExceptionConflictModal(lessons){
   const byClass=new Map();lessons.forEach(l=>{const name=st.classes.find(c=>c.id===l.class_id)?.name||'Classe';if(!byClass.has(name))byClass.set(name,[]);byClass.get(name).push(l)});
   $('#exceptionConflictBody').innerHTML=`<div class="conflict-summary"><span class="conflict-icon">⚠️</span><div><h4>${lessons.length} ${lessons.length===1?'lezione programmata':'lezioni programmate'} nel periodo scelto</h4><p>La nuova chiusura coincide con lezioni già presenti. Scegli cosa deve fare AttivaMente.</p></div></div><div class="conflict-lessons">${[...byClass.entries()].map(([name,arr])=>`<div class="conflict-class"><b>${esc(name)}</b>${arr.map(l=>`<small>${fmt(l.lesson_date)} · ${esc(l.title)}</small>`).join('')}</div>`).join('')}</div>`;
   $('#exceptionShiftBtn').onclick=()=>saveCalendarExceptionWithAction('shift');$('#exceptionCancelLessonsBtn').onclick=()=>saveCalendarExceptionWithAction('cancel');$('#exceptionConflictModal').showModal()
 }
+
+const exceptionAddBtn=$('#exceptionSaveAddBtn');
+if(exceptionAddBtn){
+  exceptionAddBtn.onclick=()=>{
+    exceptionSubmitMode='add';
+    const form=$('#exceptionForm');
+
+    if(form?.requestSubmit){
+      form.requestSubmit();
+    }else{
+      form?.dispatchEvent(
+        new Event('submit',{bubbles:true,cancelable:true})
+      );
+    }
+  };
+}
+
+const exceptionCloseBtn=$('#exceptionSaveCloseBtn');
+if(exceptionCloseBtn){
+  exceptionCloseBtn.addEventListener('click',()=>{
+    exceptionSubmitMode='close';
+  });
+}
+
 $('#exceptionForm').onsubmit=async e=>{
+  exceptionSubmitMode=exceptionSubmitMode||'close';
   e.preventDefault();if(!requireSchoolYear('Crea prima l’anno scolastico per inserire chiusure e gite.'))return;
   const school=$('#exceptionScope').value==='school',classId=$('#exceptionClass').value,start=$('#exceptionStart').value,end=$('#exceptionEnd').value||start,type=$('#exceptionType').value;
   const reason=(school&&type==='holiday'&&$('#closurePreset').value!=='ALTRO'?$('#closurePreset').value:$('#exceptionReason').value.trim())||null;

@@ -454,6 +454,25 @@
 @media(max-width:620px){.school-year-ready-hero{grid-template-columns:1fr;text-align:center}.school-year-ready-icon{margin:auto}.school-year-ready-actions{grid-template-columns:1fr}.school-year-ready-actions .btn{width:100%}}
 </style>
 
+
+<style id="exception-multi-save-v6">
+.exception-save-actions{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  margin-top:16px;
+}
+@media(max-width:700px){
+  .exception-save-actions{
+    flex-direction:column;
+  }
+  .exception-save-actions .btn{
+    width:100%;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>
@@ -975,7 +994,10 @@
 <dialog id="testModal" class="modal"><div class="modal-head"><div><span class="kicker">TEST MOTORE</span><h3>Nuovo test</h3></div><button data-close="testModal">×</button></div>
 <form id="testForm"><label>Nome<input id="testName" required placeholder="Es. Salto triplo da fermo"></label><label>Unità di misura<input id="testUnit" required placeholder="cm, s, ripetizioni…"></label><label>Risultato migliore<select id="testDirection"><option value="higher_better">Più alto</option><option value="lower_better">Più basso</option></select></label><button class="btn primary">Crea test</button></form></dialog>
 
-<dialog id="exceptionModal" class="modal"><div class="modal-head"><div><span class="kicker">CALENDARIO</span><h3>Nuova eccezione</h3></div><button data-close="exceptionModal">×</button></div><form id="exceptionForm"><label>Ambito<select id="exceptionScope"><option value="school">Tutta la scuola</option><option value="class">Solo una classe</option></select></label><label id="exceptionClassWrap" class="hidden">Classe<select id="exceptionClass"></select></label><label>Tipo<select id="exceptionType"><option value="holiday">Vacanza / chiusura</option><option value="school_event">Gita / uscita</option><option value="no_lesson">Lezione annullata</option><option value="other">Altro</option></select></label><label id="closurePresetWrap">Motivo della chiusura<select id="closurePreset"><option value="VACANZE DI NATALE">🎄 VACANZE DI NATALE</option><option value="VACANZE DI PASQUA">🐣 VACANZE DI PASQUA</option><option value="OGNISSANTI">🕯️ OGNISSANTI</option><option value="FESTA DEI LAVORATORI">🛠️ FESTA DEI LAVORATORI</option><option value="IMMACOLATA CONCEZIONE">🙏 IMMACOLATA CONCEZIONE</option><option value="VACANZE DI CARNEVALE">🎭 VACANZE DI CARNEVALE</option><option value="FESTA DELLA REPUBBLICA">🇮🇹 FESTA DELLA REPUBBLICA</option><option value="FESTA DELLA LIBERAZIONE">🇮🇹 FESTA DELLA LIBERAZIONE</option><option value="ALTRO">❌ ALTRO</option></select></label><label id="exceptionReasonWrap" class="hidden">Motivo personalizzato<input id="exceptionReason" placeholder="Scrivi il motivo"></label><div class="form-row"><label>Dal<input id="exceptionStart" type="date"></label><label>Al<input id="exceptionEnd" type="date"></label></div><button class="btn primary">Salva</button></form></dialog>
+<dialog id="exceptionModal" class="modal"><div class="modal-head"><div><span class="kicker">CALENDARIO</span><h3>Nuova eccezione</h3></div><button data-close="exceptionModal">×</button></div><form id="exceptionForm"><label>Ambito<select id="exceptionScope"><option value="school">Tutta la scuola</option><option value="class">Solo una classe</option></select></label><label id="exceptionClassWrap" class="hidden">Classe<select id="exceptionClass"></select></label><label>Tipo<select id="exceptionType"><option value="holiday">Vacanza / chiusura</option><option value="school_event">Gita / uscita</option><option value="no_lesson">Lezione annullata</option><option value="other">Altro</option></select></label><label id="closurePresetWrap">Motivo della chiusura<select id="closurePreset"><option value="VACANZE DI NATALE">🎄 VACANZE DI NATALE</option><option value="VACANZE DI PASQUA">🐣 VACANZE DI PASQUA</option><option value="OGNISSANTI">🕯️ OGNISSANTI</option><option value="FESTA DEI LAVORATORI">🛠️ FESTA DEI LAVORATORI</option><option value="IMMACOLATA CONCEZIONE">🙏 IMMACOLATA CONCEZIONE</option><option value="VACANZE DI CARNEVALE">🎭 VACANZE DI CARNEVALE</option><option value="FESTA DELLA REPUBBLICA">🇮🇹 FESTA DELLA REPUBBLICA</option><option value="FESTA DELLA LIBERAZIONE">🇮🇹 FESTA DELLA LIBERAZIONE</option><option value="ALTRO">❌ ALTRO</option></select></label><label id="exceptionReasonWrap" class="hidden">Motivo personalizzato<input id="exceptionReason" placeholder="Scrivi il motivo"></label><div class="form-row"><label>Dal<input id="exceptionStart" type="date"></label><label>Al<input id="exceptionEnd" type="date"></label></div><div class="exception-save-actions">
+  <button id="exceptionSaveCloseBtn" class="btn primary" type="submit" data-exception-submit="close">Salva e chiudi</button>
+  <button id="exceptionSaveAddBtn" class="btn secondary" type="button">Aggiungi altre chiusure</button>
+</div></form></dialog>
 
 <dialog id="exceptionConflictModal" class="modal"><div class="modal-head"><div><span class="kicker">LEZIONI GIÀ PROGRAMMATE</span><h3>Come vuoi gestirle?</h3></div><button data-close="exceptionConflictModal">×</button></div><div id="exceptionConflictBody"></div><div class="conflict-action-grid"><button id="exceptionShiftBtn" type="button" class="conflict-action-card shift"><span>↪️</span><div><b>Slitta le lezioni</b><small>Sposta le lezioni coinvolte e le successive alla prima data utile, mantenendo l’ordine.</small></div></button><button id="exceptionCancelLessonsBtn" type="button" class="conflict-action-card cancel"><span>🗑️</span><div><b>Cancella le lezioni</b><small>Elimina le lezioni che cadono nella chiusura e compatta i relativi blocchi.</small></div></button></div><button type="button" class="btn ghost" data-close="exceptionConflictModal">Annulla</button></dialog>
 
