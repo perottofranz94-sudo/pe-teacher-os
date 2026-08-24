@@ -1383,44 +1383,186 @@ if('serviceWorker'in navigator)addEventListener('load',async()=>{try{const r=awa
 
 
 
-/* RUBRICHE · layout completo stile tabella.
-   Non modifica né filtra indicatori/descritttori del workbook. */
-(function(){
-  function rubricEnhanceV3(){
-    const view=document.querySelector('#view-rubrics');
-    if(!view)return;
-    if(!view.querySelector(':scope > .rubrics-shell')){
-      const shell=document.createElement('div');
-      shell.className='rubrics-shell';
-      while(view.firstChild)shell.appendChild(view.firstChild);
-      view.appendChild(shell);
-    }
 
-    // Tutti gli indicatori disponibili restano presenti.
-    const tabs=[...view.querySelectorAll('.rubric-indicator-tab')];
-    tabs.forEach((tab,i)=>{
-      if(!tab.dataset.rubricIndex)tab.dataset.rubricIndex=String(i);
-    });
 
-    // Espande sempre l'elenco completo dei 19 livelli del singolo indicatore.
-    view.querySelectorAll('.rubric-all-descriptors').forEach(el=>{
-      el.hidden=false;
-      el.style.display='block';
-    });
+/* =========================================================
+   RUBRICHE DI VALUTAZIONE V4
+   - safe area dinamica rispetto alla sidebar
+   - tutti gli indicatori selezionabili
+   - un indicatore per volta
+   - 19 livelli completi 5→10
+   ========================================================= */
 
-    // Se il renderer precedente usa una tabella, non alteriamo alcuna riga.
-    view.querySelectorAll('.rubric-descriptor-table').forEach(table=>{
-      table.style.display='table';
-    });
+let rubricActiveIndicatorV4=0;
+let rubricCurrentPayloadV4=null;
+
+function rubricVoteBandV4(vote){
+  const v=Number(vote);
+  if(v<=5.5)return {row:'band-red',badge:'vote-red'};
+  if(v<7)return {row:'band-orange',badge:'vote-orange'};
+  if(v<9)return {row:'band-yellow',badge:'vote-yellow'};
+  return {row:'band-green',badge:'vote-green'};
+}
+
+function rubricTableV4(item){
+  return `
+    <div class="rubric-table-scroll-v4">
+      <table class="rubric-table-v4">
+        <thead>
+          <tr>
+            <th>Voto</th>
+            <th>Giudizio</th>
+            <th>Descrittore</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${RUBRIC_DATA.scale.map((level,i)=>{
+            const band=rubricVoteBandV4(level.vote);
+            return `
+              <tr class="${band.row}">
+                <td>
+                  <span class="rubric-vote-badge-v4 ${band.badge}">
+                    ${String(level.vote).replace('.',',')}
+                  </span>
+                </td>
+                <td class="rubric-judgement-v4">${esc(level.label)}</td>
+                <td>${esc(item.descriptors?.[i]||'—')}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function rubricDetailV4(indicators,index){
+  const item=indicators[index]||indicators[0];
+  if(!item)return '<div class="rubric-empty">Nessun indicatore disponibile.</div>';
+
+  return `
+    <article class="rubric-detail-v4">
+      <div class="rubric-detail-title-v4">
+        <div>
+          <span class="kicker">INDICATORE ${index+1}</span>
+          <h4>${esc(item.indicator)}</h4>
+          <p>
+            <strong>Evidenze osservabili:</strong>
+            ${esc(item.evidence||'—')}
+          </p>
+        </div>
+      </div>
+      ${rubricTableV4(item)}
+      ${item.notes?`<small class="muted">${esc(item.notes)}</small>`:''}
+    </article>
+  `;
+}
+
+function bindRubricIndicatorTabsV4(){
+  $$('[data-rubric-indicator-v4]').forEach(btn=>{
+    btn.onclick=()=>{
+      const indicators=rubricCurrentPayloadV4?.indicators||[];
+      const idx=Number(btn.dataset.rubricIndicatorV4);
+      if(!indicators[idx])return;
+
+      rubricActiveIndicatorV4=idx;
+
+      $$('[data-rubric-indicator-v4]').forEach(x=>
+        x.classList.toggle(
+          'active',
+          Number(x.dataset.rubricIndicatorV4)===idx
+        )
+      );
+
+      const detail=$('#rubricSelectedIndicatorV4');
+      if(detail){
+        detail.innerHTML=rubricDetailV4(indicators,idx);
+      }
+    };
+  });
+}
+
+renderRubricContent=function({title,subtitle,indicators}){
+  const content=$('#rubricContent');
+  if(!content)return;
+
+  rubricActiveIndicatorV4=0;
+  rubricCurrentPayloadV4={title,subtitle,indicators};
+
+  content.innerHTML=`
+    <div class="rubric-header-card-v4">
+      <div class="rubric-header-top">
+        <div>
+          <span class="kicker">RUBRICA DI VALUTAZIONE</span>
+          <h3>${esc(title)}</h3>
+          <p>${esc(subtitle)}</p>
+        </div>
+        <span class="chip good">
+          ${indicators.length} ${indicators.length===1?'indicatore':'indicatori'}
+        </span>
+      </div>
+    </div>
+
+    <div class="rubric-indicator-tabs-v4">
+      ${indicators.map((item,i)=>`
+        <button
+          type="button"
+          class="rubric-indicator-tab-v4 ${i===0?'active':''}"
+          data-rubric-indicator-v4="${i}"
+        >
+          <span class="rubric-indicator-number-v4">${i+1}</span>
+          <strong>${esc(item.indicator)}</strong>
+        </button>
+      `).join('')}
+    </div>
+
+    <div id="rubricSelectedIndicatorV4">
+      ${rubricDetailV4(indicators,0)}
+    </div>
+  `;
+
+  bindRubricIndicatorTabsV4();
+  requestAnimationFrame(syncRubricsSafeAreaV4);
+};
+
+function syncRubricsSafeAreaV4(){
+  const view=$('#view-rubriche');
+  const sidebar=document.querySelector('.sidebar');
+  if(!view)return;
+
+  if(window.innerWidth<=900 || !sidebar){
+    view.style.marginLeft='0px';
+    view.style.width='100%';
+    view.style.maxWidth='100%';
+    return;
   }
 
-  const start=()=>{
-    const view=document.querySelector('#view-rubrics');
-    if(!view)return;
-    rubricEnhanceV3();
-    new MutationObserver(()=>requestAnimationFrame(rubricEnhanceV3))
-      .observe(view,{childList:true,subtree:true});
-  };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);
-  else start();
-})();
+  /* Reset first to measure the natural position. */
+  view.style.marginLeft='0px';
+  view.style.width='100%';
+  view.style.maxWidth='100%';
+
+  const side=sidebar.getBoundingClientRect();
+  const rect=view.getBoundingClientRect();
+
+  const safeLeft=side.right+18;
+  const extra=Math.max(0,safeLeft-rect.left);
+
+  view.style.marginLeft=`${extra}px`;
+  view.style.width=`calc(100% - ${extra}px)`;
+  view.style.maxWidth=`calc(100% - ${extra}px)`;
+}
+
+window.addEventListener('resize',syncRubricsSafeAreaV4);
+
+document.addEventListener('DOMContentLoaded',()=>{
+  requestAnimationFrame(syncRubricsSafeAreaV4);
+});
+
+/* `go()` calls renderRubrics when opening the page; ensure the safe area
+   is recalculated after navigation without altering any other view. */
+const _renderRubricsV4Base=renderRubrics;
+renderRubrics=function(){
+  _renderRubricsV4Base();
+  requestAnimationFrame(syncRubricsSafeAreaV4);
+};
