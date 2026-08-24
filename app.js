@@ -1381,15 +1381,14 @@ addEventListener('online',()=>syncFromCloud());document.addEventListener('visibi
 if('serviceWorker'in navigator)addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('./service-worker.js?v=7.0',{updateViaCache:'none'});await r.update()}catch(e){console.warn('SW update',e)}});
 
 
-/* =========================================================
-   RUBRICHE DI VALUTAZIONE · LAYOUT V2
-   Solo presentazione: nessun dato o descrittore viene alterato.
-   ========================================================= */
+
+
+/* RUBRICHE · layout completo stile tabella.
+   Non modifica né filtra indicatori/descritttori del workbook. */
 (function(){
-  function enhanceRubricsLayout(){
+  function rubricEnhanceV3(){
     const view=document.querySelector('#view-rubrics');
     if(!view)return;
-
     if(!view.querySelector(':scope > .rubrics-shell')){
       const shell=document.createElement('div');
       shell.className='rubrics-shell';
@@ -1397,23 +1396,31 @@ if('serviceWorker'in navigator)addEventListener('load',async()=>{try{const r=awa
       view.appendChild(shell);
     }
 
-    // Evita che qualunque elemento della rubrica possa invadere la sidebar.
-    view.querySelectorAll('*').forEach(el=>{
-      if(el.scrollWidth>el.clientWidth && !el.classList.contains('rubric-all-descriptors')){
-        el.style.maxWidth='100%';
-      }
+    // Tutti gli indicatori disponibili restano presenti.
+    const tabs=[...view.querySelectorAll('.rubric-indicator-tab')];
+    tabs.forEach((tab,i)=>{
+      if(!tab.dataset.rubricIndex)tab.dataset.rubricIndex=String(i);
+    });
+
+    // Espande sempre l'elenco completo dei 19 livelli del singolo indicatore.
+    view.querySelectorAll('.rubric-all-descriptors').forEach(el=>{
+      el.hidden=false;
+      el.style.display='block';
+    });
+
+    // Se il renderer precedente usa una tabella, non alteriamo alcuna riga.
+    view.querySelectorAll('.rubric-descriptor-table').forEach(table=>{
+      table.style.display='table';
     });
   }
 
-  const rubricObserver=new MutationObserver(()=>{
-    requestAnimationFrame(enhanceRubricsLayout);
-  });
-
-  document.addEventListener('DOMContentLoaded',()=>{
+  const start=()=>{
     const view=document.querySelector('#view-rubrics');
-    if(view){
-      enhanceRubricsLayout();
-      rubricObserver.observe(view,{childList:true,subtree:true});
-    }
-  });
+    if(!view)return;
+    rubricEnhanceV3();
+    new MutationObserver(()=>requestAnimationFrame(rubricEnhanceV3))
+      .observe(view,{childList:true,subtree:true});
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);
+  else start();
 })();
