@@ -101,7 +101,20 @@ function populateSelects(){
   if(!$('#sessionDate').value)$('#sessionDate').value=localISODate(new Date());if($('#extraDate')&&!$('#extraDate').value)$('#extraDate').value=localISODate(new Date());
 }
 function listItem(a,b,c=''){return`<div class="list-item"><div><strong>${esc(a)}</strong><small>${esc(b)}</small></div>${c}</div>`}
+
+function updateDashboardYearButton(){
+  const btn=$('#heroSchoolYearBtn');
+  if(!btn)return;
+
+  const hasActiveYear=!!st.year;
+
+  btn.classList.toggle('hidden',hasActiveYear);
+  btn.hidden=hasActiveYear;
+  btn.setAttribute('aria-hidden',hasActiveYear?'true':'false');
+}
+
 function renderDashboard(){
+  updateDashboardYearButton();
   $('#statClasses').textContent=st.classes.length;$('#statSports').textContent=st.sports.length+1;$('#statLessons').textContent=st.lessons.length;$('#statTests').textContent=st.tests.length;
   $('#heroExerciseCount').textContent=Object.values(st.sportCounts).reduce((a,b)=>a+b,0)||1390;
   const parts=new Intl.DateTimeFormat('it-IT',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
@@ -1393,7 +1406,10 @@ $('#migrateYearBtn').onclick=()=>openSchoolYearDialog(!st.year);
  */
 const heroSchoolYearBtn=$('#heroSchoolYearBtn');
 if(heroSchoolYearBtn){
-  heroSchoolYearBtn.onclick=()=>openSchoolYearDialog(!st.year);
+  heroSchoolYearBtn.onclick=()=>{
+    if(st.year)return;
+    openSchoolYearDialog(true);
+  };
 }
 
 const heroPlannerBtn=$('#heroPlannerBtn');
