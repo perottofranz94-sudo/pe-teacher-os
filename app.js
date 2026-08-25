@@ -1386,6 +1386,28 @@ function showSchoolYearClosureReminder(){
 }
 
 $('#migrateYearBtn').onclick=()=>openSchoolYearDialog(!st.year);
+
+/*
+ * Dashboard: usa direttamente lo stesso flusso reale
+ * del pulsante Impostazioni, senza cercare pulsanti nel DOM.
+ */
+const heroSchoolYearBtn=$('#heroSchoolYearBtn');
+if(heroSchoolYearBtn){
+  heroSchoolYearBtn.onclick=()=>openSchoolYearDialog(!st.year);
+}
+
+const heroPlannerBtn=$('#heroPlannerBtn');
+if(heroPlannerBtn){
+  heroPlannerBtn.onclick=()=>{
+    if(!requireSchoolYear('Per generare una programmazione devi prima creare un anno scolastico.'))return;
+    go('planner');
+    requestAnimationFrame(()=>{
+      populateSelects();
+      updatePlannerForSelectedClass();
+      $('#planClass')?.focus();
+    });
+  };
+}
 $('#migrateForm').onsubmit=async e=>{
   e.preventDefault();const btn=$('#migrateSubmitBtn');btn.disabled=true;btn.textContent='Salvataggio…';
   try{
@@ -1699,42 +1721,3 @@ renderRubrics=function(){
 };
 
 
-/* DASHBOARD ACTIONS V7 — riusa le azioni già esistenti in Impostazioni */
-(function(){
-  function findAction(selectors){
-    for(const s of selectors){
-      const nodes=[...document.querySelectorAll(s)];
-      const el=nodes.find(x=>x&&!x.disabled&&x.offsetParent!==null)||
-               nodes.find(x=>x&&!x.disabled);
-      if(el)return el;
-    }
-    return null;
-  }
-  document.addEventListener('click',e=>{
-    const y=e.target.closest('#heroSchoolYearBtn');
-    if(y){
-      e.preventDefault(); e.stopImmediatePropagation();
-      const target=findAction([
-        '#newSchoolYearBtn','#settingsNewSchoolYearBtn',
-        '[data-action="new-school-year"]','[data-settings-action="new-school-year"]'
-      ]);
-      if(target&&target!==y){ target.click(); return; }
-      const dlg=document.querySelector('#schoolYearModal,#newSchoolYearModal');
-      if(dlg?.showModal)dlg.showModal();
-      else toast('Impossibile aprire la creazione del nuovo anno scolastico');
-      return;
-    }
-    const p=e.target.closest('#heroPlannerBtn');
-    if(p){
-      e.preventDefault(); e.stopImmediatePropagation();
-      const target=findAction([
-        '#newModuleBtn','#settingsNewModuleBtn',
-        '[data-action="new-module"]','[data-settings-action="new-module"]'
-      ]);
-      if(target&&target!==p){ target.click(); return; }
-      const dlg=document.querySelector('#moduleModal,#plannerModal');
-      if(dlg?.showModal)dlg.showModal();
-      else toast('Impossibile aprire la generazione della programmazione');
-    }
-  },true);
-})();
