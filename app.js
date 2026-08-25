@@ -1697,3 +1697,44 @@ renderRubrics=function(){
   _renderRubricsV4Base();
   requestAnimationFrame(syncRubricsSafeAreaV4);
 };
+
+
+/* DASHBOARD ACTIONS V7 — riusa le azioni già esistenti in Impostazioni */
+(function(){
+  function findAction(selectors){
+    for(const s of selectors){
+      const nodes=[...document.querySelectorAll(s)];
+      const el=nodes.find(x=>x&&!x.disabled&&x.offsetParent!==null)||
+               nodes.find(x=>x&&!x.disabled);
+      if(el)return el;
+    }
+    return null;
+  }
+  document.addEventListener('click',e=>{
+    const y=e.target.closest('#heroSchoolYearBtn');
+    if(y){
+      e.preventDefault(); e.stopImmediatePropagation();
+      const target=findAction([
+        '#newSchoolYearBtn','#settingsNewSchoolYearBtn',
+        '[data-action="new-school-year"]','[data-settings-action="new-school-year"]'
+      ]);
+      if(target&&target!==y){ target.click(); return; }
+      const dlg=document.querySelector('#schoolYearModal,#newSchoolYearModal');
+      if(dlg?.showModal)dlg.showModal();
+      else toast('Impossibile aprire la creazione del nuovo anno scolastico');
+      return;
+    }
+    const p=e.target.closest('#heroPlannerBtn');
+    if(p){
+      e.preventDefault(); e.stopImmediatePropagation();
+      const target=findAction([
+        '#newModuleBtn','#settingsNewModuleBtn',
+        '[data-action="new-module"]','[data-settings-action="new-module"]'
+      ]);
+      if(target&&target!==p){ target.click(); return; }
+      const dlg=document.querySelector('#moduleModal,#plannerModal');
+      if(dlg?.showModal)dlg.showModal();
+      else toast('Impossibile aprire la generazione della programmazione');
+    }
+  },true);
+})();
