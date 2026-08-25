@@ -1414,8 +1414,49 @@ if(heroSchoolYearBtn){
 
 const heroPlannerBtn=$('#heroPlannerBtn');
 if(heroPlannerBtn){
-  heroPlannerBtn.onclick=()=>{
-    if(!requireSchoolYear('Per generare una programmazione devi prima creare un anno scolastico.'))return;
+  heroPlannerBtn.onclick=async()=>{
+    /*
+     * Percorso guidato Dashboard:
+     * 1. anno scolastico;
+     * 2. almeno una classe;
+     * 3. programmazione.
+     *
+     * Gli avvisi non aprono automaticamente la schermata successiva:
+     * è sempre il docente a confermare l'azione.
+     */
+    if(!st.year){
+      const createYear=await appConfirm({
+        icon:'📅',
+        kicker:'PRIMA CONFIGURAZIONE',
+        title:'Prima devi creare l’anno scolastico',
+        message:'Per generare una programmazione AttivaMente deve sapere a quale anno scolastico appartengono classi, calendario e lezioni.',
+        details:'Dopo aver creato l’anno potrai inserire subito le chiusure del calendario scolastico oppure farlo più tardi.',
+        confirmText:'Crea anno scolastico',
+        danger:false
+      });
+
+      if(createYear)openSchoolYearDialog(true);
+      return;
+    }
+
+    if(!(st.classes||[]).length){
+      const createClass=await appConfirm({
+        icon:'👥',
+        kicker:'MANCA UNA CLASSE',
+        title:'Crea almeno una classe',
+        message:'Prima di generare una programmazione devi creare almeno una classe per l’anno scolastico attivo.',
+        details:'Inserisci classe, ordine scolastico, alunni e orario settimanale. AttivaMente userà questi dati per costruire correttamente le lezioni.',
+        confirmText:'Crea una classe',
+        danger:false
+      });
+
+      if(createClass){
+        go('classes');
+        setTimeout(()=>openClass(null),80);
+      }
+      return;
+    }
+
     go('planner');
     requestAnimationFrame(()=>{
       populateSelects();
