@@ -1110,114 +1110,128 @@ function renderRubricContent({title,subtitle,indicators}){
   bindRubricVoteButtons(indicators);
 }
 
-function renderRubricForClass(){
-  const select=$('#rubricClassSelect');
-  const sportSection=$('#rubricSportSection');
-  const sportsGrid=$('#rubricSportsGrid');
-  const content=$('#rubricContent');
-  const hint=$('#rubricContextHint');
-  if(!select||!sportSection||!sportsGrid||!content||!hint)return;
-
-  const cl=st.classes.find(x=>x.id===select.value);
-  rubricSelectedSport='';
-
-  if(!cl){
-    sportSection.classList.add('hidden');
-    content.innerHTML='';
-    hint.className='rubric-context-hint';
-    hint.textContent='Seleziona una classe di AttivaMente per aprire la rubrica corretta.';
-    return;
-  }
-
-  const grade=String(Number(cl.grade||0));
-
-  if(cl.school_level==='primary'){
-    sportSection.classList.add('hidden');
-    hint.className='rubric-context-hint primary';
-    hint.innerHTML=`<strong>Educazione fisica</strong>&nbsp;· Valutazione generale in base agli obiettivi delle Indicazioni Nazionali. Nessuna valutazione per singolo sport.`;
-
-    const data=RUBRIC_DATA.primary[grade];
-    if(!data){
-      content.innerHTML='<div class="rubric-empty">Rubrica non disponibile per questa classe.</div>';
-      return;
-    }
-
-    renderRubricContent({
-      title:`Educazione fisica · ${rubricClassLabel(cl)}`,
-      subtitle:'Rubrica generale e progressiva della scuola primaria, coerente con gli obiettivi di Educazione fisica.',
-      indicators:data.indicators
+function rubricAllDisciplines(){
+  const names=new Set();
+  ['lower_secondary','upper_secondary'].forEach(group=>{
+    Object.values(RUBRIC_DATA[group]||{}).forEach(grade=>{
+      Object.keys(grade?.sports||{}).forEach(name=>names.add(name));
     });
+  });
+  return [...names].sort((a,b)=>a.localeCompare(b,'it'));
+}
+
+function renderRubricGradeVariant(group,grade,sport){
+  const gradeData=RUBRIC_DATA[group]?.[String(grade)];
+  const indicators=gradeData?.sports?.[sport]||[];
+  const ord=group==='lower_secondary'?'media':'superiore';
+  const gradeLabel=`${grade}ª ${ord}`;
+  if(!indicators.length){
+    $('#rubricContent').innerHTML='<div class="rubric-empty">Rubrica non disponibile per questa combinazione.</div>';
     return;
   }
+  renderRubricContent({
+    title:`${sport} · ${gradeLabel}`,
+    subtitle:`Rubrica disciplinare completa per la ${gradeLabel}: tutti gli indicatori, le evidenze osservabili e i descrittori dal 5 al 10.`,
+    indicators
+  });
+}
 
-  const group=
-    cl.school_level==='lower_secondary'
-      ? RUBRIC_DATA.lower_secondary
-      : cl.school_level==='upper_secondary'
-      ? RUBRIC_DATA.upper_secondary
-      : null;
-
-  const gradeData=group?.[grade];
-
-  if(!gradeData){
-    sportSection.classList.add('hidden');
-    content.innerHTML='<div class="rubric-empty">Rubrica non disponibile per questa classe.</div>';
+function renderPrimaryRubric(grade=1){
+  const data=RUBRIC_DATA.primary?.[String(grade)];
+  if(!data){
+    $('#rubricContent').innerHTML='<div class="rubric-empty">Rubrica primaria non disponibile.</div>';
     return;
   }
+  renderRubricContent({
+    title:`Educazione fisica · ${grade}ª primaria`,
+    subtitle:'Rubrica generale e progressiva della scuola primaria, coerente con gli obiettivi delle Indicazioni Nazionali.',
+    indicators:data.indicators
+  });
+}
 
-  hint.className='rubric-context-hint';
-  hint.textContent=`${rubricClassLabel(cl)} · scegli una disciplina per visualizzare indicatori, evidenze e tutti i 19 descrittori.`;
-  sportSection.classList.remove('hidden');
-  content.innerHTML='';
-
-  const sports=Object.keys(gradeData.sports);
-  sportsGrid.innerHTML=sports.map(name=>`
-    <button type="button" class="rubric-sport-card" data-rubric-sport="${esc(name)}">
-      <span>${rubricSportEmoji(name)}</span>
-      <b>${esc(name)}</b>
-    </button>
-  `).join('');
-
-  $$('[data-rubric-sport]').forEach(btn=>{
+function setRubricGradeButtons(items,onPick){
+  const nav=$('#rubricGradeNav');
+  nav.classList.remove('hidden');
+  nav.innerHTML=items.map((x,i)=>`<button type="button" class="rubric-grade-btn ${i===0?'active':''}" data-rubric-grade-key="${esc(x.key)}">${esc(x.label)}</button>`).join('');
+  $$('[data-rubric-grade-key]').forEach(btn=>{
     btn.onclick=()=>{
-      rubricSelectedSport=btn.dataset.rubricSport;
-      $$('[data-rubric-sport]').forEach(x=>x.classList.toggle('active',x===btn));
-      const indicators=gradeData.sports[rubricSelectedSport]||[];
-      renderRubricContent({
-        title:`${rubricSelectedSport} · ${rubricClassLabel(cl)}`,
-        subtitle:'Rubrica disciplinare completa: indicatori tecnici, evidenze osservabili e descrittori dal 5 al 10.',
-        indicators
-      });
+      $$('[data-rubric-grade-key]').forEach(x=>x.classList.toggle('active',x===btn));
+      onPick(btn.dataset.rubricGradeKey);
       $('#rubricContent')?.scrollIntoView({behavior:'smooth',block:'start'});
     };
   });
 }
 
-function renderRubrics(){
-  const select=$('#rubricClassSelect');
-  if(!select)return;
+function openRubricDiscipline(name){
+  rubricSelectedSport=name;
+  $$('[data-rubric-sport]').forEach(x=>x.classList.toggle('active',x.dataset.rubricSport===name));
+  const hint=$('#rubricContextHint');
 
-  const previous=select.value;
-  select.innerHTML=
-    '<option value="">Seleziona una classe…</option>'+
-    st.classes.map(cl=>`
-      <option value="${cl.id}" ${cl.id===previous?'selected':''}>
-        ${esc(rubricClassLabel(cl))}
-      </option>
-    `).join('');
+  if(name==='__primary__'){
+    hint.className='rubric-context-hint primary';
+    hint.innerHTML='<strong>Educazione fisica · Primaria</strong> · Rubriche generali per 1ª–5ª primaria, senza distinzione per singolo sport.';
+    const items=[1,2,3,4,5].map(g=>({key:String(g),label:`${g}ª primaria`}));
+    setRubricGradeButtons(items,key=>renderPrimaryRubric(Number(key)));
+    renderPrimaryRubric(1);
+    return;
+  }
 
-  select.onchange=renderRubricForClass;
+  hint.className='rubric-context-hint';
+  hint.innerHTML=`<strong>${esc(name)}</strong> · scegli eventualmente il livello scolastico tramite le schede sotto.`;
 
-  if(previous && st.classes.some(x=>x.id===previous)){
-    select.value=previous;
-    renderRubricForClass();
+  const variants=[
+    ...[1,2,3].map(g=>({key:`lower_secondary:${g}`,label:`${g}ª media`})),
+    ...[1,2,3,4,5].map(g=>({key:`upper_secondary:${g}`,label:`${g}ª superiore`}))
+  ].filter(x=>{
+    const [group,grade]=x.key.split(':');
+    return !!RUBRIC_DATA[group]?.[grade]?.sports?.[name];
+  });
+
+  setRubricGradeButtons(variants,key=>{
+    const [group,grade]=key.split(':');
+    renderRubricGradeVariant(group,Number(grade),name);
+  });
+
+  if(variants.length){
+    const [group,grade]=variants[0].key.split(':');
+    renderRubricGradeVariant(group,Number(grade),name);
   }else{
-    $('#rubricSportSection')?.classList.add('hidden');
-    if($('#rubricContent'))$('#rubricContent').innerHTML='';
-    if($('#rubricContextHint')){
-      $('#rubricContextHint').className='rubric-context-hint';
-      $('#rubricContextHint').textContent='Seleziona una classe di AttivaMente per aprire la rubrica corretta.';
-    }
+    $('#rubricContent').innerHTML='<div class="rubric-empty">Rubrica non disponibile per questa disciplina.</div>';
+  }
+}
+
+function renderRubrics(){
+  const grid=$('#rubricSportsGrid');
+  const content=$('#rubricContent');
+  const hint=$('#rubricContextHint');
+  const nav=$('#rubricGradeNav');
+  if(!grid||!content||!hint||!nav)return;
+
+  const sports=rubricAllDisciplines();
+  grid.innerHTML=`
+    <button type="button" class="rubric-sport-card" data-rubric-sport="__primary__">
+      <span>🏃‍♀️</span><b>Educazione fisica · Primaria</b>
+    </button>
+    ${sports.map(name=>`
+      <button type="button" class="rubric-sport-card" data-rubric-sport="${esc(name)}">
+        <span>${rubricSportEmoji(name)}</span><b>${esc(name)}</b>
+      </button>
+    `).join('')}
+  `;
+
+  $$('[data-rubric-sport]').forEach(btn=>{
+    btn.onclick=()=>openRubricDiscipline(btn.dataset.rubricSport);
+  });
+
+  if(rubricSelectedSport && (rubricSelectedSport==='__primary__'||sports.includes(rubricSelectedSport))){
+    openRubricDiscipline(rubricSelectedSport);
+  }else{
+    rubricSelectedSport='';
+    nav.classList.add('hidden');
+    nav.innerHTML='';
+    content.innerHTML='';
+    hint.className='rubric-context-hint';
+    hint.textContent='Seleziona una disciplina per aprire la relativa rubrica.';
   }
 }
 

@@ -567,6 +567,22 @@
 @media(max-width:900px){.teamgen-layout{grid-template-columns:1fr}.teamgen-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.teamgen-hero{padding:19px}.teamgen-hero-mark{display:none}.teamgen-segmented{grid-template-columns:1fr}.teamgen-grid{grid-template-columns:1fr}.teamgen-result-head{display:grid}.teamgen-results-panel{padding:14px}}
 </style>
+
+<style id="rubrics-discipline-only-v14">
+#view-rubriche .rubrics-discipline-panel{padding:20px 22px;margin-bottom:14px;border-radius:18px}
+#view-rubriche .rubric-sports-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important;gap:10px!important}
+#view-rubriche .rubric-sport-card{min-height:82px!important}
+#view-rubriche .rubric-grade-nav{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 16px;padding:12px;border-radius:16px;background:rgba(255,255,255,.025);border:1px solid rgba(125,165,200,.14)}
+#view-rubriche .rubric-grade-nav.hidden{display:none!important}
+#view-rubriche .rubric-grade-btn{min-height:42px;padding:9px 13px;border-radius:12px;border:1px solid rgba(125,165,200,.18);background:rgba(255,255,255,.035);color:inherit;font-weight:800;cursor:pointer}
+#view-rubriche .rubric-grade-btn.active{background:rgba(64,190,196,.12);border-color:rgba(64,190,196,.5)}
+#view-rubriche .rubric-context-hint{margin:0 0 12px}
+@media(max-width:640px){
+  #view-rubriche .rubrics-discipline-panel{padding:15px}
+  #view-rubriche .rubric-sports-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #view-rubriche .rubric-grade-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>
@@ -1012,40 +1028,29 @@
 <section id="view-rubriche" class="view">
   <div class="rubrics-hero glass">
     <div>
-      <span class="kicker">RUBRICHE DI VALUTAZIONE</span>
-      <h3>Valuta con criteri chiari, progressivi e completi.</h3>
-      <p>
-        Le rubriche derivano integralmente dal workbook di valutazione:
-        19 livelli da 5 a 10, indicatori, evidenze osservabili e descrittori completi.
-      </p>
+      <span class="kicker">VALUTAZIONE</span>
+      <h3>Rubriche di valutazione</h3>
+      <p>Scegli direttamente la disciplina. Le rubriche sono indipendenti dalle classi create nell’anno scolastico e mantengono tutti gli indicatori, le evidenze osservabili e i 19 livelli valutativi già definiti.</p>
     </div>
     <div class="rubrics-hero-mark">▤</div>
   </div>
 
-  <div class="rubrics-selector glass">
-    <label class="rubrics-class-field">
-      Classe
-      <select id="rubricClassSelect">
-        <option value="">Seleziona una classe…</option>
-      </select>
-    </label>
-
-    <div id="rubricContextHint" class="rubric-context-hint">
-      Seleziona una classe di AttivaMente per aprire la rubrica corretta.
-    </div>
-  </div>
-
-  <div id="rubricSportSection" class="hidden">
+  <div class="rubrics-discipline-panel glass">
     <div class="section-title-row rubric-sport-heading">
       <div>
         <span class="kicker">DISCIPLINA</span>
-        <h3>Scegli lo sport da valutare</h3>
-        <p>La rubrica cambia automaticamente in base alla classe selezionata.</p>
+        <h3>Scegli cosa vuoi valutare</h3>
+        <p>Apri una disciplina per visualizzare le rubriche complete già presenti in AttivaMente.</p>
       </div>
     </div>
     <div id="rubricSportsGrid" class="rubric-sports-grid"></div>
   </div>
 
+  <div id="rubricContextHint" class="rubric-context-hint">
+    Seleziona una disciplina per aprire la relativa rubrica.
+  </div>
+
+  <div id="rubricGradeNav" class="rubric-grade-nav hidden"></div>
   <div id="rubricContent"></div>
 </section>
 
