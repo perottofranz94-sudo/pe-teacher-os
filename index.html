@@ -473,6 +473,100 @@
 }
 </style>
 
+
+<style id="student-sport-levels-v11">
+.class-sport-level-btn{
+  margin-top:12px;
+  width:100%;
+  justify-content:center;
+}
+.student-levels-intro{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:14px 16px;
+  border:1px solid rgba(120,170,220,.22);
+  border-radius:16px;
+  background:rgba(13,42,72,.55);
+  margin-bottom:14px;
+}
+.student-levels-intro p{margin:3px 0 0;color:var(--muted)}
+.student-levels-list{display:grid;gap:9px;max-height:58vh;overflow:auto;padding-right:4px}
+.student-level-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 250px;
+  gap:14px;
+  align-items:center;
+  padding:12px 14px;
+  border:1px solid rgba(120,170,220,.16);
+  border-radius:14px;
+  background:rgba(255,255,255,.025);
+}
+.student-level-name{display:flex;align-items:center;gap:10px;min-width:0}
+.student-level-avatar{
+  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(48,128,213,.18);font-weight:900;flex:0 0 auto
+}
+.student-level-name strong{display:block}
+.student-level-name small{display:block;color:var(--muted);margin-top:2px}
+.student-level-select{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:6px;
+}
+.student-level-choice{
+  min-height:42px;
+  border-radius:10px;
+  border:1px solid rgba(137,174,210,.28);
+  background:rgba(6,31,55,.82);
+  color:inherit;
+  font-weight:900;
+  cursor:pointer;
+}
+.student-level-choice:hover{border-color:#5da8ff}
+.student-level-choice.selected{
+  border-color:#50d2b0;
+  background:rgba(52,175,145,.18);
+  box-shadow:0 0 0 1px rgba(80,210,176,.18) inset;
+}
+.student-level-legend{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:6px;
+  margin:12px 0 4px;
+}
+.student-level-legend span{
+  text-align:center;font-size:10px;color:var(--muted);padding:5px 3px
+}
+.student-levels-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+@media(max-width:700px){
+  .student-level-row{grid-template-columns:1fr}
+  .student-levels-list{max-height:54vh}
+  .student-levels-actions{flex-direction:column-reverse}
+  .student-levels-actions .btn{width:100%}
+}
+</style>
+
+
+<style id="student-sport-discipline-v12">
+.student-discipline-step{display:grid;gap:14px;margin:4px 0 18px;padding:18px;border:1px solid rgba(100,180,255,.18);border-radius:20px;background:linear-gradient(145deg,rgba(31,92,145,.16),rgba(19,45,78,.08))}
+.student-discipline-intro{display:grid;gap:4px}.student-discipline-intro strong{font-size:1.05rem}.student-discipline-intro small{opacity:.72}
+.student-discipline-step label{display:grid;gap:7px;font-weight:700}.student-discipline-step select,.student-discipline-step input{width:100%}
+.student-custom-sport-row{display:grid;grid-template-columns:1fr auto;gap:10px}
+.student-level-sport-chip{display:inline-flex;align-items:center;gap:6px;margin:0 0 14px;padding:7px 11px;border-radius:999px;background:rgba(68,180,190,.12);border:1px solid rgba(68,180,190,.22);font-size:.82rem;font-weight:800}
+@media(max-width:640px){.student-custom-sport-row{grid-template-columns:1fr}.student-discipline-step{padding:14px}}
+</style>
+
+<style id="team-generator-v13">
+.teamgen-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:24px 28px;margin-bottom:20px;overflow:hidden}.teamgen-hero h3{font-size:1.65rem;margin:4px 0 6px}.teamgen-hero p{max-width:760px;margin:0;opacity:.76;line-height:1.55}.teamgen-hero-mark{display:grid;place-items:center;flex:0 0 76px;width:76px;height:76px;border-radius:24px;font-size:2.25rem;background:rgba(65,185,194,.12);border:1px solid rgba(65,185,194,.2)}
+.teamgen-layout{display:grid;grid-template-columns:minmax(300px,390px) minmax(0,1fr);gap:20px;align-items:start}.teamgen-config{display:grid;gap:17px}.teamgen-config label{display:grid;gap:7px;font-weight:750}.teamgen-config select{width:100%}.team-count-picker{display:grid;grid-template-columns:52px 1fr 52px;align-items:center;min-height:54px;border:1px solid rgba(125,165,200,.2);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.025)}.team-count-picker button{height:100%;border:0;background:rgba(255,255,255,.04);color:inherit;font-size:1.35rem;cursor:pointer}.team-count-picker strong{text-align:center;font-size:1.35rem}
+.teamgen-choice-block{display:grid;gap:8px}.teamgen-choice-label{font-weight:750}.teamgen-segmented{display:grid;grid-template-columns:1fr 1fr;gap:8px}.teamgen-segmented button{min-height:68px;padding:10px;border-radius:15px;border:1px solid rgba(125,165,200,.17);background:rgba(255,255,255,.025);color:inherit;text-align:left;cursor:pointer;display:grid;gap:2px}.teamgen-segmented button.active{border-color:rgba(64,190,196,.58);background:rgba(64,190,196,.11);box-shadow:inset 0 0 0 1px rgba(64,190,196,.12)}.teamgen-segmented small{opacity:.62}.teamgen-info{padding:11px 13px;border-radius:13px;background:rgba(100,160,210,.08);font-size:.83rem;line-height:1.4}.teamgen-main-btn{min-height:52px;font-weight:850;font-size:1rem}
+.teamgen-empty{min-height:360px;display:grid;place-items:center;align-content:center;text-align:center;padding:30px}.teamgen-empty-icon{font-size:3rem;margin-bottom:8px}.teamgen-empty h3{margin:0 0 6px}.teamgen-empty p{margin:0;opacity:.65;max-width:390px}
+.teamgen-result-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:15px}.teamgen-result-head h3{margin:3px 0}.teamgen-result-head p{margin:0;opacity:.68}.teamgen-result-actions{display:flex;gap:8px;flex-wrap:wrap}.teamgen-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.team-card{padding:18px;border-radius:20px;border:1px solid rgba(125,165,200,.17);background:rgba(255,255,255,.035)}.team-card-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.team-card-head h4{margin:0;font-size:1.08rem}.team-card-score{font-size:.78rem;padding:5px 8px;border-radius:999px;background:rgba(65,185,194,.1);border:1px solid rgba(65,185,194,.18)}.team-player{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:9px;padding:9px 0;border-top:1px solid rgba(125,165,200,.1)}.team-player:first-of-type{border-top:0}.team-player-avatar{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.06);font-size:.74rem}.team-player-name{min-width:0}.team-player-name strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.team-player-name small{opacity:.55}.team-player-level{font-size:.74rem;font-weight:800;opacity:.72}.teamgen-warning{margin-bottom:12px;padding:11px 13px;border-radius:13px;background:rgba(245,180,55,.1);border:1px solid rgba(245,180,55,.18);font-size:.82rem}.teamgen-results-panel{padding:20px}
+@media(max-width:900px){.teamgen-layout{grid-template-columns:1fr}.teamgen-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.teamgen-hero{padding:19px}.teamgen-hero-mark{display:none}.teamgen-segmented{grid-template-columns:1fr}.teamgen-grid{grid-template-columns:1fr}.teamgen-result-head{display:grid}.teamgen-results-panel{padding:14px}}
+</style>
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>
@@ -500,6 +594,7 @@
     <button data-view="dashboard" class="nav-btn active"><span>⌂</span>Dashboard</button>
     <button data-view="calendar" class="nav-btn"><span>◫</span>Calendario</button>
     <button data-view="classes" class="nav-btn"><span>◎</span>Classi</button>
+    <button data-view="teams" class="nav-btn"><span>⚖</span>Generatore di squadre</button>
     <button data-view="planner" class="nav-btn"><span>✦</span>Programmazione</button>
     <button data-view="sports" class="nav-btn"><span>◈</span>Archivio sport</button>
     <button data-view="primarygames" class="nav-btn"><span>✹</span>Giochi scuola primaria</button>
@@ -629,6 +724,69 @@
 <section id="view-classes" class="view">
   <div class="section-title-row"><div><span class="kicker">CLASSI</span><h3>Gestione classi</h3><p>Composizione, alunni e livelli per sport.</p></div><button id="newClassBtn" class="btn primary">+ Nuova classe</button></div>
   <div id="classesGrid" class="class-grid"></div>
+</section>
+
+
+<section id="view-teams" class="view">
+  <div class="teamgen-hero glass">
+    <div>
+      <span class="kicker">GENERATORE INTELLIGENTE</span>
+      <h3>Generatore di squadre</h3>
+      <p>Crea gruppi in pochi secondi. Puoi bilanciarli usando i livelli individuali della disciplina scelta e gestire la composizione maschi/femmine.</p>
+    </div>
+    <div class="teamgen-hero-mark">⚖</div>
+  </div>
+
+  <div class="teamgen-layout">
+    <article class="panel glass teamgen-config">
+      <div class="panel-head"><div><span class="kicker">CONFIGURAZIONE</span><h3>Come vuoi creare le squadre?</h3></div></div>
+
+      <label>Classe
+        <select id="teamGenClass"></select>
+      </label>
+
+      <label id="teamGenSportField">Disciplina
+        <select id="teamGenSport"></select>
+        <small id="teamGenSportHelp" class="field-help">I livelli specifici salvati per questa disciplina verranno usati per l'equilibrio.</small>
+      </label>
+
+      <label>Numero di squadre
+        <div class="team-count-picker">
+          <button id="teamCountMinus" type="button" aria-label="Riduci squadre">−</button>
+          <strong id="teamCountValue">2</strong>
+          <button id="teamCountPlus" type="button" aria-label="Aumenta squadre">＋</button>
+        </div>
+      </label>
+
+      <div class="teamgen-choice-block">
+        <span class="teamgen-choice-label">Equilibrio</span>
+        <div class="teamgen-segmented">
+          <button type="button" data-team-balance="balanced" class="active"><b>⚖ Equilibrate</b><small>Usa i livelli 1–5</small></button>
+          <button type="button" data-team-balance="random"><b>🎲 Casuali</b><small>Mescolamento libero</small></button>
+        </div>
+      </div>
+
+      <div class="teamgen-choice-block">
+        <span class="teamgen-choice-label">Maschi e femmine</span>
+        <div class="teamgen-segmented">
+          <button type="button" data-team-gender="mixed" class="active"><b>♀♂ Mescolati</b><small>Distribuzione uniforme</small></button>
+          <button type="button" data-team-gender="separate"><b>♀ / ♂ Separati</b><small>Squadre non miste</small></button>
+        </div>
+      </div>
+
+      <div id="teamGenInfo" class="teamgen-info">Seleziona una classe per iniziare.</div>
+      <button id="generateTeamsBtn" type="button" class="btn primary teamgen-main-btn">✦ Genera squadre</button>
+    </article>
+
+    <section class="teamgen-results-wrap">
+      <div id="teamGenEmpty" class="teamgen-empty glass">
+        <div class="teamgen-empty-icon">⚖</div>
+        <h3>Le squadre appariranno qui</h3>
+        <p>AttivaMente distribuirà gli alunni secondo le opzioni che hai scelto.</p>
+      </div>
+      <div id="teamGenResults" class="hidden"></div>
+    </section>
+  </div>
 </section>
 
 <section id="view-planner" class="view">
@@ -936,6 +1094,7 @@
     <button data-view="dashboard"><span>⌂</span><div><b>Dashboard</b><small>Panoramica dell’app</small></div></button>
     <button data-view="calendar"><span>▦</span><div><b>Calendario</b><small>Lezioni, chiusure e gite</small></div></button>
     <button data-view="classes"><span>◎</span><div><b>Classi</b><small>Crea e modifica le classi</small></div></button>
+    <button data-view="teams"><span>⚖</span><div><b>Generatore di squadre</b><small>Crea gruppi equilibrati per disciplina</small></div></button>
     <button data-view="planner"><span>✦</span><div><b>Programmazione</b><small>Genera i moduli didattici</small></div></button>
     <button data-view="sports"><span>◈</span><div><b>Archivio sport</b><small>Tutti gli sport e gli esercizi</small></div></button>
     <button data-view="primarygames"><span>✹</span><div><b>Giochi scuola primaria</b><small>Libro e giochi personali</small></div></button>
@@ -1095,6 +1254,48 @@
 
     <div id="adaptLessonPreview" class="adapt-lesson-preview hidden"></div>
   </div>
+</dialog>
+
+
+<dialog id="studentSportLevelsModal" class="modal">
+  <div class="modal-head">
+    <div>
+      <span class="kicker">LIVELLO INDIVIDUALE</span>
+      <h3 id="studentSportLevelsTitle">Assegna livello sportivo</h3>
+    </div>
+    <button type="button" data-close="studentSportLevelsModal">×</button>
+  </div>
+
+  <div id="studentSportDisciplineStep" class="student-discipline-step hidden">
+    <div class="student-discipline-intro">
+      <strong>Prima scegli la disciplina</strong>
+      <small>Il livello sarà salvato specificamente per questo sport.</small>
+    </div>
+    <label>Disciplina
+      <select id="studentLevelSportSelect"></select>
+    </label>
+    <label id="studentLevelCustomSportWrap" class="hidden">Nuovo sport
+      <div class="student-custom-sport-row">
+        <input id="studentLevelCustomSport" type="text" maxlength="60" placeholder="Es. Pickleball, Dodgeball, Padel…">
+        <button id="studentLevelAddCustomSportBtn" type="button" class="btn secondary">＋ Aggiungi sport</button>
+      </div>
+    </label>
+    <button id="studentLevelChooseSportBtn" type="button" class="btn primary">Continua con questo sport →</button>
+  </div>
+
+  <div id="studentSportLevelsBody"></div>
+  <div class="student-level-legend">
+    <span>1 · Principiante</span>
+    <span>2 · Base</span>
+    <span>3 · Intermedio</span>
+    <span>4 · Avanzato</span>
+    <span>5 · Molto avanzato</span>
+  </div>
+  <div class="student-levels-actions">
+    <button type="button" class="btn secondary" id="studentLevelsCancelBtn">Annulla</button>
+    <button type="button" class="btn primary" id="studentLevelsSaveBtn">Salva livelli</button>
+  </div>
+  <small id="studentLevelsMsg" class="muted"></small>
 </dialog>
 
 </body>

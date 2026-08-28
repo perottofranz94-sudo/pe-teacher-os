@@ -66,7 +66,7 @@ function appConfirm({
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2300)}
 function openMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');b?.classList.remove('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','true');document.body.classList.add('menu-open')}
 function closeMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.remove('open');m.setAttribute('aria-hidden','true');b?.classList.add('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','false');document.body.classList.remove('menu-open')}
-function go(v){closeMobileMenu();$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${v}`));$$('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));let m={dashboard:['PANORAMICA','Dashboard'],calendar:['ANNO SCOLASTICO','Calendario'],classes:['GESTIONE','Classi'],planner:['MOTORE DIDATTICO','Programmazione'],sports:['MEGA ARCHIVIO','Archivio sport'],tests:['VALUTAZIONE','Test motori'],rubriche:['VALUTAZIONE','Rubriche di valutazione'],primarygames:['SCUOLA PRIMARIA','Giochi scuola primaria'],owner:['AREA RISERVATA','Area OWNER'],settings:['CONFIGURAZIONE','Impostazioni']}[v];$('#pageKicker').textContent=m[0];$('#pageTitle').textContent=m[1];if(v==='sports')renderSports();if(v==='primarygames')loadPrimaryGames();if(v==='tests')renderTests();if(v==='rubriche')renderRubrics();if(v==='calendar')renderCalendar();if(v==='settings')renderSettings()}
+function go(v){closeMobileMenu();$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${v}`));$$('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));let m={dashboard:['PANORAMICA','Dashboard'],calendar:['ANNO SCOLASTICO','Calendario'],classes:['GESTIONE','Classi'],teams:['STRUMENTI','Generatore di squadre'],planner:['MOTORE DIDATTICO','Programmazione'],sports:['MEGA ARCHIVIO','Archivio sport'],tests:['VALUTAZIONE','Test motori'],rubriche:['VALUTAZIONE','Rubriche di valutazione'],primarygames:['SCUOLA PRIMARIA','Giochi scuola primaria'],owner:['AREA RISERVATA','Area OWNER'],settings:['CONFIGURAZIONE','Impostazioni']}[v];$('#pageKicker').textContent=m[0];$('#pageTitle').textContent=m[1];if(v==='sports')renderSports();if(v==='primarygames')loadPrimaryGames();if(v==='tests')renderTests();if(v==='rubriche')renderRubrics();if(v==='calendar')renderCalendar();if(v==='settings')renderSettings();if(v==='teams'){populateSelects();updateTeamGenInfo()}}
 $$('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));$$('[data-jump]').forEach(b=>b.onclick=()=>go(b.dataset.jump));$('#quickPlan').onclick=()=>go('planner');$$('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).close());
 $('#mobileMenuBtn').onclick=openMobileMenu;$('#mobileMoreBtn').onclick=openMobileMenu;$('#mobileMenuClose').onclick=closeMobileMenu;$('#mobileMenuBackdrop').onclick=closeMobileMenu;$('#mobileLogoutBtn').onclick=()=>db.auth.signOut();document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu()});
 
@@ -92,7 +92,7 @@ async function loadCore(){
 
 function populateSelects(){
   const co='<option value="">Seleziona classe</option>'+st.classes.map(c=>`<option value="${c.id}">${esc(c.name)} · ${c.student_count} alunni</option>`).join('');
-  ['planClass','sessionClass','rankingClass','exceptionClass','extraClass'].forEach(id=>$( '#'+id).innerHTML=co);
+  ['planClass','sessionClass','rankingClass','exceptionClass','extraClass','teamGenClass'].forEach(id=>$( '#'+id).innerHTML=co);
   const so='<option value="">Seleziona sport</option>'+st.sports.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
   $('#planSport').innerHTML=so;
   const to='<option value="">Seleziona test</option>'+st.tests.map(t=>`<option value="${t.id}">${esc(t.name)} (${esc(t.unit)})</option>`).join('');
@@ -134,9 +134,300 @@ function renderDashboard(){
   $('#dashboardHof').innerHTML=st.hof.slice(0,6).map(x=>listItem(`${x.first_name} ${x.last_name}`,`${x.test_name} · ${x.school_year_label}`,`<span class="chip gold">${x.result_value} ${esc(x.unit)}</span>`)).join('')||listItem('Nessun record ancora','Inserisci i primi risultati');
 }
 function renderClasses(){
-  $('#classesGrid').innerHTML=st.classes.map(c=>`<article class="class-card" data-class="${c.id}">${c.school_level?`<span class="class-school-badge">${esc(schoolLevelLabels[c.school_level]||c.school_level)}</span>`:'<span class="class-school-badge">Grado scolastico da impostare</span>'}<span class="kicker">CLASSE</span><h4>${esc(c.name)}</h4><div class="class-counts"><span class="chip">${c.student_count} alunni</span><span class="chip">♀ ${c.female_count??'—'}</span><span class="chip">♂ ${c.male_count??'—'}</span></div><div class="edit-hint">Apri e modifica →</div></article>`).join('')||`<article class="class-card"><h4>Nessuna classe</h4><p>Creane una per iniziare.</p></article>`;
-  $$('[data-class]').forEach(x=>x.onclick=()=>openClass(x.dataset.class));
+  $('#classesGrid').innerHTML=st.classes.map(c=>`<article class="class-card" data-class="${c.id}">${c.school_level?`<span class="class-school-badge">${esc(schoolLevelLabels[c.school_level]||c.school_level)}</span>`:'<span class="class-school-badge">Grado scolastico da impostare</span>'}<span class="kicker">CLASSE</span><h4>${esc(c.name)}</h4><div class="class-counts"><span class="chip">${c.student_count} alunni</span><span class="chip">♀ ${c.female_count??'—'}</span><span class="chip">♂ ${c.male_count??'—'}</span></div><button type="button" class="btn secondary class-sport-level-btn" data-student-levels="${c.id}">⚡ Assegna livello sportivo</button><div class="edit-hint">Apri e modifica →</div></article>`).join('')||`<article class="class-card"><h4>Nessuna classe</h4><p>Creane una per iniziare.</p></article>`;
+  $$('[data-class]').forEach(x=>x.onclick=e=>{if(e.target.closest('[data-student-levels]'))return;openClass(x.dataset.class)});
+  $$('[data-student-levels]').forEach(b=>b.onclick=e=>{e.stopPropagation();openStudentSportLevels(b.dataset.studentLevels)});
 }
+
+let studentLevelsCtx=null;
+const GENERAL_STUDENT_LEVEL_KEY='__general__';
+const CUSTOM_STUDENT_SPORTS_KEY='attivamente_custom_student_sports_v1';
+
+function isPrimaryLowerClass(cl){
+  return cl?.school_level==='primary' && Number(cl?.grade||0)>=1 && Number(cl?.grade||0)<=3;
+}
+function getCustomStudentSports(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(CUSTOM_STUDENT_SPORTS_KEY)||'[]');
+    return Array.isArray(raw)?raw.filter(Boolean):[];
+  }catch{return []}
+}
+function saveCustomStudentSports(items){
+  localStorage.setItem(CUSTOM_STUDENT_SPORTS_KEY,JSON.stringify([...new Set(items.map(x=>String(x).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'it'))));
+}
+function sportLevelKeyFromSport(sp){
+  return sp?.id?`sport:${sp.id}`:'';
+}
+function sportLabelFromKey(key){
+  if(key===GENERAL_STUDENT_LEVEL_KEY)return 'Livello sportivo generale';
+  if(key?.startsWith('sport:')){
+    const id=key.slice(6),sp=st.sports.find(x=>String(x.id)===id);
+    return sp?.name||'Disciplina';
+  }
+  if(key?.startsWith('custom:'))return key.slice(7);
+  return 'Disciplina';
+}
+function populateStudentLevelSportSelect(){
+  const sel=$('#studentLevelSportSelect');
+  if(!sel)return;
+  const official=(st.sports||[]).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'it'));
+  const custom=getCustomStudentSports();
+  sel.innerHTML='<option value="">Seleziona disciplina…</option>'+
+    official.map(sp=>`<option value="${esc(sportLevelKeyFromSport(sp))}">${esc(sp.name)}</option>`).join('')+
+    custom.map(name=>`<option value="custom:${esc(name)}">${esc(name)} · personale</option>`).join('')+
+    '<option value="__other__">＋ Altro / crea nuovo sport…</option>';
+}
+async function loadStudentLevelsForSport(){
+  if(!studentLevelsCtx)return;
+  const {classId,schoolYearId,sportKey}=studentLevelsCtx;
+  const body=$('#studentSportLevelsBody'),msg=$('#studentLevelsMsg');
+  body.innerHTML='<p class="muted">Carico i livelli…</p>';
+  const [{data:en,error:enErr},{data:levels,error:lvErr}]=await Promise.all([
+    db.from('pe_student_enrollments')
+      .select('student_id,pe_students(id,first_name,last_name,sex)')
+      .eq('class_id',classId).eq('active',true),
+    db.from('pe_student_sport_levels')
+      .select('student_id,level')
+      .eq('school_year_id',schoolYearId).eq('class_id',classId).eq('sport_key',sportKey)
+  ]);
+  if(enErr||lvErr){
+    body.innerHTML='<p class="muted">Impossibile caricare i livelli.</p>';
+    toast((enErr||lvErr).message);return;
+  }
+  const students=(en||[]).map(x=>x.pe_students).filter(Boolean)
+    .sort((a,b)=>`${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`,'it'));
+  const levelMap=Object.fromEntries((levels||[]).map(x=>[x.student_id,Number(x.level)]));
+  studentLevelsCtx.students=students;
+  studentLevelsCtx.levels={...levelMap};
+  const label=sportLabelFromKey(sportKey);
+  body.innerHTML=`<div class="student-level-sport-chip">🏅 ${esc(label)}</div>
+    <div class="student-levels-summary"><strong>${students.length} alunni</strong><span id="studentLevelsAssignedCount">${students.filter(s=>levelMap[s.id]).length}/${students.length} assegnati</span></div>
+    <div class="student-levels-list">${students.map(s=>`<div class="student-level-row">
+      <div class="student-level-person"><strong>${esc(s.last_name)} ${esc(s.first_name)}</strong><small>${s.sex==='F'?'♀ Femmina':s.sex==='M'?'♂ Maschio':'Alunno'}</small></div>
+      <div class="student-level-picker" data-level-student="${s.id}">
+        ${[1,2,3,4,5].map(n=>`<button type="button" class="student-level-choice ${Number(levelMap[s.id])===n?'active':''}" data-level="${n}" title="Livello ${n}">${n}</button>`).join('')}
+      </div></div>`).join('')}</div>`;
+  $$('[data-level-student]').forEach(group=>{
+    const sid=group.dataset.levelStudent;
+    group.querySelectorAll('[data-level]').forEach(btn=>{
+      btn.onclick=()=>{
+        const level=Number(btn.dataset.level);
+        studentLevelsCtx.levels[sid]=level;
+        group.querySelectorAll('[data-level]').forEach(x=>x.classList.toggle('active',x===btn));
+        const count=students.filter(s=>studentLevelsCtx.levels[s.id]).length;
+        $('#studentLevelsAssignedCount').textContent=`${count}/${students.length} assegnati`;
+      };
+    });
+  });
+}
+async function openStudentSportLevels(classId){
+  const cl=st.classes.find(x=>x.id===classId);
+  if(!cl)return toast('Classe non trovata');
+  if(!st.year)return toast('Anno scolastico non disponibile');
+
+  const lowerPrimary=isPrimaryLowerClass(cl),body=$('#studentSportLevelsBody'),msg=$('#studentLevelsMsg');
+  $('#studentSportLevelsTitle').textContent=`${cl.name} · livello sportivo`;
+  msg.textContent='';body.innerHTML='';
+  studentLevelsCtx={classId,schoolYearId:st.year.id,classObj:cl,sportKey:null,students:[],levels:{}};
+  const step=$('#studentSportDisciplineStep');
+  step.classList.toggle('hidden',lowerPrimary);
+  $('#studentLevelsSaveBtn').classList.toggle('hidden',!lowerPrimary);
+
+  if(lowerPrimary){
+    // 1ª–3ª primaria: nessuna disciplina. Un solo profilo motorio/sportivo generale.
+    studentLevelsCtx.sportKey=GENERAL_STUDENT_LEVEL_KEY;
+  }else{
+    populateStudentLevelSportSelect();
+    $('#studentLevelSportSelect').value='';
+    $('#studentLevelCustomSport').value='';
+    $('#studentLevelCustomSportWrap').classList.add('hidden');
+  }
+  $('#studentSportLevelsModal').showModal();
+  if(lowerPrimary)await loadStudentLevelsForSport();
+}
+$('#studentLevelSportSelect')?.addEventListener('change',e=>{
+  $('#studentLevelCustomSportWrap')?.classList.toggle('hidden',e.target.value!=='__other__');
+});
+$('#studentLevelAddCustomSportBtn')?.addEventListener('click',()=>{
+  const input=$('#studentLevelCustomSport'),name=input.value.trim();
+  if(!name)return toast('Scrivi il nome dello sport');
+  const items=getCustomStudentSports();
+  if(!items.some(x=>x.toLowerCase()===name.toLowerCase()))saveCustomStudentSports([...items,name]);
+  populateStudentLevelSportSelect();
+  $('#studentLevelSportSelect').value=`custom:${name}`;
+  $('#studentLevelCustomSportWrap').classList.add('hidden');
+  toast(`${name} aggiunto alle discipline`);
+});
+$('#studentLevelChooseSportBtn')?.addEventListener('click',async()=>{
+  const sel=$('#studentLevelSportSelect'),value=sel?.value;
+  if(!value)return toast('Seleziona prima una disciplina');
+  if(value==='__other__')return toast('Crea prima il nuovo sport');
+  studentLevelsCtx.sportKey=value;
+  $('#studentSportDisciplineStep').classList.add('hidden');
+  $('#studentLevelsSaveBtn').classList.remove('hidden');
+  await loadStudentLevelsForSport();
+});
+async function saveStudentSportLevels(){
+  if(!studentLevelsCtx?.sportKey)return toast('Seleziona prima la disciplina');
+  const btn=$('#studentLevelsSaveBtn'),msg=$('#studentLevelsMsg');
+  btn.disabled=true;btn.textContent='Salvataggio…';msg.textContent='Salvo i livelli…';
+  try{
+    const assigned=studentLevelsCtx.students.filter(s=>studentLevelsCtx.levels[s.id]).map(s=>({
+      owner_id:st.user.id,
+      school_year_id:studentLevelsCtx.schoolYearId,
+      class_id:studentLevelsCtx.classId,
+      student_id:s.id,
+      sport_key:studentLevelsCtx.sportKey,
+      level:Number(studentLevelsCtx.levels[s.id]),
+      updated_at:new Date().toISOString()
+    }));
+    if(assigned.length){
+      const{error}=await db.from('pe_student_sport_levels').upsert(
+        assigned,{onConflict:'school_year_id,class_id,student_id,sport_key'}
+      );
+      if(error)throw error;
+    }
+    $('#studentSportLevelsModal').close();
+    toast(`Livelli salvati · ${sportLabelFromKey(studentLevelsCtx.sportKey)}`);
+  }catch(err){
+    console.error(err);msg.textContent='Errore: '+(err.message||'salvataggio non riuscito');
+    toast('Impossibile salvare i livelli');
+  }finally{btn.disabled=false;btn.textContent='Salva livelli'}
+}
+$('#studentLevelsSaveBtn')?.addEventListener('click',saveStudentSportLevels);
+$('#studentLevelsCancelBtn')?.addEventListener('click',()=>$('#studentSportLevelsModal').close());
+
+
+/* =========================================================
+   GENERATORE DI SQUADRE V13
+   ========================================================= */
+let teamGenState={count:2,balance:'balanced',gender:'mixed',last:null};
+
+function teamGenClassObj(){
+  return st.classes.find(x=>x.id===$('#teamGenClass')?.value);
+}
+function teamGenSportOptions(){
+  const cl=teamGenClassObj(),sel=$('#teamGenSport'),field=$('#teamGenSportField');
+  if(!sel||!field)return;
+  if(!cl){sel.innerHTML='<option value="">Seleziona prima una classe</option>';return}
+  const lower=isPrimaryLowerClass(cl);
+  field.classList.toggle('hidden',lower);
+  if(lower){
+    sel.innerHTML=`<option value="${GENERAL_STUDENT_LEVEL_KEY}">Livello sportivo generale</option>`;
+    sel.value=GENERAL_STUDENT_LEVEL_KEY;return;
+  }
+  const official=(st.sports||[]).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'it'));
+  const custom=getCustomStudentSports();
+  sel.innerHTML='<option value="">Seleziona disciplina…</option>'+
+    official.map(sp=>`<option value="${esc(sportLevelKeyFromSport(sp))}">${esc(sp.name)}</option>`).join('')+
+    custom.map(name=>`<option value="custom:${esc(name)}">${esc(name)} · personale</option>`).join('');
+}
+async function updateTeamGenInfo(){
+  const cl=teamGenClassObj(),info=$('#teamGenInfo');
+  if(!cl){info.textContent='Seleziona una classe per iniziare.';teamGenSportOptions();return}
+  teamGenSportOptions();
+  const {count,error}=await db.from('pe_student_enrollments').select('*',{count:'exact',head:true}).eq('class_id',cl.id).eq('active',true);
+  info.textContent=error?`${cl.name} · alunni disponibili`:`${cl.name} · ${count||0} alunni disponibili`;
+}
+function setTeamCount(n){
+  teamGenState.count=Math.max(2,Math.min(12,Number(n)||2));
+  if($('#teamCountValue'))$('#teamCountValue').textContent=teamGenState.count;
+}
+function shuffled(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  return a;
+}
+function distributeBalanced(players,n){
+  const teams=Array.from({length:n},()=>[]);
+  // Randomizza le parità, poi snake draft per distribuire i livelli forti/deboli.
+  const sorted=shuffled(players).sort((a,b)=>(b.level||3)-(a.level||3));
+  sorted.forEach((p,i)=>{
+    const round=Math.floor(i/n),pos=i%n;
+    const idx=round%2===0?pos:n-1-pos;
+    teams[idx].push(p);
+  });
+  return teams;
+}
+function distributeRandom(players,n){
+  const teams=Array.from({length:n},()=>[]);
+  shuffled(players).forEach((p,i)=>teams[i%n].push(p));
+  return teams;
+}
+function generateSeparatedTeams(players,n,balance){
+  const females=players.filter(p=>p.sex==='F'),males=players.filter(p=>p.sex==='M'),other=players.filter(p=>p.sex!=='F'&&p.sex!=='M');
+  if(!females.length||!males.length)return balance?distributeBalanced(players,n):distributeRandom(players,n);
+  // Numero di squadre assegnato ai sessi in proporzione agli alunni, almeno una per gruppo.
+  let nf=Math.round(n*females.length/(females.length+males.length));
+  nf=Math.max(1,Math.min(n-1,nf));const nm=n-nf;
+  const fn=balance?distributeBalanced(females,nf):distributeRandom(females,nf);
+  const mn=balance?distributeBalanced(males,nm):distributeRandom(males,nm);
+  const teams=[...fn,...mn];
+  other.forEach((p,i)=>teams[i%teams.length].push(p));
+  return teams;
+}
+function genderBalancedMixed(players,n,balance){
+  // Distribuisce F e M separatamente sugli stessi team per rendere uniforme anche il genere.
+  const teams=Array.from({length:n},()=>[]);
+  const groups=[players.filter(p=>p.sex==='F'),players.filter(p=>p.sex==='M'),players.filter(p=>p.sex!=='F'&&p.sex!=='M')];
+  groups.forEach(group=>{
+    const parts=balance?distributeBalanced(group,n):distributeRandom(group,n);
+    parts.forEach((part,i)=>teams[i].push(...part));
+  });
+  return teams;
+}
+function renderGeneratedTeams(teams,meta){
+  const results=$('#teamGenResults'),empty=$('#teamGenEmpty');
+  empty.classList.add('hidden');results.classList.remove('hidden');
+  const missing=meta.players.filter(p=>!p.hasLevel).length;
+  const warning=meta.balance==='balanced'&&missing?`<div class="teamgen-warning">⚠ ${missing} alunn${missing===1?'o non ha':'i non hanno'} un livello salvato per ${esc(meta.sportLabel)}. Per il bilanciamento ${missing===1?'è stato usato':'è stato usato'} il livello neutro 3.</div>`:'';
+  results.innerHTML=`<article class="glass teamgen-results-panel">
+    <div class="teamgen-result-head"><div><span class="kicker">RISULTATO</span><h3>${teams.length} squadre · ${esc(meta.className)}</h3><p>${esc(meta.sportLabel)} · ${meta.balance==='balanced'?'equilibrate':'casuali'} · ${meta.gender==='mixed'?'♀♂ mescolati':'♀ / ♂ separati'}</p></div>
+    <div class="teamgen-result-actions"><button id="regenerateTeamsBtn" type="button" class="btn secondary">↻ Rigenera</button></div></div>
+    ${warning}<div class="teamgen-grid">${teams.map((team,i)=>{
+      const avg=team.length?(team.reduce((s,p)=>s+(p.level||3),0)/team.length):0;
+      return `<article class="team-card"><div class="team-card-head"><h4>Squadra ${i+1}</h4><span class="team-card-score">${team.length} alunni${meta.balance==='balanced'?` · Ø ${avg.toFixed(1)}`:''}</span></div>
+        ${team.map(p=>`<div class="team-player"><span class="team-player-avatar">${p.sex==='F'?'♀':p.sex==='M'?'♂':'•'}</span><div class="team-player-name"><strong>${esc(p.last_name)} ${esc(p.first_name)}</strong><small>${p.sex==='F'?'Femmina':p.sex==='M'?'Maschio':'Alunno'}</small></div>${meta.balance==='balanced'?`<span class="team-player-level">L${p.level||3}</span>`:''}</div>`).join('')}
+      </article>`}).join('')}</div></article>`;
+  $('#regenerateTeamsBtn').onclick=()=>generateTeams(true);
+}
+async function generateTeams(isRegenerate=false){
+  const cl=teamGenClassObj();
+  if(!cl)return toast('Seleziona una classe');
+  const sportKey=isPrimaryLowerClass(cl)?GENERAL_STUDENT_LEVEL_KEY:$('#teamGenSport')?.value;
+  if(!sportKey)return toast('Seleziona la disciplina');
+  const [{data:en,error:enErr},{data:levels,error:lvErr}]=await Promise.all([
+    db.from('pe_student_enrollments').select('student_id,pe_students(id,first_name,last_name,sex)').eq('class_id',cl.id).eq('active',true),
+    db.from('pe_student_sport_levels').select('student_id,level').eq('school_year_id',st.year.id).eq('class_id',cl.id).eq('sport_key',sportKey)
+  ]);
+  if(enErr||lvErr)return toast((enErr||lvErr).message);
+  const levelMap=Object.fromEntries((levels||[]).map(x=>[x.student_id,Number(x.level)]));
+  const players=(en||[]).map(x=>x.pe_students).filter(Boolean).map(s=>({...s,level:levelMap[s.id]||3,hasLevel:!!levelMap[s.id]}));
+  if(players.length<2)return toast('Servono almeno 2 alunni');
+  const n=Math.min(teamGenState.count,players.length);
+  let teams;
+  if(teamGenState.gender==='separate')teams=generateSeparatedTeams(players,n,teamGenState.balance==='balanced');
+  else teams=genderBalancedMixed(players,n,teamGenState.balance==='balanced');
+  // Rimuove eventuali team vuoti solo nei casi limite.
+  teams=teams.filter(t=>t.length);
+  const meta={players,className:cl.name,sportLabel:sportLabelFromKey(sportKey),balance:teamGenState.balance,gender:teamGenState.gender};
+  teamGenState.last={teams,meta};
+  renderGeneratedTeams(teams,meta);
+}
+$('#teamGenClass')?.addEventListener('change',updateTeamGenInfo);
+$('#teamCountMinus')?.addEventListener('click',()=>setTeamCount(teamGenState.count-1));
+$('#teamCountPlus')?.addEventListener('click',()=>setTeamCount(teamGenState.count+1));
+$$('[data-team-balance]').forEach(b=>b.addEventListener('click',()=>{
+  teamGenState.balance=b.dataset.teamBalance;
+  $$('[data-team-balance]').forEach(x=>x.classList.toggle('active',x===b));
+}));
+$$('[data-team-gender]').forEach(b=>b.addEventListener('click',()=>{
+  teamGenState.gender=b.dataset.teamGender;
+  $$('[data-team-gender]').forEach(x=>x.classList.toggle('active',x===b));
+}));
+$('#generateTeamsBtn')?.addEventListener('click',()=>generateTeams(false));
+setTeamCount(2);
+
 $('#newClassBtn').onclick=()=>openClass(null);
 async function openClass(id){
   if(!id&&!requireSchoolYear('Per creare una classe devi prima impostare l’anno scolastico.'))return;
