@@ -177,24 +177,42 @@ function populateStudentLevelSportSelect(){
     custom.map(name=>`<option value="custom:${esc(name)}">${esc(name)} · personale</option>`).join('')+
     '<option value="__other__">＋ Altro / crea nuovo sport…</option>';
 }
+
+async function fetchActiveClassStudents(classId){
+  const {data:en,error:enErr}=await db.from('pe_student_enrollments')
+    .select('student_id')
+    .eq('class_id',classId)
+    .eq('active',true);
+  if(enErr)return {data:null,error:enErr};
+  const ids=[...new Set((en||[]).map(x=>x.student_id).filter(Boolean))];
+  if(!ids.length)return {data:[],error:null};
+  const {data:students,error:stErr}=await db.from('pe_students')
+    .select('id,first_name,last_name,sex')
+    .in('id',ids);
+  if(stErr)return {data:null,error:stErr};
+  const map=new Map((students||[]).map(s=>[s.id,s]));
+  return {data:ids.map(id=>map.get(id)).filter(Boolean),error:null};
+}
+
 async function loadStudentLevelsForSport(){
   if(!studentLevelsCtx)return;
   const {classId,schoolYearId,sportKey}=studentLevelsCtx;
   const body=$('#studentSportLevelsBody'),msg=$('#studentLevelsMsg');
   body.innerHTML='<p class="muted">Carico i livelli…</p>';
-  const [{data:en,error:enErr},{data:levels,error:lvErr}]=await Promise.all([
-    db.from('pe_student_enrollments')
-      .select('student_id,pe_students(id,first_name,last_name,sex)')
-      .eq('class_id',classId).eq('active',true),
+  const [{data:studentsRaw,error:enErr},{data:levels,error:lvErr}]=await Promise.all([
+    fetchActiveClassStudents(classId),
     db.from('pe_student_sport_levels')
       .select('student_id,level')
       .eq('school_year_id',schoolYearId).eq('class_id',classId).eq('sport_key',sportKey)
   ]);
   if(enErr||lvErr){
+    console.error('Livelli sportivi:',enErr||lvErr);
     body.innerHTML='<p class="muted">Impossibile caricare i livelli.</p>';
-    toast((enErr||lvErr).message);return;
+    const err=enErr||lvErr;
+    msg.textContent='Errore caricamento: '+(err?.message||'operazione non riuscita');
+    toast(err?.message||'Impossibile caricare i livelli');return;
   }
-  const students=(en||[]).map(x=>x.pe_students).filter(Boolean)
+  const students=(studentsRaw||[]).filter(Boolean)
     .sort((a,b)=>`${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`,'it'));
   const levelMap=Object.fromEntries((levels||[]).map(x=>[x.student_id,Number(x.level)]));
   studentLevelsCtx.students=students;
@@ -396,13 +414,13 @@ async function generateTeams(isRegenerate=false){
   if(!cl)return toast('Seleziona una classe');
   const sportKey=isPrimaryLowerClass(cl)?GENERAL_STUDENT_LEVEL_KEY:$('#teamGenSport')?.value;
   if(!sportKey)return toast('Seleziona la disciplina');
-  const [{data:en,error:enErr},{data:levels,error:lvErr}]=await Promise.all([
-    db.from('pe_student_enrollments').select('student_id,pe_students(id,first_name,last_name,sex)').eq('class_id',cl.id).eq('active',true),
+  const [{data:studentsRaw,error:enErr},{data:levels,error:lvErr}]=await Promise.all([
+    fetchActiveClassStudents(cl.id),
     db.from('pe_student_sport_levels').select('student_id,level').eq('school_year_id',st.year.id).eq('class_id',cl.id).eq('sport_key',sportKey)
   ]);
-  if(enErr||lvErr)return toast((enErr||lvErr).message);
+  if(enErr||lvErr){console.error('Generatore squadre:',enErr||lvErr);return toast((enErr||lvErr)?.message||'Impossibile caricare gli alunni')}
   const levelMap=Object.fromEntries((levels||[]).map(x=>[x.student_id,Number(x.level)]));
-  const players=(en||[]).map(x=>x.pe_students).filter(Boolean).map(s=>({...s,level:levelMap[s.id]||3,hasLevel:!!levelMap[s.id]}));
+  const players=(studentsRaw||[]).filter(Boolean).map(s=>({...s,level:levelMap[s.id]||3,hasLevel:!!levelMap[s.id]}));
   if(players.length<2)return toast('Servono almeno 2 alunni');
   const n=Math.min(teamGenState.count,players.length);
   let teams;
