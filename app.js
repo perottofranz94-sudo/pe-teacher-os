@@ -2492,19 +2492,3 @@ renderRubrics=function(){
   _renderRubricsV4Base();
   requestAnimationFrame(syncRubricsSafeAreaV4);
 };
-
-
-
-
-// V25: supporto esplicito alla scheda Regole per l'insegnante.
-$$('[data-behavior-tab]').forEach(tab=>{
- tab.addEventListener('click',()=>{
-  const key=tab.dataset.behaviorTab;
-  const panes={all:$('#behaviorAll'),class:$('#behaviorAll'),progress:$('#behaviorProgress'),rewards:$('#behaviorRewards'),rules:$('#behaviorRules'),teacher:$('#behaviorTeacherRules')};
-  if(!panes[key])return;
-  Object.values(panes).filter(Boolean).forEach(p=>p.classList.add('hidden'));
-  panes[key].classList.remove('hidden');
-  $$('[data-behavior-tab]').forEach(t=>t.classList.toggle('active',t===tab));
-  if(key==='teacher')renderBehaviorTeacherRules();
- });
-});

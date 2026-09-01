@@ -726,6 +726,11 @@
 .behavior-no-token{background:rgba(235,89,89,.06);border-color:rgba(235,89,89,.15)}
 .behavior-badge-prize-note{margin-top:9px;padding:9px 10px;border-radius:11px;background:rgba(244,197,66,.07);border:1px solid rgba(244,197,66,.13);font-size:.77rem;line-height:1.4}
 </style>
+
+<style id="behavior-teacher-panel-fix-v26">
+#behaviorTab-teacher.active{display:block}
+#behaviorTeacherRules{display:block}
+</style>
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>
@@ -1184,7 +1189,10 @@
       <div id="behaviorRewards"></div>
     </div>
     <div id="behaviorTab-rules" class="behavior-tab-panel">
-      <div id="behaviorRules"></div><div id="behaviorTeacherRules" class="behavior-tab-pane hidden"></div>
+      <div id="behaviorRules"></div>
+    </div>
+    <div id="behaviorTab-teacher" class="behavior-tab-panel">
+      <div id="behaviorTeacherRules"></div>
     </div>
   </div>
 </section>
