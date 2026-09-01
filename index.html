@@ -619,6 +619,66 @@
 }
 .student-level-choice{transition:.16s ease}
 </style>
+
+<style id="behavior-rpg-v21">
+.behavior-student-card{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.behavior-student-card[data-levelup-ready="1"]{cursor:pointer;border-color:rgba(244,197,66,.52)!important;box-shadow:0 0 0 1px rgba(244,197,66,.12),0 0 30px rgba(244,197,66,.08),inset 0 0 30px rgba(244,197,66,.035)}
+.behavior-student-card[data-levelup-ready="1"]:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(0,0,0,.22),0 0 34px rgba(244,197,66,.12)}
+.behavior-level-glow{position:absolute;inset:-45%;pointer-events:none;background:conic-gradient(from 0deg,transparent,rgba(244,197,66,.10),transparent,rgba(64,190,196,.08),transparent);animation:behaviorSpin 8s linear infinite}
+@keyframes behaviorSpin{to{transform:rotate(360deg)}}
+.behavior-student-card>*{position:relative;z-index:1}
+.behavior-levelup-pill{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:7px 10px;border-radius:999px;background:linear-gradient(90deg,rgba(244,197,66,.18),rgba(255,132,55,.13));border:1px solid rgba(244,197,66,.28);font-size:.72rem;font-weight:900;letter-spacing:.03em}
+.behavior-badge-strip{display:flex;gap:5px;flex-wrap:wrap;margin:9px 0 2px}
+.behavior-badge-mini{display:grid;place-items:center;width:27px;height:27px;border-radius:9px;background:rgba(255,255,255,.045);border:1px solid rgba(125,165,200,.12);font-size:.95rem}
+.behavior-badge-ready{border-color:rgba(80,210,176,.34);background:rgba(80,210,176,.08)}
+.behavior-ready-card{padding:11px 12px;margin-top:10px;border-radius:14px;background:rgba(80,210,176,.07);border:1px solid rgba(80,210,176,.18)}
+.behavior-ready-card b{display:block}.behavior-ready-card small{opacity:.65}
+.behavior-confirm-badge{margin-top:9px;width:100%}
+.behavior-levelup-modal{width:min(760px,94vw)!important;max-width:none!important;overflow:hidden!important;background:radial-gradient(circle at 50% 0,rgba(244,197,66,.18),transparent 38%),linear-gradient(180deg,#0a2440,#061729)!important;border:1px solid rgba(244,197,66,.25)!important}
+.behavior-levelup-close{position:absolute;right:16px;top:14px;z-index:5;width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.22);color:white;font-size:1.2rem;cursor:pointer}
+.behavior-levelup-screen{text-align:center;padding:34px 24px 28px;position:relative}
+.behavior-levelup-burst{position:absolute;left:50%;top:92px;width:340px;height:340px;transform:translate(-50%,-50%);border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(244,197,66,.15) 0 6deg,transparent 6deg 18deg);mask:radial-gradient(circle,transparent 0 26%,#000 27% 60%,transparent 61%);animation:behaviorSpin 10s linear infinite;opacity:.55}
+.behavior-levelup-kicker{font-weight:900;letter-spacing:.22em;font-size:.78rem;color:#f4c542}
+.behavior-levelup-title{font-size:clamp(2.2rem,6vw,4.4rem);margin:10px 0 0;line-height:.95;text-shadow:0 0 30px rgba(244,197,66,.18)}
+.behavior-levelup-avatar{width:94px;height:94px;margin:20px auto 12px;border-radius:28px;display:grid;place-items:center;font-size:2rem;font-weight:1000;background:linear-gradient(145deg,rgba(244,197,66,.2),rgba(64,190,196,.14));border:1px solid rgba(244,197,66,.3);box-shadow:0 0 40px rgba(244,197,66,.09)}
+.behavior-levelup-name{font-size:1.45rem;font-weight:900}
+.behavior-levelup-level{display:inline-flex;gap:8px;align-items:center;margin-top:8px;padding:9px 14px;border-radius:999px;background:rgba(244,197,66,.1);border:1px solid rgba(244,197,66,.2);font-weight:900}
+.behavior-unlocks{margin-top:24px;text-align:left}
+.behavior-unlocks h4{text-align:center;margin:0 0 12px}
+.behavior-unlock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.behavior-unlock-card{padding:15px;border-radius:17px;background:rgba(255,255,255,.035);border:1px solid rgba(125,165,200,.13)}
+.behavior-unlock-card .big{font-size:1.7rem}.behavior-unlock-card h5{font-size:.95rem;margin:6px 0 4px}.behavior-unlock-card p{font-size:.78rem;margin:0;opacity:.62;line-height:1.4}
+.behavior-no-unlock{padding:14px;text-align:center;border-radius:16px;background:rgba(255,255,255,.03);opacity:.7}
+.behavior-profile-badges{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin-top:16px}
+.behavior-profile-badge{padding:7px 9px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(125,165,200,.12);font-size:.8rem;font-weight:800}
+.behavior-claim-level{margin-top:20px;min-width:210px}
+@keyframes behaviorPop{0%{transform:scale(.88);opacity:0}65%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+.behavior-levelup-screen>*:not(.behavior-levelup-burst){animation:behaviorPop .45s ease both}
+</style>
+
+<style id="student-level-reset-v22">
+#studentLevelsResetBtn{border-color:rgba(232,93,93,.42)!important;background:rgba(232,93,93,.10)!important;color:#ffd5d5!important}
+#studentLevelsResetBtn:hover{background:rgba(232,93,93,.18)!important}
+</style>
+
+<style id="token-economy-reset-v23">
+.behavior-reset-btn{border:1px solid rgba(235,89,89,.34)!important;background:rgba(235,89,89,.08)!important;color:#ffd7d7!important}
+.behavior-reset-btn:hover{background:rgba(235,89,89,.15)!important}
+.behavior-reset-modal{width:min(620px,94vw)!important;background:linear-gradient(180deg,#101e2d,#081522)!important;border:1px solid rgba(235,89,89,.25)!important}
+.behavior-reset-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.behavior-reset-warning{width:54px;height:54px;display:grid;place-items:center;border-radius:18px;background:rgba(235,89,89,.12);font-size:1.7rem}
+.behavior-reset-head small{font-weight:900;letter-spacing:.14em;color:#ff8e8e}
+.behavior-reset-head h2{margin:3px 0 0}
+.behavior-reset-summary{padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);margin-bottom:12px}
+.behavior-reset-summary strong{display:block;font-size:1.1rem}.behavior-reset-summary span{display:block;margin-top:4px;color:var(--muted)}
+.behavior-reset-dangerbox{display:grid;gap:7px;padding:16px;border-radius:17px;background:rgba(235,89,89,.07);border:1px solid rgba(235,89,89,.18)}
+.behavior-reset-dangerbox strong{color:#ffc5c5}.behavior-reset-dangerbox span{font-size:.88rem}.behavior-reset-dangerbox small{margin-top:5px;opacity:.65}
+.behavior-reset-type{display:grid;gap:8px;margin-top:16px;font-size:.88rem}
+.behavior-reset-type input{font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.behavior-reset-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+#behaviorResetConfirmBtn:disabled{opacity:.35;cursor:not-allowed}
+@media(max-width:600px){.behavior-reset-actions{flex-direction:column-reverse}.behavior-reset-actions .btn{width:100%}}
+</style>
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>
@@ -650,7 +710,7 @@
     <button data-view="planner" class="nav-btn"><span>✦</span>Programmazione</button>
     <button data-view="sports" class="nav-btn"><span>◈</span>Archivio sport</button>
     <button data-view="primarygames" class="nav-btn"><span>✹</span>Giochi scuola primaria</button>
-    <button data-view="behavior" class="nav-btn"><span>⭐</span>Gioco delle Stelle</button>
+    <button data-view="behavior" class="nav-btn"><span>⭐</span>TOKEN ECONOMY</button>
     <button data-view="tests" class="nav-btn"><span>⌁</span>Test motori</button>
     <button data-view="rubriche" class="nav-btn"><span>▤</span>Rubriche di valutazione</button>
     <button id="ownerNavBtn" data-view="owner" class="nav-btn hidden"><span>♛</span>Area OWNER</button>
@@ -1037,7 +1097,7 @@
   <div class="behavior-hero">
     <div>
       <span class="kicker">SOLO SCUOLA PRIMARIA</span>
-      <h3>⭐ Il Gioco delle Stelle</h3>
+      <h3>⭐ Il TOKEN ECONOMY</h3>
       <p>Qui non vince chi corre più forte. Vince chi impara a essere un bravo compagno.</p>
     </div>
     <div class="behavior-hero-path"><span>🟢</span><i>→</i><span>🔥</span><i>→</i><span>👑</span><i>→</i><span>🏅</span><i>→</i><span>🏆</span></div>
@@ -1046,12 +1106,12 @@
   <div class="behavior-topbar glass">
     <label>Classe primaria<select id="behaviorClass"></select></label>
     <div id="behaviorClassStats" class="behavior-class-stats"></div>
-    <button id="behaviorLimBtn" type="button" class="btn secondary">📺 Modalità LIM</button>
+    <button id="behaviorLimBtn" type="button" class="btn secondary">📺 Modalità LIM</button><button type="button" class="btn behavior-reset-btn" id="behaviorResetBtn">↺ Reset Token Economy</button>
   </div>
 
   <div id="behaviorNoClass" class="behavior-empty glass hidden">
     <div>⭐</div><h3>Crea prima una classe della primaria</h3>
-    <p>Il Gioco delle Stelle è disponibile esclusivamente per le classi 1ª–5ª primaria.</p>
+    <p>Il TOKEN ECONOMY è disponibile esclusivamente per le classi 1ª–5ª primaria.</p>
   </div>
 
   <div id="behaviorWorkspace">
@@ -1090,6 +1150,37 @@
 <dialog id="behaviorMissionModal" class="modal behavior-action-modal">
   <div class="modal-head"><div><span class="kicker">MISSIONE</span><h3>Scegli la missione di oggi</h3></div><button type="button" data-close="behaviorMissionModal">×</button></div>
   <div id="behaviorMissionGrid" class="behavior-mission-grid"></div>
+</dialog>
+
+
+
+<dialog id="behaviorResetModal" class="modal behavior-reset-modal">
+  <div class="behavior-reset-head">
+    <div class="behavior-reset-warning">⚠️</div>
+    <div>
+      <small>AZIONE IRREVERSIBILE</small>
+      <h2>Reset Token Economy</h2>
+    </div>
+  </div>
+  <div id="behaviorResetSummary"></div>
+  <div class="behavior-reset-dangerbox">
+    <strong>Verranno azzerati solo i dati della classe selezionata:</strong>
+    <span>⭐ stelle e XP</span><span>👑 livelli</span><span>🏅 badge</span><span>🏆 premi</span><span>🎯 missione della classe</span>
+    <small>Alunni, classe, calendario e altri dati dell'app non verranno modificati.</small>
+  </div>
+  <label class="behavior-reset-type">Per confermare scrivi <b>RESET</b>
+    <input id="behaviorResetInput" autocomplete="off" placeholder="Scrivi RESET">
+  </label>
+  <div class="behavior-reset-actions">
+    <button type="button" class="btn secondary" id="behaviorResetCancelBtn">Annulla</button>
+    <button type="button" class="btn danger" id="behaviorResetConfirmBtn" disabled>↺ Conferma reset</button>
+  </div>
+  <small id="behaviorResetMsg" class="muted"></small>
+</dialog>
+
+<dialog id="behaviorLevelUpModal" class="modal behavior-levelup-modal">
+  <button type="button" class="behavior-levelup-close" data-close="behaviorLevelUpModal">×</button>
+  <div id="behaviorLevelUpContent"></div>
 </dialog>
 
 <dialog id="behaviorLimModal" class="modal behavior-lim-modal">
@@ -1205,7 +1296,7 @@
     <button data-view="planner"><span>✦</span><div><b>Programmazione</b><small>Genera i moduli didattici</small></div></button>
     <button data-view="sports"><span>◈</span><div><b>Archivio sport</b><small>Tutti gli sport e gli esercizi</small></div></button>
     <button data-view="primarygames"><span>✹</span><div><b>Giochi scuola primaria</b><small>Libro e giochi personali</small></div></button>
-    <button data-view="behavior"><span>⭐</span><div><b>Gioco delle Stelle</b><small>Comportamento · solo primaria</small></div></button>
+    <button data-view="behavior"><span>⭐</span><div><b>TOKEN ECONOMY</b><small>Gioco delle Stelle · solo primaria</small></div></button>
     <button data-view="tests"><span>⌁</span><div><b>Test motori</b><small>Risultati e classifiche</small></div></button>
     <button data-view="rubriche"><span>▤</span><div><b>Rubriche di valutazione</b><small>Criteri e descrittori completi</small></div></button>
     <button data-view="settings"><span>⚙</span><div><b>Impostazioni</b><small>Anno scolastico e chiusure</small></div></button>
@@ -1401,6 +1492,7 @@
   </div>
   <div class="student-levels-actions">
     <button type="button" class="btn secondary" id="studentLevelsCancelBtn">Annulla</button>
+    <button type="button" class="btn danger" id="studentLevelsResetBtn">↺ Reset livelli</button>
     <button type="button" class="btn primary" id="studentLevelsSaveBtn">Salva livelli</button>
   </div>
   <small id="studentLevelsMsg" class="muted"></small>
