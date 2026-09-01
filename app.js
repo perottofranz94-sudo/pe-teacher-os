@@ -1982,6 +1982,8 @@ async function awardBehaviorBadge(studentId,badgeKey){
   behaviorState.badges.unshift(data);
   toast(`${badge.icon} Badge ${badge.name} conquistato!`);
   renderBehaviorAll();
+  // Mantiene la schermata LEVEL UP aperta e la aggiorna: il docente vede subito che il badge è stato consegnato.
+  openBehaviorLevelUp(studentId);
 }
 function openBehaviorLevelUp(studentId){
   const s=behaviorState.students.find(x=>x.id===studentId);if(!s)return;
@@ -2003,7 +2005,7 @@ function openBehaviorLevelUp(studentId){
       ${((unseen?unlocks:allUnlocked).length)?`<div class="behavior-unlock-grid">${(unseen?unlocks:allUnlocked).map(r=>`<article class="behavior-unlock-card"><span class="big">${r.icon}</span><h5>${esc(r.name)}</h5><p>Premio disponibile da ${r.xp} XP.</p></article>`).join('')}</div>`:`<div class="behavior-no-unlock">Nessun nuovo premio a questo livello. Continua il percorso! 🚀</div>`}
     </div>
     ${awarded.length?`<div class="behavior-profile-badges">${awarded.map(b=>`<span class="behavior-profile-badge">${b.icon} ${esc(b.name)}</span>`).join('')}</div>`:''}
-    ${ready.length?`<div class="behavior-unlocks"><h4>🏅 Badge pronti da confermare</h4><div class="behavior-unlock-grid">${ready.map(b=>`<article class="behavior-unlock-card"><span class="big">${b.icon}</span><h5>${esc(b.name)}</h5><p>${esc(b.criterion)}</p><button class="btn primary behavior-confirm-badge" data-confirm-badge="${b.key}" data-student="${studentId}">Conferma badge</button></article>`).join('')}</div></div>`:''}
+    ${ready.length?`<div class="behavior-unlocks"><h4>🏅 Badge pronti da confermare</h4><div class="behavior-unlock-grid">${ready.map(b=>`<article class="behavior-unlock-card"><span class="big">${b.icon}</span><h5>${esc(b.name)}</h5><p>${esc(b.criterion)}</p><button class="btn primary behavior-confirm-badge" data-confirm-badge="${b.key}" data-student="${studentId}" >🏅 Consegna badge</button></article>`).join('')}</div></div>`:''}
     ${unseen?`<button type="button" class="btn primary behavior-claim-level" id="behaviorClaimLevelBtn">✨ Fantastico!</button>`:''}
   </div>`;
   $$('[data-confirm-badge]').forEach(b=>b.onclick=()=>awardBehaviorBadge(b.dataset.student,b.dataset.confirmBadge));

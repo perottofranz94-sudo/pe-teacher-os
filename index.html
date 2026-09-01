@@ -679,6 +679,42 @@
 #behaviorResetConfirmBtn:disabled{opacity:.35;cursor:not-allowed}
 @media(max-width:600px){.behavior-reset-actions{flex-direction:column-reverse}.behavior-reset-actions .btn{width:100%}}
 </style>
+
+<style id="behavior-levelup-scroll-fix-v24">
+.behavior-levelup-modal{
+  max-height:min(88vh,820px)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.behavior-levelup-screen{
+  min-height:auto!important;
+  padding-bottom:38px!important;
+}
+.behavior-levelup-modal::backdrop{background:rgba(0,10,22,.78)}
+.behavior-levelup-close{
+  position:sticky!important;
+  float:right;
+  top:12px!important;
+  margin:0 0 -38px auto;
+}
+.behavior-confirm-badge{
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  min-height:46px;
+  position:relative;
+  z-index:4;
+  margin-top:12px!important;
+}
+.behavior-unlock-card{overflow:visible!important}
+@media(max-height:760px){
+ .behavior-levelup-modal{max-height:92vh!important}
+ .behavior-levelup-screen{padding-top:22px!important}
+ .behavior-levelup-avatar{width:76px!important;height:76px!important;margin-top:12px!important}
+ .behavior-levelup-title{font-size:2.7rem!important}
+}
+</style>
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>
