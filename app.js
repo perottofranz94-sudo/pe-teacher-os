@@ -2005,7 +2005,7 @@ function openBehaviorLevelUp(studentId){
       ${((unseen?unlocks:allUnlocked).length)?`<div class="behavior-unlock-grid">${(unseen?unlocks:allUnlocked).map(r=>`<article class="behavior-unlock-card"><span class="big">${r.icon}</span><h5>${esc(r.name)}</h5><p>Premio disponibile da ${r.xp} XP.</p></article>`).join('')}</div>`:`<div class="behavior-no-unlock">Nessun nuovo premio a questo livello. Continua il percorso! 🚀</div>`}
     </div>
     ${awarded.length?`<div class="behavior-profile-badges">${awarded.map(b=>`<span class="behavior-profile-badge">${b.icon} ${esc(b.name)}</span>`).join('')}</div>`:''}
-    ${ready.length?`<div class="behavior-unlocks"><h4>🏅 Badge pronti da confermare</h4><div class="behavior-unlock-grid">${ready.map(b=>`<article class="behavior-unlock-card"><span class="big">${b.icon}</span><h5>${esc(b.name)}</h5><p>${esc(b.criterion)}</p><button class="btn primary behavior-confirm-badge" data-confirm-badge="${b.key}" data-student="${studentId}" >🏅 Consegna badge</button></article>`).join('')}</div></div>`:''}
+    ${ready.length?`<div class="behavior-unlocks"><h4>🏅 Badge pronti da confermare</h4><div class="behavior-unlock-grid">${ready.map(b=>`<article class="behavior-unlock-card"><span class="big">${b.icon}</span><h5>${esc(b.name)}</h5><p>${esc(b.criterion)}</p><div class="behavior-badge-prize-note">🎁 Sblocca: <b>${esc(BEHAVIOR_BADGE_PRIZES[b.key]||'Medaglietta simbolica')}</b></div><button class="btn primary behavior-confirm-badge" data-confirm-badge="${b.key}" data-student="${studentId}" >🏅 Consegna badge</button></article>`).join('')}</div></div>`:''}
     ${unseen?`<button type="button" class="btn primary behavior-claim-level" id="behaviorClaimLevelBtn">✨ Fantastico!</button>`:''}
   </div>`;
   $$('[data-confirm-badge]').forEach(b=>b.onclick=()=>awardBehaviorBadge(b.dataset.student,b.dataset.confirmBadge));
@@ -2069,7 +2069,7 @@ function renderBehaviorAll(){
   </article>`}).join('')||'<div class="behavior-empty glass"><h3>Nessun alunno nella classe</h3></div>';
  $$('[data-behavior-action]').forEach(b=>b.onclick=e=>{e.stopPropagation();openBehaviorAction(b.dataset.student,b.dataset.behaviorAction)});
  $$('[data-behavior-profile]').forEach(card=>card.onclick=e=>{if(e.target.closest('[data-behavior-action]'))return;openBehaviorLevelUp(card.dataset.behaviorProfile)});
- renderBehaviorProgress();renderBehaviorRewards();renderBehaviorRules();
+ renderBehaviorProgress();renderBehaviorRewards();renderBehaviorRules();renderBehaviorTeacherRules();
 }
 function renderBehaviorProgress(){
  const summaries=behaviorState.students.map(s=>({s,...behaviorSummary(s.id)}));
@@ -2080,8 +2080,35 @@ function renderBehaviorProgress(){
 function renderBehaviorRewards(){
  const readyTotal=behaviorState.students.reduce((n,s)=>n+behaviorReadyBadges(s.id).length,0);
  $('#behaviorRewards').innerHTML=`${readyTotal?`<div class="behavior-ready-card"><b>✨ ${readyTotal} badge ${readyTotal===1?'pronto':'pronti'} da confermare</b><small>Clicca sulla card del bambino per vedere e assegnare il nuovo badge.</small></div>`:''}
- <h3 class="behavior-section-title">🏅 Badge qualitativi</h3><div class="behavior-badge-grid">${BEHAVIOR_BADGES.map(b=>`<article class="behavior-info-card"><span class="big">${b.icon}</span><h4>${b.name}</h4><p>${b.criterion}</p></article>`).join('')}</div>
+ <h3 class="behavior-section-title">🏅 Badge qualitativi</h3><div class="behavior-badge-grid">${BEHAVIOR_BADGES.map(b=>`<article class="behavior-info-card"><span class="big">${b.icon}</span><h4>${b.name}</h4><p>${b.criterion}</p><div class="behavior-badge-prize-note">🎁 Premio badge: <b>${esc(BEHAVIOR_BADGE_PRIZES[b.key]||'Medaglietta simbolica')}</b></div></article>`).join('')}</div>
  <h3 class="behavior-section-title">🏆 Premi sbloccabili</h3><div class="behavior-reward-grid">${BEHAVIOR_REWARDS.map(r=>`<article class="behavior-info-card"><span class="big">${r.icon}</span><h4>${r.name}</h4><p>Si sblocca a <b>${r.xp} XP</b>. Un premio conquistato non viene revocato da una successiva stella rossa.</p></article>`).join('')}</div>`;
+}
+
+const BEHAVIOR_BADGE_PRIZES={
+  badge_0:'🏅 Medaglietta Fair Play',
+  badge_1:'🎽 Fascia Team Player per una lezione',
+  badge_2:'👑 Fascia Leader per una lezione',
+  badge_3:'🔑 Pass speciale Aiutante del docente',
+  badge_4:'🏅 Medaglietta Impegno',
+  badge_5:'🧠 Distintivo Autocontrollo',
+  badge_6:'❤️ Medaglietta Rispetto',
+  badge_7:'🎯 Distintivo Concentrazione',
+  badge_8:'🛡️ Distintivo Responsabilità',
+  badge_9:'🌟 Medaglietta Rinascita'
+};
+function renderBehaviorTeacherRules(){
+ const el=$('#behaviorTeacherRules');if(!el)return;
+ el.innerHTML=`<div class="behavior-teacher-guide">
+  <div class="behavior-teacher-hero"><h3>👨‍🏫 Regola d’oro: il token verde deve valere</h3><p>Il token non premia il semplice “fare ciò che si deve”. Deve riconoscere un comportamento che ti fa pensare: <b>WOW, questa volta è stato davvero bravo.</b> Se assegni token per ogni comportamento corretto, perdono rapidamente valore.</p></div>
+  <div class="behavior-wow-rule"><span class="ico">⭐</span><div><b>1. Premia ciò che supera l’atteso</b><p>Un gesto spontaneo di fair play, un miglioramento evidente, autocontrollo in una situazione difficile, aiuto autentico a un compagno, grande responsabilità o capacità di correggersi dopo un errore.</p></div></div>
+  <div class="behavior-wow-rule"><span class="ico">👀</span><div><b>2. Premia comportamenti osservabili</b><p>Il bambino deve poter capire esattamente perché lo ha ricevuto: “Hai aiutato un compagno senza che nessuno te lo chiedesse” è meglio di “Sei stato bravo”.</p></div></div>
+  <div class="behavior-wow-rule"><span class="ico">📈</span><div><b>3. Valuta il miglioramento individuale</b><p>Lo stesso comportamento può avere un valore diverso per bambini diversi. Per chi fatica ad accettare una sconfitta, riuscirci autonomamente può essere un vero comportamento WOW.</p></div></div>
+  <div class="behavior-wow-rule"><span class="ico">⚖️</span><div><b>4. Non trasformarlo in una gara di popolarità</b><p>Non premiare abilità sportive, simpatia, velocità o chi parla di più. Il sistema riguarda comportamenti, responsabilità, rispetto e crescita personale.</p></div></div>
+  <div class="behavior-wow-rule"><span class="ico">🗣️</span><div><b>5. Consegna il token spiegando il perché</b><p>Una frase di 5–10 secondi basta: “Token verde per Fair Play: hai ammesso che la palla era uscita su di te anche se nessuno l’aveva visto.” Questo dà valore educativo al token.</p></div></div>
+  <div class="behavior-wow-rule"><span class="ico">♻️</span><div><b>6. Il recupero vale quanto la perfezione</b><p>Un errore non etichetta il bambino. Se dopo un richiamo riesce a cambiare comportamento in modo autentico, il recupero deve essere riconosciuto: insegna che si può sbagliare e poi scegliere meglio.</p></div></div>
+  <div class="behavior-teacher-callout">💡 Test rapido prima del click: <b>“Saprei spiegare alla classe in una frase perché questo comportamento merita un riconoscimento speciale?”</b> Se sì, assegna il token. Se la risposta è “perché si è comportato normalmente”, non assegnarlo.</div>
+  <div class="behavior-teacher-callout behavior-no-token">🚫 Mai usare token, badge o premi per umiliare, confrontare pubblicamente i bambini o punire con esercizio fisico. La Token Economy deve rinforzare crescita e comportamenti positivi, non creare una classifica di “bravi” e “cattivi”.</div>
+ </div>`;
 }
 function renderBehaviorRules(){
  const rules=[['🟢','FAI UNA COSA BELLA','Se ascolti, aiuti, rispetti o ti impegni, il maestro può darti una stella verde.'],['⭐','LA STELLA NON SI CHIEDE','È il maestro che decide quando l’hai conquistata.'],['🔥','UNA STELLA = UN PUNTO XP','Ogni stella verde ti fa fare un piccolo passo avanti.'],['👑','PIÙ XP = NUOVO LIVELLO','Ogni 5 XP sali di livello: è un percorso, non un voto.'],['🏅','PUOI CONQUISTARE BADGE','Fair Play, Rispetto, Aiutante, Impegno, Autocontrollo e tanti altri.'],['🔴','SE SBAGLI, PUOI RIMEDIARE','Un errore rallenta il percorso, ma non cancella ciò che hai già conquistato.'],['♻️','PUOI RECUPERARE','Dopo un errore puoi fare una scelta migliore e tornare sulla strada giusta.'],['🤝','NON È UNA GARA TRA BAMBINI','Ognuno prova a migliorare se stesso.'],['🌟','LA REGOLA PIÙ IMPORTANTE','Non devi essere perfetto. Devi provare a diventare un pochino migliore ogni volta.']];
@@ -2467,3 +2494,17 @@ renderRubrics=function(){
 };
 
 
+
+
+// V25: supporto esplicito alla scheda Regole per l'insegnante.
+$$('[data-behavior-tab]').forEach(tab=>{
+ tab.addEventListener('click',()=>{
+  const key=tab.dataset.behaviorTab;
+  const panes={all:$('#behaviorAll'),class:$('#behaviorAll'),progress:$('#behaviorProgress'),rewards:$('#behaviorRewards'),rules:$('#behaviorRules'),teacher:$('#behaviorTeacherRules')};
+  if(!panes[key])return;
+  Object.values(panes).filter(Boolean).forEach(p=>p.classList.add('hidden'));
+  panes[key].classList.remove('hidden');
+  $$('[data-behavior-tab]').forEach(t=>t.classList.toggle('active',t===tab));
+  if(key==='teacher')renderBehaviorTeacherRules();
+ });
+});
