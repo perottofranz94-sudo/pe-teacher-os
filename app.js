@@ -66,7 +66,7 @@ function appConfirm({
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2300)}
 function openMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');b?.classList.remove('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','true');document.body.classList.add('menu-open')}
 function closeMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.remove('open');m.setAttribute('aria-hidden','true');b?.classList.add('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','false');document.body.classList.remove('menu-open')}
-function go(v){closeMobileMenu();$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${v}`));$$('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));let m={dashboard:['PANORAMICA','Dashboard'],calendar:['ANNO SCOLASTICO','Calendario'],classes:['GESTIONE','Classi'],teams:['STRUMENTI','Generatore di squadre'],planner:['MOTORE DIDATTICO','Programmazione'],sports:['MEGA ARCHIVIO','Archivio sport'],tests:['VALUTAZIONE','Test motori'],rubriche:['VALUTAZIONE','Rubriche di valutazione'],primarygames:['SCUOLA PRIMARIA','Giochi scuola primaria'],owner:['AREA RISERVATA','Area OWNER'],settings:['CONFIGURAZIONE','Impostazioni']}[v];$('#pageKicker').textContent=m[0];$('#pageTitle').textContent=m[1];if(v==='sports')renderSports();if(v==='primarygames')loadPrimaryGames();if(v==='tests')renderTests();if(v==='rubriche')renderRubrics();if(v==='calendar')renderCalendar();if(v==='settings')renderSettings();if(v==='teams'){populateSelects();updateTeamGenInfo()}}
+function go(v){closeMobileMenu();$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${v}`));$$('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));let m={dashboard:['PANORAMICA','Dashboard'],calendar:['ANNO SCOLASTICO','Calendario'],classes:['GESTIONE','Classi'],teams:['STRUMENTI','Generatore di squadre'],planner:['MOTORE DIDATTICO','Programmazione'],sports:['MEGA ARCHIVIO','Archivio sport'],tests:['VALUTAZIONE','Test motori'],rubriche:['VALUTAZIONE','Rubriche di valutazione'],primarygames:['SCUOLA PRIMARIA','Giochi scuola primaria'],behavior:['SCUOLA PRIMARIA','Gioco delle Stelle'],owner:['AREA RISERVATA','Area OWNER'],settings:['CONFIGURAZIONE','Impostazioni']}[v];$('#pageKicker').textContent=m[0];$('#pageTitle').textContent=m[1];if(v==='sports')renderSports();if(v==='primarygames')loadPrimaryGames();if(v==='behavior')renderBehaviorGame();if(v==='tests')renderTests();if(v==='rubriche')renderRubrics();if(v==='calendar')renderCalendar();if(v==='settings')renderSettings();if(v==='teams'){populateSelects();updateTeamGenInfo()}}
 $$('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));$$('[data-jump]').forEach(b=>b.onclick=()=>go(b.dataset.jump));$('#quickPlan').onclick=()=>go('planner');$$('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).close());
 $('#mobileMenuBtn').onclick=openMobileMenu;$('#mobileMoreBtn').onclick=openMobileMenu;$('#mobileMenuClose').onclick=closeMobileMenu;$('#mobileMenuBackdrop').onclick=closeMobileMenu;$('#mobileLogoutBtn').onclick=()=>db.auth.signOut();document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu()});
 
@@ -934,7 +934,7 @@ async function showExerciseReplacementPicker(sportId){const sp=st.sports.find(x=
 async function showPrimaryReplacementPicker(){await loadPrimaryGames();$('#replacePickerTitle').textContent='Giochi Scuola Primaria';$('#replacePickerBody').innerHTML=`<div class="replace-exercise-grid">${st.primaryGames.map(g=>`<article class="replace-exercise-card"><img class="replace-primary-thumb" src="${esc(g._imageUrl||('./'+g.image_path))}" alt=""><h4>${esc(g.title)}</h4><p>${esc(g.description||'')}</p><div class="category-pills"><span class="chip">Difficoltà ${g.difficulty}/5</span></div><button class="btn primary small-btn" data-choose-primary="${esc(g.id)}">Scegli</button></article>`).join('')}</div>`;$$('[data-choose-primary]').forEach(b=>b.onclick=()=>applyPrimaryReplacement(b.dataset.choosePrimary));$('#replacePickerModal').showModal()}
 async function applyExerciseReplacement(newId){if(!replaceCtx)return;const old=replaceCtx.item.exercise_id||null;const{error}=await db.from('pe_lesson_exercises').update({exercise_id:newId,custom_title:null,custom_explanation:null,custom_field_dimensions:null,custom_equipment:null,primary_game_ref:null,replaced_from_exercise_id:old,replaced_at:new Date().toISOString(),replacement_reason:'manual_change'}).eq('id',replaceCtx.item.id);if(error)return toast(error.message);await db.from('pe_lesson_exercise_replacements').insert({owner_id:st.user.id,lesson_exercise_id:replaceCtx.item.id,old_exercise_id:old,new_exercise_id:newId});const lessonId=replaceCtx.lesson.id;$('#replacePickerModal').close();toast('Attività sostituita');await loadCore();await openLesson(lessonId)}
 async function applyPrimaryReplacement(id){if(!replaceCtx)return;const g=primaryById(id);if(!g)return;const old=replaceCtx.item.exercise_id||null;const marker=g.is_custom?`PRIMARY_GAME:CUSTOM:${g.id}`:`PRIMARY_GAME:BOOK:${g.source_page}`;const{error}=await db.from('pe_lesson_exercises').update({exercise_id:null,custom_title:g.title,custom_explanation:g.description,custom_field_dimensions:g.material_spaces,primary_game_ref:marker,replaced_from_exercise_id:old,replaced_at:new Date().toISOString(),replacement_reason:'manual_change_primary'}).eq('id',replaceCtx.item.id);if(error)return toast(error.message);await db.from('pe_lesson_exercise_replacements').insert({owner_id:st.user.id,lesson_exercise_id:replaceCtx.item.id,old_exercise_id:old,new_exercise_id:null});const lessonId=replaceCtx.lesson.id;$('#replacePickerModal').close();toast('Gioco primaria inserito nella lezione');await loadCore();await openLesson(lessonId)}
-function renderSports(){const term=$('#sportSearch').value.toLowerCase().trim();const arr=st.sports.filter(x=>!term||x.name.toLowerCase().includes(term));const primaryMatch=!term||'giochi scuola primaria'.includes(term)||'primaria'.includes(term)||'giochi'.includes(term);const primaryCount=(st.primaryDefaults?.length||75)+(st.primaryCustom?.length||0);$('#archiveTotal').textContent=Object.values(st.sportCounts).reduce((a,b)=>a+b,0)+primaryCount;let cards=arr.map((s,i)=>`<article class="sport-card tone-${(i%5)+1}" data-sport="${s.id}"><div class="sport-icon">${iconMap[s.slug]||'🏅'}</div><h4>${esc(s.name)}</h4><p>${esc(s.description||'Archivio didattico con progressioni, varianti e spiegazioni complete.')}</p><div class="sport-footer"><span class="sport-count">${st.sportCounts[s.id]||0} attività</span><span class="sport-arrow">→</span></div></article>`).join('');if(primaryMatch)cards+=`<article class="sport-card primary-sport-card" data-primary-sport="1"><div class="sport-icon">✹</div><h4>Giochi Scuola Primaria</h4><p>I 75 giochi del tuo libro più quelli creati da te, con immagini, regole, varianti e difficoltà.</p><div class="sport-footer"><span class="sport-count">${primaryCount} giochi</span><span class="sport-arrow">→</span></div></article>`;$('#sportsGrid').innerHTML=cards;$$('[data-sport]').forEach(x=>x.onclick=()=>openSport(x.dataset.sport));$$('[data-primary-sport]').forEach(x=>x.onclick=async()=>{await loadPrimaryGames();go('primarygames')})}
+function renderSports(){const term=$('#sportSearch').value.toLowerCase().trim();const arr=st.sports.filter(x=>!term||x.name.toLowerCase().includes(term));const primaryMatch=!term||'giochi scuola primaria'.includes(term)||'primaria'.includes(term)||'giochi'.includes(term);const primaryCount=(st.primaryDefaults?.length||75)+(st.primaryCustom?.length||0);$('#archiveTotal').textContent=Object.values(st.sportCounts).reduce((a,b)=>a+b,0)+primaryCount;let cards=arr.map((s,i)=>`<article class="sport-card tone-${(i%5)+1}" data-sport="${s.id}"><div class="sport-icon">${iconMap[s.slug]||'🏅'}</div><h4>${esc(s.name)}</h4><p>${esc(s.description||'Archivio didattico con progressioni, varianti e spiegazioni complete.')}</p><div class="sport-footer"><span class="sport-count">${st.sportCounts[s.id]||0} attività</span><span class="sport-arrow">→</span></div></article>`).join('');if(primaryMatch)cards+=`<article class="sport-card primary-sport-card" data-primary-sport="1"><div class="sport-icon">✹</div><h4>Giochi Scuola Primaria</h4><p>I 75 giochi del tuo libro più quelli creati da te, con immagini, regole, varianti e difficoltà.</p><div class="sport-footer"><span class="sport-count">${primaryCount} giochi</span><span class="sport-arrow">→</span></div></article>`;$('#sportsGrid').innerHTML=cards;$$('[data-sport]').forEach(x=>x.onclick=()=>openSport(x.dataset.sport));$$('[data-primary-sport]').forEach(x=>x.onclick=()=>go('primarygames'))}
 $('#sportSearch').oninput=renderSports;
 $('#backSports').onclick=()=>{$('#sportDetail').classList.add('hidden');$('#sportLanding').classList.remove('hidden');st.currentSport=null};
 async function openSport(id){st.currentSport=st.sports.find(x=>x.id===id);$('#sportLanding').classList.add('hidden');$('#sportDetail').classList.remove('hidden');let{data:cats}=await db.from('pe_categories').select('*').eq('sport_id',id).order('sort_order');st.categories=cats||[];$('#categoryFilter').innerHTML='<option value="">Tutte le categorie</option>'+st.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');$('#sportDetailHero').innerHTML=`<span class="kicker">${iconMap[st.currentSport.slug]||'🏅'} ARCHIVIO SPORT</span><h3>${esc(st.currentSport.name)}</h3><p>${st.sportCounts[id]||0} attività verificate · ${st.categories.length} categorie</p><div class="category-pills">${st.categories.slice(0,12).map(c=>`<span class="chip">${esc(c.name)}</span>`).join('')}</div>`;await loadExercises()}
@@ -1820,6 +1820,151 @@ $('#migrateForm').onsubmit=async e=>{
 
 $('#backPrimaryToSports').onclick=()=>go('sports');
 
+
+/* =========================================================
+   GIOCO DELLE STELLE · SOLO PRIMARIA
+   Basato su Behaviour Management Game V3
+   ========================================================= */
+const BEHAVIOR_MISSIONS=[
+['Ascolto','Partiamo solo al segnale.','Tutti iniziano dopo la consegna.','Facile'],['Ascolto','Una consegna, zero interruzioni.','Lasciamo terminare la spiegazione.','Facile'],['Ascolto','Cambio attività in 30 secondi.','La classe è pronta entro il tempo.','Media'],
+['Fair Play','Nessuna presa in giro.','Nessun commento svalutante.','Media'],['Fair Play','Accettiamo le decisioni.','Nessuna protesta dopo la decisione.','Media'],['Fair Play','Aiutiamo chi ha sbagliato.','Almeno 3 incoraggiamenti.','Media'],['Fair Play','Festeggiamo senza deridere.','Si celebra rispettando tutti.','Facile'],
+['Collaborazione','Ogni compagno riceve un passaggio.','Osservazione durante il gioco.','Media'],['Collaborazione','Tre incoraggiamenti per squadra.','Contare gli incoraggiamenti.','Media'],['Collaborazione','Nessuno resta fuori.','La squadra include tutti.','Media'],['Collaborazione','Costruiamo insieme la soluzione.','Decisione condivisa.','Difficile'],
+['Rispetto','Rispettiamo spazio e file.','Nessun taglio o spinta.','Facile'],['Rispetto','Parole da campione.','Linguaggio rispettoso.','Facile'],['Rispetto','Rispettiamo il turno.','Aspettiamo senza disturbare.','Facile'],
+['Responsabilità','Materiale al suo posto in 60 secondi.','Cronometro del docente.','Media'],['Responsabilità','Ognuno controlla il proprio spazio.','Area libera e sicura.','Facile'],['Responsabilità','Due responsabili del materiale.','Incarichi completati.','Facile'],
+['Autocontrollo','Errore? Reset e riparto.','Ripresa rapida dopo l’errore.','Media'],['Autocontrollo','Perdo senza arrabbiarmi.','Gestione positiva della sconfitta.','Media'],['Autocontrollo','Accetto l’errore dell’arbitro.','Nessuna reazione aggressiva.','Media'],
+['Leadership','Aiuto senza comandare.','Supporto concreto.','Difficile'],['Leadership','Do il buon esempio.','Comportamento positivo osservabile.','Media'],['Leadership','Risolvo un piccolo conflitto.','Uso parole rispettose.','Difficile'],['Leadership','Incoraggio un compagno in difficoltà.','Osservazione diretta.','Media'],
+['Impegno','Provo anche se è difficile.','Perseveranza osservabile.','Facile'],['Impegno','Non mollo dopo l’errore.','Riprendo l’attività.','Facile'],['Concentrazione','Restiamo sul compito.','Nessuna distrazione.','Media'],['Concentrazione','Pronti al segnale.','Reazione rapida al comando.','Facile'],['Sicurezza','Niente comportamenti pericolosi.','Uso corretto di spazi e materiali.','Media']
+].map((x,i)=>({id:i+1,category:x[0],mission:x[1],verify:x[2],difficulty:x[3]}));
+const BEHAVIOR_BADGES=[
+['🏆','FAIR PLAY','Rispetta decisioni, avversari e compagni.'],['⚽','TEAM PLAYER','Collabora, include e incoraggia.'],['👑','LEADER','Dà il buon esempio e aiuta senza comandare.'],['🤝','AIUTANTE','Si assume una responsabilità concreta.'],['💪','IMPEGNO','Mostra perseveranza e crescita.'],['🧠','AUTOCONTROLLO','Gestisce errore e frustrazione positivamente.'],['❤️','RISPETTO','Rispetta persone, regole e spazi.'],['🎯','CONCENTRAZIONE','Mantiene l’attenzione nel compito.'],['🛡️','RESPONSABILITÀ','Cura materiali, spazi e incarichi.'],['📈','RINASCITA','Migliora dopo una fase difficile.']
+].map((x,i)=>({key:`badge_${i}`,icon:x[0],name:x[1],criterion:x[2]}));
+const BEHAVIOR_REWARDS=[
+['music','🎵','Scegli la musica del riscaldamento',5],['tool','⚽','Scegli l’attrezzo della sfida',10],['assistant','🧑‍🏫','Assistente del docente',10],['captain','👑','Capitano per una partita',15],['final_game','🏆','Scegli il gioco finale',20],['material','🛡️','Responsabile del materiale',15],['fairplay','🤝','Leader Fair Play',15],['special','🌟','Missione speciale',30],['badge_custom','🏅','Badge personalizzato',20],['challenge','🎮','Proponi una mini-sfida',30]
+].map(x=>({key:x[0],icon:x[1],name:x[2],xp:x[3]}));
+let behaviorState={classId:null,students:[],events:[],badges:[],rewards:[],mission:null,selectedStudent:null};
+
+function behaviorPrimaryClasses(){return (st.classes||[]).filter(c=>c.school_level==='primary')}
+function behaviorLevel(xp){return Math.max(1,Math.floor(Math.max(0,xp)/5)+1)}
+function behaviorNextXP(xp){return behaviorLevel(xp)*5}
+function behaviorSummary(studentId){
+ const ev=behaviorState.events.filter(e=>e.student_id===studentId);
+ const green=ev.filter(e=>e.event_type==='green').length,red=ev.filter(e=>e.event_type==='red').length,recovery=ev.filter(e=>e.event_type==='recovery').length;
+ const xp=Math.max(0,green-red+recovery),level=behaviorLevel(xp);
+ return {green,red,recovery,xp,level,next:behaviorNextXP(xp)};
+}
+function behaviorConsequence(red){
+ if(red<3)return red?`${red} 🔴 · attenzione: richiamo individuale e obiettivo personale.`:'';
+ if(red===3)return '3 🔴 · colloquio breve + riflessione; privilegi-premio sospesi per la prossima lezione; poi missione di recupero.';
+ if(red<=5)return `${red} 🔴 · riflessione + riparazione pertinente; privilegi sospesi; valutare comunicazione alla famiglia.`;
+ if(red===6)return '6 🔴 · piano comportamentale, riparazione e coinvolgimento delle figure scolastiche/famiglia secondo regolamento.';
+ return `${red} 🔴 · attivare le procedure scolastiche e rivedere il piano educativo; non aumentare all’infinito le punizioni.`;
+}
+async function renderBehaviorGame(){
+ const classes=behaviorPrimaryClasses(),sel=$('#behaviorClass'),no=$('#behaviorNoClass'),ws=$('#behaviorWorkspace');
+ if(!classes.length){no.classList.remove('hidden');ws.classList.add('hidden');sel.innerHTML='';return}
+ no.classList.add('hidden');ws.classList.remove('hidden');
+ const current=behaviorState.classId&&classes.some(c=>c.id===behaviorState.classId)?behaviorState.classId:classes[0].id;
+ sel.innerHTML=classes.map(c=>`<option value="${c.id}">${esc(c.name)} · ${c.grade||''}ª primaria</option>`).join('');
+ sel.value=current;behaviorState.classId=current;
+ await loadBehaviorClass();
+}
+async function loadBehaviorClass(){
+ const classId=$('#behaviorClass')?.value||behaviorState.classId;if(!classId||!st.year)return;
+ behaviorState.classId=classId;
+ const [{data:students,error:se},{data:events,error:ee},{data:badges,error:be},{data:rewards,error:re},{data:state,error:ce}]=await Promise.all([
+   fetchActiveClassStudents(classId),
+   db.from('pe_behavior_events').select('*').eq('school_year_id',st.year.id).eq('class_id',classId).order('created_at',{ascending:false}),
+   db.from('pe_behavior_badges').select('*').eq('school_year_id',st.year.id).eq('class_id',classId).order('awarded_at',{ascending:false}),
+   db.from('pe_behavior_rewards').select('*').eq('school_year_id',st.year.id).eq('class_id',classId),
+   db.from('pe_behavior_class_state').select('*').eq('school_year_id',st.year.id).eq('class_id',classId).maybeSingle()
+ ]);
+ if(se||ee||be||re||ce){console.error(se||ee||be||re||ce);return toast('Impossibile caricare il Gioco delle Stelle')}
+ behaviorState.students=(students||[]).sort((a,b)=>`${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`,'it'));
+ behaviorState.events=events||[];behaviorState.badges=badges||[];behaviorState.rewards=rewards||[];
+ behaviorState.mission=state?.mission_1?BEHAVIOR_MISSIONS.find(m=>m.mission===state.mission_1)||{mission:state.mission_1,verify:state.mission_2||''}:null;
+ renderBehaviorAll();
+}
+function renderBehaviorAll(){
+ const totals=behaviorState.students.map(s=>behaviorSummary(s.id)),sum=k=>totals.reduce((a,x)=>a+x[k],0);
+ $('#behaviorClassStats').innerHTML=`<span class="behavior-stat-chip">🟢 ${sum('green')}</span><span class="behavior-stat-chip">♻️ ${sum('recovery')}</span><span class="behavior-stat-chip">🔥 ${sum('xp')} XP</span>`;
+ $('#behaviorMissionTitle').textContent=behaviorState.mission?`🎯 ${behaviorState.mission.mission}`:'🎯 Scegli cosa allenare oggi';
+ $('#behaviorMissionVerify').textContent=behaviorState.mission?.verify||'Scegli 1–2 comportamenti osservabili da rinforzare.';
+ $('#behaviorStudentGrid').innerHTML=behaviorState.students.map(s=>{
+  const x=behaviorSummary(s.id),pct=Math.max(0,Math.min(100,((x.xp-(x.level-1)*5)/5)*100)),initials=((s.first_name||'')[0]||'')+((s.last_name||'')[0]||'');
+  return `<article class="behavior-student-card ${x.xp>=5?'level-up':''}">
+   <div class="behavior-student-top"><div class="behavior-avatar">${esc(initials)}</div><div class="behavior-student-name"><strong>${esc(s.last_name)} ${esc(s.first_name)}</strong><small>${x.xp} XP · prossimo ${x.next}</small></div><span class="behavior-level">👑 L${x.level}</span></div>
+   <div class="behavior-xp-row"><span>🔥 Percorso</span><b>${x.xp}/${x.next} XP</b></div><div class="behavior-xp-track"><div class="behavior-xp-fill" style="width:${pct}%"></div></div>
+   <div class="behavior-mini-stats"><span>🟢 ${x.green}</span><span>🔴 ${x.red}</span><span>♻️ ${x.recovery}</span><span>🏅 ${behaviorState.badges.filter(b=>b.student_id===s.id).length}</span></div>
+   <div class="behavior-card-actions"><button class="behavior-green" data-behavior-action="green" data-student="${s.id}">🟢 +1</button><button class="behavior-recovery" data-behavior-action="recovery" data-student="${s.id}">♻️ Recupero</button><button class="behavior-red" data-behavior-action="red" data-student="${s.id}">🔴</button></div>
+  </article>`}).join('')||'<div class="behavior-empty glass"><h3>Nessun alunno nella classe</h3></div>';
+ $$('[data-behavior-action]').forEach(b=>b.onclick=()=>openBehaviorAction(b.dataset.student,b.dataset.behaviorAction));
+ renderBehaviorProgress();renderBehaviorRewards();renderBehaviorRules();
+}
+function renderBehaviorProgress(){
+ const summaries=behaviorState.students.map(s=>({s,...behaviorSummary(s.id)}));
+ const sum=k=>summaries.reduce((a,x)=>a+x[k],0);
+ $('#behaviorProgress').innerHTML=`<div class="behavior-progress-grid"><div class="behavior-kpi"><span>🟢</span><b>${sum('green')}</b><small>Comportamenti positivi</small></div><div class="behavior-kpi"><span>♻️</span><b>${sum('recovery')}</b><small>Recuperi riusciti</small></div><div class="behavior-kpi"><span>🔥</span><b>${sum('xp')}</b><small>XP netti classe</small></div><div class="behavior-kpi"><span>🏅</span><b>${behaviorState.badges.length}</b><small>Badge conquistati</small></div></div>
+ <div class="behavior-progress-list">${summaries.map(x=>`<div class="behavior-progress-row"><strong>${esc(x.s.last_name)} ${esc(x.s.first_name)}</strong><b>👑 L${x.level}</b><div class="behavior-xp-track"><div class="behavior-xp-fill" style="width:${Math.min(100,((x.xp-(x.level-1)*5)/5)*100)}%"></div></div><span>🔥 ${x.xp} XP</span></div>`).join('')}</div>`;
+}
+function renderBehaviorRewards(){
+ $('#behaviorRewards').innerHTML=`<h3 class="behavior-section-title">🏅 Badge qualitativi</h3><div class="behavior-badge-grid">${BEHAVIOR_BADGES.map(b=>`<article class="behavior-info-card"><span class="big">${b.icon}</span><h4>${b.name}</h4><p>${b.criterion}</p></article>`).join('')}</div>
+ <h3 class="behavior-section-title">🏆 Premi sbloccabili</h3><div class="behavior-reward-grid">${BEHAVIOR_REWARDS.map(r=>`<article class="behavior-info-card"><span class="big">${r.icon}</span><h4>${r.name}</h4><p>Si sblocca a <b>${r.xp} XP</b>. Un premio conquistato non viene revocato da una successiva stella rossa.</p></article>`).join('')}</div>`;
+}
+function renderBehaviorRules(){
+ const rules=[['🟢','FAI UNA COSA BELLA','Se ascolti, aiuti, rispetti o ti impegni, il maestro può darti una stella verde.'],['⭐','LA STELLA NON SI CHIEDE','È il maestro che decide quando l’hai conquistata.'],['🔥','UNA STELLA = UN PUNTO XP','Ogni stella verde ti fa fare un piccolo passo avanti.'],['👑','PIÙ XP = NUOVO LIVELLO','Ogni 5 XP sali di livello: è un percorso, non un voto.'],['🏅','PUOI CONQUISTARE BADGE','Fair Play, Rispetto, Aiutante, Impegno, Autocontrollo e tanti altri.'],['🔴','SE SBAGLI, PUOI RIMEDIARE','Un errore rallenta il percorso, ma non cancella ciò che hai già conquistato.'],['♻️','PUOI RECUPERARE','Dopo un errore puoi fare una scelta migliore e tornare sulla strada giusta.'],['🤝','NON È UNA GARA TRA BAMBINI','Ognuno prova a migliorare se stesso.'],['🌟','LA REGOLA PIÙ IMPORTANTE','Non devi essere perfetto. Devi provare a diventare un pochino migliore ogni volta.']];
+ $('#behaviorRules').innerHTML=`<div class="behavior-rule-grid">${rules.map(r=>`<article class="behavior-info-card"><span class="big">${r[0]}</span><h4>${r[1]}</h4><p>${r[2]}</p></article>`).join('')}</div>`;
+}
+function openBehaviorAction(studentId,type){
+ const s=behaviorState.students.find(x=>x.id===studentId);if(!s)return;
+ behaviorState.selectedStudent={student:s,type};
+ const x=behaviorSummary(s.id),modal=$('#behaviorActionModal');
+ $('#behaviorActionTitle').textContent=`${s.first_name} ${s.last_name}`;
+ const label=type==='green'?'Stella verde':type==='red'?'Stella rossa':'Recupero';
+ $('#behaviorActionBody').innerHTML=`<div class="behavior-action-student"><div class="behavior-avatar">${esc((s.first_name||'')[0]||'')}${esc((s.last_name||'')[0]||'')}</div><div><strong>${esc(label)}</strong><small style="display:block;opacity:.6">🔥 ${x.xp} XP · 👑 Livello ${x.level}</small></div></div>
+ <div class="behavior-action-options">${(type==='green'?['Ascolto','Fair Play','Collaborazione','Rispetto','Responsabilità','Autocontrollo','Leadership','Impegno','Concentrazione']:type==='red'?['Ascolto','Rispetto','Sicurezza','Autocontrollo','Collaborazione']:['Recupero','Riparazione','Autocontrollo']).map((c,i)=>`<button type="button" data-behavior-category="${esc(c)}"><span>${type==='green'?'🟢':type==='red'?'🔴':'♻️'}</span><b>${esc(c)}</b></button>`).join('')}</div>
+ <label class="behavior-action-note">Nota docente facoltativa<input id="behaviorEventNote" placeholder="Breve nota privata…"></label>
+ ${type==='red'&&behaviorConsequence(x.red+1)?`<div class="behavior-consequence"><b>Indicazione educativa</b><br>${esc(behaviorConsequence(x.red+1))}<br><small>Mai usare esercizio fisico, umiliazioni o esclusioni prolungate come punizione.</small></div>`:''}`;
+ $$('[data-behavior-category]').forEach(b=>b.onclick=()=>saveBehaviorEvent(b.dataset.behaviorCategory));
+ modal.showModal();
+}
+async function saveBehaviorEvent(category){
+ const ctx=behaviorState.selectedStudent;if(!ctx)return;
+ const payload={owner_id:st.user.id,school_year_id:st.year.id,class_id:behaviorState.classId,student_id:ctx.student.id,event_type:ctx.type,category,note:$('#behaviorEventNote')?.value.trim()||null,mission:behaviorState.mission?.mission||null};
+ const{data,error}=await db.from('pe_behavior_events').insert(payload).select().single();if(error)return toast(error.message);
+ behaviorState.events.unshift(data);$('#behaviorActionModal').close();
+ if(ctx.type==='green')toast('🟢 Stella verde conquistata!');else if(ctx.type==='recovery')toast('♻️ Recupero riuscito!');else toast('🔴 Registrato nella parte docente');
+ await autoUnlockBehaviorRewards(ctx.student.id);renderBehaviorAll();
+}
+async function autoUnlockBehaviorRewards(studentId){
+ const x=behaviorSummary(studentId),existing=new Set(behaviorState.rewards.filter(r=>r.student_id===studentId).map(r=>r.reward_key));
+ const unlock=BEHAVIOR_REWARDS.filter(r=>x.xp>=r.xp&&!existing.has(r.key));
+ if(!unlock.length)return;
+ const rows=unlock.map(r=>({owner_id:st.user.id,school_year_id:st.year.id,class_id:behaviorState.classId,student_id:studentId,reward_key:r.key}));
+ const{data,error}=await db.from('pe_behavior_rewards').upsert(rows,{onConflict:'school_year_id,student_id,reward_key'}).select();
+ if(!error){behaviorState.rewards.push(...(data||[]));toast(`🏆 ${unlock.length===1?'Nuovo premio sbloccato!':'Nuovi premi sbloccati!'}`)}
+}
+function openBehaviorMissions(){
+ $('#behaviorMissionGrid').innerHTML=BEHAVIOR_MISSIONS.map(m=>`<button type="button" class="behavior-mission-option" data-mission-id="${m.id}"><b>🎯 ${esc(m.mission)}</b><small>${esc(m.category)} · ${esc(m.verify)} · ${esc(m.difficulty)}</small></button>`).join('');
+ $$('[data-mission-id]').forEach(b=>b.onclick=()=>saveBehaviorMission(Number(b.dataset.missionId)));
+ $('#behaviorMissionModal').showModal();
+}
+async function saveBehaviorMission(id){
+ const m=BEHAVIOR_MISSIONS.find(x=>x.id===id);if(!m)return;
+ const payload={owner_id:st.user.id,school_year_id:st.year.id,class_id:behaviorState.classId,mission_1:m.mission,mission_2:m.verify,updated_at:new Date().toISOString()};
+ const{error}=await db.from('pe_behavior_class_state').upsert(payload,{onConflict:'school_year_id,class_id'});if(error)return toast(error.message);
+ behaviorState.mission=m;$('#behaviorMissionModal').close();renderBehaviorAll();toast('🎯 Missione impostata');
+}
+function openBehaviorLim(){
+ const cl=st.classes.find(c=>c.id===behaviorState.classId),m=behaviorState.mission;
+ $('#behaviorLimContent').innerHTML=`<div class="behavior-lim-screen"><span class="kicker">IL GIOCO DELLE STELLE · ${esc(cl?.name||'')}</span><h2>⭐ Oggi giochiamo da campioni</h2><div class="behavior-lim-mission">🎯 ${esc(m?.mission||'Essere una squadra!')}<small style="display:block;margin-top:8px;opacity:.65">${esc(m?.verify||'Rispetto, aiuto e miglioramento.')}</small></div><div class="behavior-lim-path">🟢 → 🔥 XP → 👑 LIVELLO → 🏅 BADGE → 🏆 PREMIO</div><p class="behavior-lim-rule">La stella verde si conquista con un comportamento positivo concreto. <b>Non premiamo il bambino “più bravo”: premiamo il comportamento che vogliamo vedere di più.</b></p></div>`;
+ $('#behaviorLimModal').showModal();
+}
+$('#behaviorClass')?.addEventListener('change',()=>{behaviorState.classId=$('#behaviorClass').value;loadBehaviorClass()});
+$('#behaviorMissionBtn')?.addEventListener('click',openBehaviorMissions);
+$('#behaviorLimBtn')?.addEventListener('click',openBehaviorLim);
+$$('[data-behavior-tab]').forEach(b=>b.onclick=()=>{$$('[data-behavior-tab]').forEach(x=>x.classList.toggle('active',x===b));$$('.behavior-tab-panel').forEach(x=>x.classList.toggle('active',x.id===`behaviorTab-${b.dataset.behaviorTab}`))});
+
+
 /* --- GIOCHI SCUOLA PRIMARIA --- */
 const PRIMARY_BUCKET='pe-primary-games';
 const primaryEscLines=v=>esc(v).replace(/\n/g,'<br>');
@@ -1848,7 +1993,7 @@ function renderPrimaryGames(){
   const q=($('#primaryGameSearch')?.value||'').trim().toLowerCase(),d=$('#primaryDifficulty')?.value||'';
   const all=st.primaryGames||[];
   const rows=all.filter(g=>(!d||String(g.difficulty)===d)&&(!q||[g.title,g.material_spaces,g.description,g.rules,g.variants].join(' ').toLowerCase().includes(q)));
-  $('#primaryGameCount').textContent=all.length;
+  const primaryGameCountEl=$('#primaryGameCount');if(primaryGameCountEl)primaryGameCountEl.textContent=all.length;
   $('#primaryGamesGrid').innerHTML=rows.map(g=>`<article class="primary-game-card" data-primary-game="${esc(g.id)}"><img class="primary-game-thumb" src="${esc(g._imageUrl||('./'+g.image_path))}" alt="${esc(g.title)}" loading="lazy"><div class="primary-game-card-body"><div class="primary-game-card-head"><h4>${esc(g.title)}</h4>${diffDots(g.difficulty)}</div><p>${esc(g.description)}</p><div class="primary-game-meta"><span class="primary-source">${g.is_custom?'Creato da te':`Libro · pagina ${g.source_page}`}</span>${g.is_custom?'<span class="primary-custom-badge">PERSONALE</span>':''}</div></div></article>`).join('')||'<article class="panel glass"><h3>Nessun gioco trovato</h3><p class="muted">Prova a cambiare ricerca o difficoltà.</p></article>';
   $$('[data-primary-game]').forEach(x=>x.onclick=()=>openPrimaryGame(x.dataset.primaryGame));
 }

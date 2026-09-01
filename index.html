@@ -583,6 +583,23 @@
   #view-rubriche .rubric-grade-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 </style>
+
+<style id="behavior-game-v17">
+.behavior-hero{position:relative;display:flex;justify-content:space-between;align-items:center;gap:24px;padding:26px 28px;margin-bottom:16px;border-radius:26px;overflow:hidden;background:radial-gradient(circle at 85% 20%,rgba(244,197,66,.18),transparent 35%),linear-gradient(135deg,rgba(13,70,116,.95),rgba(5,32,58,.98));border:1px solid rgba(95,190,220,.22);box-shadow:0 20px 60px rgba(0,0,0,.2)}.behavior-hero h3{font-size:1.8rem;margin:4px 0 6px}.behavior-hero p{margin:0;opacity:.8}.behavior-hero-path{display:flex;align-items:center;gap:8px;font-size:1.65rem;white-space:nowrap}.behavior-hero-path i{font-style:normal;opacity:.35;font-size:1rem}
+.behavior-topbar{display:grid;grid-template-columns:minmax(220px,330px) 1fr auto;gap:14px;align-items:end;padding:16px 18px;margin-bottom:14px}.behavior-topbar label{display:grid;gap:6px;font-weight:800}.behavior-class-stats{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.behavior-stat-chip{padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid rgba(130,170,200,.15);font-size:.8rem;font-weight:800}
+.behavior-mission{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:18px 20px;margin-bottom:14px;border-radius:20px;background:linear-gradient(120deg,rgba(244,197,66,.08),rgba(64,190,196,.07))}.behavior-mission h3{margin:3px 0}.behavior-mission p{margin:0;opacity:.7}
+.behavior-tabs{display:flex;gap:8px;overflow:auto;padding:3px 0 12px}.behavior-tabs button{border:1px solid rgba(125,165,200,.15);background:rgba(255,255,255,.025);color:inherit;border-radius:999px;padding:9px 13px;font-weight:800;white-space:nowrap;cursor:pointer}.behavior-tabs button.active{background:rgba(64,190,196,.13);border-color:rgba(64,190,196,.45)}
+.behavior-tab-panel{display:none}.behavior-tab-panel.active{display:block}.behavior-student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:12px}.behavior-student-card{position:relative;padding:16px;border-radius:20px;border:1px solid rgba(125,165,200,.14);background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018));overflow:hidden}.behavior-student-card.level-up{border-color:rgba(244,197,66,.34);box-shadow:inset 0 0 30px rgba(244,197,66,.04)}.behavior-student-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.behavior-avatar{display:grid;place-items:center;width:40px;height:40px;border-radius:14px;background:rgba(64,190,196,.11);font-weight:900}.behavior-student-name{min-width:0;flex:1}.behavior-student-name strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.behavior-student-name small{opacity:.58}.behavior-level{font-size:.75rem;font-weight:900;padding:5px 8px;border-radius:999px;background:rgba(244,197,66,.1);border:1px solid rgba(244,197,66,.18)}
+.behavior-xp-row{display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px;font-size:.78rem}.behavior-xp-row b{font-size:.9rem}.behavior-xp-track{height:8px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}.behavior-xp-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#36c28b,#f4c542)}.behavior-mini-stats{display:flex;gap:7px;margin:10px 0}.behavior-mini-stats span{font-size:.74rem;padding:5px 7px;border-radius:9px;background:rgba(255,255,255,.035)}.behavior-card-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.behavior-card-actions button{min-height:38px;border-radius:11px;border:1px solid rgba(255,255,255,.1);color:inherit;font-weight:900;cursor:pointer}.behavior-green{background:rgba(45,196,134,.12)!important}.behavior-red{background:rgba(232,93,93,.1)!important}.behavior-recovery{background:rgba(74,144,226,.1)!important}
+.behavior-progress-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px}.behavior-kpi{padding:17px;border-radius:18px;border:1px solid rgba(125,165,200,.14);background:rgba(255,255,255,.03)}.behavior-kpi span{font-size:1.5rem}.behavior-kpi b{display:block;font-size:1.3rem;margin-top:4px}.behavior-kpi small{opacity:.6}.behavior-progress-list{display:grid;gap:8px}.behavior-progress-row{display:grid;grid-template-columns:minmax(130px,1.4fr) 70px 1fr 100px;gap:10px;align-items:center;padding:11px 13px;border-radius:14px;background:rgba(255,255,255,.025);border:1px solid rgba(125,165,200,.1)}
+.behavior-badge-grid,.behavior-reward-grid,.behavior-rule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:11px}.behavior-info-card{padding:16px;border-radius:18px;border:1px solid rgba(125,165,200,.13);background:rgba(255,255,255,.028)}.behavior-info-card .big{font-size:1.7rem}.behavior-info-card h4{margin:7px 0 4px}.behavior-info-card p{margin:0;opacity:.67;font-size:.84rem;line-height:1.45}.behavior-section-title{margin:20px 0 10px}
+.behavior-action-student{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;background:rgba(255,255,255,.035);margin-bottom:14px}.behavior-action-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.behavior-action-options button{min-height:88px;border-radius:17px;border:1px solid rgba(125,165,200,.14);color:inherit;cursor:pointer}.behavior-action-options button span{display:block;font-size:1.7rem}.behavior-action-options button b{display:block;margin-top:4px}.behavior-action-note{display:grid;gap:7px;margin-top:14px}.behavior-action-note input{width:100%}.behavior-consequence{margin-top:12px;padding:12px;border-radius:13px;background:rgba(232,93,93,.08);border:1px solid rgba(232,93,93,.15);font-size:.82rem;line-height:1.45}
+.behavior-mission-grid{display:grid;gap:8px;max-height:62vh;overflow:auto}.behavior-mission-option{padding:13px 14px;border-radius:15px;border:1px solid rgba(125,165,200,.14);background:rgba(255,255,255,.025);color:inherit;text-align:left;cursor:pointer}.behavior-mission-option b{display:block}.behavior-mission-option small{display:block;opacity:.62;margin-top:4px}
+.behavior-lim-modal{width:min(1100px,96vw)!important;max-width:none!important;background:radial-gradient(circle at 50% 0,rgba(244,197,66,.15),transparent 35%),#07192b!important}.behavior-lim-close{position:absolute;right:18px;top:16px;z-index:2}.behavior-lim-screen{text-align:center;padding:34px 24px}.behavior-lim-screen h2{font-size:clamp(2rem,5vw,4rem);margin:10px 0}.behavior-lim-mission{font-size:clamp(1.3rem,3vw,2.2rem);padding:18px;border-radius:22px;background:rgba(244,197,66,.09);border:1px solid rgba(244,197,66,.2);margin:22px auto;max-width:800px}.behavior-lim-path{font-size:clamp(1.3rem,3vw,2.1rem);letter-spacing:.08em;margin:25px 0}.behavior-lim-rule{font-size:clamp(1rem,2vw,1.35rem);opacity:.78;max-width:800px;margin:auto}
+.behavior-empty{text-align:center;padding:40px}.behavior-empty>div{font-size:3rem}
+@media(max-width:800px){.behavior-topbar{grid-template-columns:1fr}.behavior-mission{display:grid}.behavior-progress-row{grid-template-columns:1fr 60px}.behavior-progress-row>*:nth-child(n+3){grid-column:1/-1}.behavior-hero-path{display:none}}
+@media(max-width:520px){.behavior-student-grid{grid-template-columns:1fr}.behavior-card-actions{grid-template-columns:1fr 1fr 1fr}.behavior-action-options{grid-template-columns:1fr}.behavior-hero{padding:20px}}
+</style>
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>
@@ -614,6 +631,7 @@
     <button data-view="planner" class="nav-btn"><span>✦</span>Programmazione</button>
     <button data-view="sports" class="nav-btn"><span>◈</span>Archivio sport</button>
     <button data-view="primarygames" class="nav-btn"><span>✹</span>Giochi scuola primaria</button>
+    <button data-view="behavior" class="nav-btn"><span>⭐</span>Gioco delle Stelle</button>
     <button data-view="tests" class="nav-btn"><span>⌁</span>Test motori</button>
     <button data-view="rubriche" class="nav-btn"><span>▤</span>Rubriche di valutazione</button>
     <button id="ownerNavBtn" data-view="owner" class="nav-btn hidden"><span>♛</span>Area OWNER</button>
@@ -995,6 +1013,71 @@
   <div id="primaryGamesGrid" class="primary-games-grid"></div>
 </section>
 
+
+<section id="view-behavior" class="view">
+  <div class="behavior-hero">
+    <div>
+      <span class="kicker">SOLO SCUOLA PRIMARIA</span>
+      <h3>⭐ Il Gioco delle Stelle</h3>
+      <p>Qui non vince chi corre più forte. Vince chi impara a essere un bravo compagno.</p>
+    </div>
+    <div class="behavior-hero-path"><span>🟢</span><i>→</i><span>🔥</span><i>→</i><span>👑</span><i>→</i><span>🏅</span><i>→</i><span>🏆</span></div>
+  </div>
+
+  <div class="behavior-topbar glass">
+    <label>Classe primaria<select id="behaviorClass"></select></label>
+    <div id="behaviorClassStats" class="behavior-class-stats"></div>
+    <button id="behaviorLimBtn" type="button" class="btn secondary">📺 Modalità LIM</button>
+  </div>
+
+  <div id="behaviorNoClass" class="behavior-empty glass hidden">
+    <div>⭐</div><h3>Crea prima una classe della primaria</h3>
+    <p>Il Gioco delle Stelle è disponibile esclusivamente per le classi 1ª–5ª primaria.</p>
+  </div>
+
+  <div id="behaviorWorkspace">
+    <div class="behavior-mission glass">
+      <div><span class="kicker">MISSIONE DELLA LEZIONE</span><h3 id="behaviorMissionTitle">🎯 Scegli cosa allenare oggi</h3><p id="behaviorMissionVerify">Scegli 1–2 comportamenti osservabili da rinforzare.</p></div>
+      <button id="behaviorMissionBtn" type="button" class="btn primary">🎯 Scegli missione</button>
+    </div>
+
+    <div class="behavior-tabs">
+      <button class="active" data-behavior-tab="class">👥 Classe</button>
+      <button data-behavior-tab="progress">📈 Progressi</button>
+      <button data-behavior-tab="rewards">🏆 Premi & Badge</button>
+      <button data-behavior-tab="rules">🌈 Regole</button>
+    </div>
+
+    <div id="behaviorTab-class" class="behavior-tab-panel active">
+      <div id="behaviorStudentGrid" class="behavior-student-grid"></div>
+    </div>
+    <div id="behaviorTab-progress" class="behavior-tab-panel">
+      <div id="behaviorProgress"></div>
+    </div>
+    <div id="behaviorTab-rewards" class="behavior-tab-panel">
+      <div id="behaviorRewards"></div>
+    </div>
+    <div id="behaviorTab-rules" class="behavior-tab-panel">
+      <div id="behaviorRules"></div>
+    </div>
+  </div>
+</section>
+
+<dialog id="behaviorActionModal" class="modal behavior-action-modal">
+  <div class="modal-head"><div><span class="kicker">AZIONE RAPIDA</span><h3 id="behaviorActionTitle">Alunno</h3></div><button type="button" data-close="behaviorActionModal">×</button></div>
+  <div id="behaviorActionBody"></div>
+</dialog>
+
+<dialog id="behaviorMissionModal" class="modal behavior-action-modal">
+  <div class="modal-head"><div><span class="kicker">MISSIONE</span><h3>Scegli la missione di oggi</h3></div><button type="button" data-close="behaviorMissionModal">×</button></div>
+  <div id="behaviorMissionGrid" class="behavior-mission-grid"></div>
+</dialog>
+
+<dialog id="behaviorLimModal" class="modal behavior-lim-modal">
+  <button type="button" class="behavior-lim-close" data-close="behaviorLimModal">×</button>
+  <div id="behaviorLimContent"></div>
+</dialog>
+
 <section id="view-tests" class="view">
   <div class="tests-hero">
     <div><span class="kicker">TEST MOTORI</span><h3>Misura. Confronta. Segui la crescita.</h3><p>Risultati individuali, classifiche separate per sesso e record storici.</p></div>
@@ -1103,6 +1186,7 @@
     <button data-view="planner"><span>✦</span><div><b>Programmazione</b><small>Genera i moduli didattici</small></div></button>
     <button data-view="sports"><span>◈</span><div><b>Archivio sport</b><small>Tutti gli sport e gli esercizi</small></div></button>
     <button data-view="primarygames"><span>✹</span><div><b>Giochi scuola primaria</b><small>Libro e giochi personali</small></div></button>
+    <button data-view="behavior"><span>⭐</span><div><b>Gioco delle Stelle</b><small>Comportamento · solo primaria</small></div></button>
     <button data-view="tests"><span>⌁</span><div><b>Test motori</b><small>Risultati e classifiche</small></div></button>
     <button data-view="rubriche"><span>▤</span><div><b>Rubriche di valutazione</b><small>Criteri e descrittori completi</small></div></button>
     <button data-view="settings"><span>⚙</span><div><b>Impostazioni</b><small>Anno scolastico e chiusure</small></div></button>
