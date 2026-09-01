@@ -600,6 +600,13 @@
 @media(max-width:800px){.behavior-topbar{grid-template-columns:1fr}.behavior-mission{display:grid}.behavior-progress-row{grid-template-columns:1fr 60px}.behavior-progress-row>*:nth-child(n+3){grid-column:1/-1}.behavior-hero-path{display:none}}
 @media(max-width:520px){.behavior-student-grid{grid-template-columns:1fr}.behavior-card-actions{grid-template-columns:1fr 1fr 1fr}.behavior-action-options{grid-template-columns:1fr}.behavior-hero{padding:20px}}
 </style>
+
+<style id="class-edit-fix-v18">
+.class-card-actions{display:grid;gap:8px;margin-top:14px}
+.class-card-actions .btn{width:100%;justify-content:center}
+.student-row{grid-template-columns:minmax(150px,1.15fr) minmax(130px,1fr) 72px 42px}
+@media(max-width:640px){.student-row{grid-template-columns:1fr 1fr 64px 40px}.class-card-actions{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>

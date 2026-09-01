@@ -134,9 +134,10 @@ function renderDashboard(){
   $('#dashboardHof').innerHTML=st.hof.slice(0,6).map(x=>listItem(`${x.first_name} ${x.last_name}`,`${x.test_name} · ${x.school_year_label}`,`<span class="chip gold">${x.result_value} ${esc(x.unit)}</span>`)).join('')||listItem('Nessun record ancora','Inserisci i primi risultati');
 }
 function renderClasses(){
-  $('#classesGrid').innerHTML=st.classes.map(c=>`<article class="class-card" data-class="${c.id}">${c.school_level?`<span class="class-school-badge">${esc(schoolLevelLabels[c.school_level]||c.school_level)}</span>`:'<span class="class-school-badge">Grado scolastico da impostare</span>'}<span class="kicker">CLASSE</span><h4>${esc(c.name)}</h4><div class="class-counts"><span class="chip">${c.student_count} alunni</span><span class="chip">♀ ${c.female_count??'—'}</span><span class="chip">♂ ${c.male_count??'—'}</span></div><button type="button" class="btn secondary class-sport-level-btn" data-student-levels="${c.id}">⚡ Assegna livello sportivo</button><div class="edit-hint">Apri e modifica →</div></article>`).join('')||`<article class="class-card"><h4>Nessuna classe</h4><p>Creane una per iniziare.</p></article>`;
-  $$('[data-class]').forEach(x=>x.onclick=e=>{if(e.target.closest('[data-student-levels]'))return;openClass(x.dataset.class)});
-  $$('[data-student-levels]').forEach(b=>b.onclick=e=>{e.stopPropagation();openStudentSportLevels(b.dataset.studentLevels)});
+  $('#classesGrid').innerHTML=st.classes.map(c=>`<article class="class-card" data-class="${c.id}">${c.school_level?`<span class="class-school-badge">${esc(schoolLevelLabels[c.school_level]||c.school_level)}</span>`:'<span class="class-school-badge">Grado scolastico da impostare</span>'}<span class="kicker">CLASSE</span><h4>${esc(c.name)}</h4><div class="class-counts"><span class="chip">${c.student_count} alunni</span><span class="chip">♀ ${c.female_count??'—'}</span><span class="chip">♂ ${c.male_count??'—'}</span></div><div class="class-card-actions"><button type="button" class="btn primary" data-edit-class="${c.id}">✏️ Apri e modifica</button><button type="button" class="btn secondary class-sport-level-btn" data-student-levels="${c.id}">⚡ Assegna livello sportivo</button></div></article>`).join('')||`<article class="class-card"><h4>Nessuna classe</h4><p>Creane una per iniziare.</p></article>`;
+  $$('[data-class]').forEach(x=>x.onclick=e=>{if(e.target.closest('[data-student-levels],[data-edit-class]'))return;openClass(x.dataset.class)});
+  $$('[data-edit-class]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();openClass(b.dataset.editClass)});
+  $$('[data-student-levels]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();openStudentSportLevels(b.dataset.studentLevels)});
 }
 
 let studentLevelsCtx=null;
@@ -468,7 +469,7 @@ function updateClassAutoCounts(){
 }
 function addStudentRow(first='',last='',sex='F',id=''){
   let d=document.createElement('div');d.className='student-row';d.dataset.studentId=id;
-  d.innerHTML=`<input class="s-first" placeholder="Nome" value="${esc(first)}"><input class="s-last" placeholder="Cognome" value="${esc(last)}"><select class="s-sex"><option value="F" ${sex==='F'?'selected':''}>F</option><option value="M" ${sex==='M'?'selected':''}>M</option></select><button type="button">×</button>`;
+  d.innerHTML=`<input class="s-last" placeholder="Cognome" autocomplete="family-name" value="${esc(last)}"><input class="s-first" placeholder="Nome" autocomplete="given-name" value="${esc(first)}"><select class="s-sex"><option value="F" ${sex==='F'?'selected':''}>F</option><option value="M" ${sex==='M'?'selected':''}>M</option></select><button type="button">×</button>`;
   d.querySelector('button').onclick=()=>{d.remove();updateClassAutoCounts()};
   d.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',updateClassAutoCounts));
   d.querySelector('.s-sex').addEventListener('change',updateClassAutoCounts);
