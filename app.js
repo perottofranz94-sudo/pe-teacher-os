@@ -1348,8 +1348,53 @@ function renderTests(){$('#testsGrid').innerHTML=st.tests.map(t=>`<article class
 $('#newTestBtn').onclick=()=>$('#testModal').showModal();
 $('#testForm').onsubmit=async e=>{e.preventDefault();const slug=$('#testName').value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Date.now();let{error}=await db.from('pe_motor_tests').insert({owner_id:st.user.id,name:$('#testName').value,slug,unit:$('#testUnit').value,result_direction:$('#testDirection').value,is_default:false,active:true});if(error)return toast(error.message);$('#testModal').close();toast('Test creato');await loadCore()}
 $$('[data-testtab]').forEach(b=>b.onclick=()=>{$$('[data-testtab]').forEach(x=>x.classList.toggle('active',x===b));$$('.testtab').forEach(x=>x.classList.toggle('active',x.id===`testtab-${b.dataset.testtab}`));if(b.dataset.testtab==='rankings')loadRankings();if(b.dataset.testtab==='hof')loadHof()});
-$('#sessionForm').onsubmit=async e=>{e.preventDefault();if(!requireSchoolYear('Crea prima l’anno scolastico per registrare i test.'))return;const cid=$('#sessionClass').value,tid=$('#sessionTest').value,date=$('#sessionDate').value;if(!cid||!tid)return;let test=st.tests.find(x=>x.id===tid);let{data:ses,error}=await db.from('pe_motor_test_sessions').insert({owner_id:st.user.id,school_year_id:st.year.id,class_id:cid,test_id:tid,session_date:date,title:test.name}).select().single();if(error)return toast(error.message);renderResultEntry(ses,test,cid)}
-async function renderResultEntry(session,test,cid){let{data:en}=await db.from('pe_student_enrollments').select('student_id,pe_students(*)').eq('class_id',cid).eq('active',true);$('#sessionResultsArea').innerHTML=`<div class="panel glass" style="margin-top:14px"><span class="kicker">${esc(test.name)}</span><h3>Inserisci risultati</h3><div id="resultRows">${(en||[]).map(x=>`<div class="ranking-row"><div>${x.pe_students.sex==='F'?'♀':'♂'}</div><div><strong>${esc(x.pe_students.first_name)} ${esc(x.pe_students.last_name)}</strong></div><input style="max-width:120px" type="number" step="0.01" data-result-student="${x.student_id}" placeholder="${esc(test.unit)}"></div>`).join('')}</div><button id="saveResults" class="btn primary" style="margin-top:12px">Salva risultati</button></div>`;$('#saveResults').onclick=async()=>{const rows=[];$$('[data-result-student]').forEach(i=>{if(i.value!=='')rows.push({owner_id:st.user.id,session_id:session.id,student_id:i.dataset.resultStudent,result_value:+i.value})});if(rows.length){let{error}=await db.from('pe_motor_test_results').insert(rows);if(error)return toast(error.message)}toast('Risultati salvati');await loadCore();loadRankings()}}
+$('#sessionForm').onsubmit=async e=>{
+  e.preventDefault();
+  if(!requireSchoolYear('Crea prima l’anno scolastico per registrare i test.'))return;
+  const cid=$('#sessionClass').value,tid=$('#sessionTest').value,date=$('#sessionDate').value;
+  if(!cid||!tid)return toast('Seleziona classe e test');
+  const test=st.tests.find(x=>x.id===tid);
+  if(!test)return toast('Test non trovato');
+  const submitBtn=e.submitter||$('#sessionForm button[type="submit"]');
+  if(submitBtn)submitBtn.disabled=true;
+  try{
+    const{data:ses,error}=await db.from('pe_motor_test_sessions').insert({
+      owner_id:st.user.id,
+      school_year_id:st.year.id,
+      class_id:cid,
+      test_id:tid,
+      session_date:date,
+      title:test.name
+    }).select().single();
+    if(error)return toast(error.message);
+    await renderResultEntry(ses,test,cid);
+  }finally{
+    if(submitBtn)submitBtn.disabled=false;
+  }
+}
+async function renderResultEntry(session,test,cid){
+  const {data:students,error:studentsErr}=await fetchActiveClassStudents(cid);
+  if(studentsErr){
+    console.error('Caricamento alunni test motori:',studentsErr);
+    $('#sessionResultsArea').innerHTML=`<div class="panel glass" style="margin-top:14px"><span class="kicker">${esc(test.name)}</span><h3>Impossibile caricare gli alunni</h3><p>${esc(studentsErr.message||'Errore nel caricamento della classe.')}</p></div>`;
+    return toast('Impossibile caricare gli alunni della classe');
+  }
+  const ordered=(students||[]).slice().sort((a,b)=>`${a.last_name||''} ${a.first_name||''}`.localeCompare(`${b.last_name||''} ${b.first_name||''}`,'it'));
+  $('#sessionResultsArea').innerHTML=`<div class="panel glass" style="margin-top:14px"><span class="kicker">${esc(test.name)}</span><h3>Inserisci risultati</h3><div id="resultRows">${ordered.map(s=>`<div class="ranking-row"><div>${s.sex==='F'?'♀':'♂'}</div><div><strong>${esc(s.last_name)} ${esc(s.first_name)}</strong></div><input style="max-width:120px" type="number" step="0.01" data-result-student="${s.id}" placeholder="${esc(test.unit)}"></div>`).join('')}</div><button id="saveResults" class="btn primary" style="margin-top:12px">Salva risultati</button></div>`;
+  $('#saveResults').onclick=async()=>{
+    const rows=[];
+    $$('[data-result-student]').forEach(i=>{
+      if(i.value!=='')rows.push({owner_id:st.user.id,session_id:session.id,student_id:i.dataset.resultStudent,result_value:+i.value})
+    });
+    if(rows.length){
+      let{error}=await db.from('pe_motor_test_results').insert(rows);
+      if(error)return toast(error.message)
+    }
+    toast('Risultati salvati');
+    await loadCore();
+    loadRankings()
+  }
+}
 function avg(values){const nums=(values||[]).map(Number).filter(Number.isFinite);return nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:null}
 function fmtNum(v,d=2){if(v===null||v===undefined||!Number.isFinite(Number(v)))return '—';return Number(v).toLocaleString('it-IT',{maximumFractionDigits:d})}
 function testEmoji(name=''){const n=String(name).toLowerCase();if(/sprint|corsa|veloc|cooper|navetta|beep|yo-yo/.test(n))return '🏃';if(/salto|jump|cmj|lungo|alto/.test(n))return '🦘';if(/lancio|palla medica|peso|throw/.test(n))return '🥎';if(/forza|push|plank|core|traz|grip|presa|addom/.test(n))return '💪';if(/equilibr|balance/.test(n))return '⚖️';if(/fless|mobil|sit and reach/.test(n))return '🧘';if(/agilit|t-test|505|shuttle/.test(n))return '⚡';if(/corda|rope/.test(n))return '🪢';if(/resist|endurance/.test(n))return '❤️';return '🏅'}
