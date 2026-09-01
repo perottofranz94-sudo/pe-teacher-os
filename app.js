@@ -454,8 +454,17 @@ async function openClass(id){
   $('#deleteClassBtn').classList.toggle('hidden',!id);
   if(id){
     const c=st.classes.find(x=>x.id===id);if(!c)return toast('Classe non trovata');$('#classModalTitle').textContent=c.name;$('#className').value=c.name;$('#classSchoolLevel').value=c.school_level||'';updateGradeOptions(c.grade);
-    const{data:en,error}=await db.from('pe_student_enrollments').select('*,pe_students(*)').eq('class_id',id).eq('active',true);if(error)return toast(error.message);
-    classOriginalStudentIds=(en||[]).map(x=>x.student_id);(en||[]).forEach(x=>addStudentRow(x.pe_students?.first_name,x.pe_students?.last_name,x.pe_students?.sex,x.pe_students?.id));
+    const{data:en,error}=await db.from('pe_student_enrollments').select('student_id').eq('class_id',id).eq('active',true);if(error)return toast(error.message);
+    classOriginalStudentIds=(en||[]).map(x=>x.student_id).filter(Boolean);
+    let students=[];
+    if(classOriginalStudentIds.length){
+      const{data:stu,error:stuErr}=await db.from('pe_students').select('id,first_name,last_name,sex').in('id',classOriginalStudentIds);
+      if(stuErr)return toast(stuErr.message);
+      const byId=new Map((stu||[]).map(s=>[s.id,s]));
+      students=classOriginalStudentIds.map(sid=>byId.get(sid)).filter(Boolean);
+    }
+    students.sort((a,b)=>`${a.last_name||''} ${a.first_name||''}`.localeCompare(`${b.last_name||''} ${b.first_name||''}`,'it'));
+    students.forEach(s=>addStudentRow(s.first_name,s.last_name,s.sex,s.id));
   }else{$('#classModalTitle').textContent='Nuova classe';$('#className').value='';$('#classSchoolLevel').value='';updateGradeOptions('')}
   await Promise.all([renderLevelGrid(id),loadClassTimetable(id)]);updateClassAutoCounts();updateSportLevelsVisibility();$('#classModal').showModal();
 }
