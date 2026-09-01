@@ -607,6 +607,18 @@
 .student-row{grid-template-columns:minmax(150px,1.15fr) minmax(130px,1fr) 72px 42px}
 @media(max-width:640px){.student-row{grid-template-columns:1fr 1fr 64px 40px}.class-card-actions{grid-template-columns:1fr}}
 </style>
+
+<style id="student-level-selection-fix-v20">
+.student-level-choice.selected,
+.student-level-choice.active,
+.student-level-choice[aria-pressed="true"]{
+  border-color:#50d2b0!important;
+  background:linear-gradient(145deg,rgba(52,175,145,.28),rgba(36,130,112,.2))!important;
+  box-shadow:0 0 0 2px rgba(80,210,176,.16) inset,0 0 18px rgba(80,210,176,.08)!important;
+  transform:translateY(-1px);
+}
+.student-level-choice{transition:.16s ease}
+</style>
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>

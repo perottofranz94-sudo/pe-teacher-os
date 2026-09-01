@@ -224,17 +224,27 @@ async function loadStudentLevelsForSport(){
     <div class="student-levels-list">${students.map(s=>`<div class="student-level-row">
       <div class="student-level-person"><strong>${esc(s.last_name)} ${esc(s.first_name)}</strong><small>${s.sex==='F'?'♀ Femmina':s.sex==='M'?'♂ Maschio':'Alunno'}</small></div>
       <div class="student-level-picker" data-level-student="${s.id}">
-        ${[1,2,3,4,5].map(n=>`<button type="button" class="student-level-choice ${Number(levelMap[s.id])===n?'active':''}" data-level="${n}" title="Livello ${n}">${n}</button>`).join('')}
+        ${[1,2,3,4,5].map(n=>`<button type="button" class="student-level-choice ${Number(levelMap[s.id])===n?'selected':''}" data-level="${n}" aria-pressed="${Number(levelMap[s.id])===n?'true':'false'}" title="Livello ${n}">${n}</button>`).join('')}
       </div></div>`).join('')}</div>`;
   $$('[data-level-student]').forEach(group=>{
     const sid=group.dataset.levelStudent;
+    if(studentLevelsCtx.levels[sid])group.dataset.selectedLevel=String(studentLevelsCtx.levels[sid]);
     group.querySelectorAll('[data-level]').forEach(btn=>{
-      btn.onclick=()=>{
+      btn.onclick=e=>{
+        e.preventDefault();
+        e.stopPropagation();
         const level=Number(btn.dataset.level);
         studentLevelsCtx.levels[sid]=level;
-        group.querySelectorAll('[data-level]').forEach(x=>x.classList.toggle('active',x===btn));
-        const count=students.filter(s=>studentLevelsCtx.levels[s.id]).length;
+        group.dataset.selectedLevel=String(level);
+        group.querySelectorAll('[data-level]').forEach(x=>{
+          const chosen=x===btn;
+          x.classList.toggle('selected',chosen);
+          x.classList.toggle('active',chosen);
+          x.setAttribute('aria-pressed',chosen?'true':'false');
+        });
+        const count=students.filter(s=>Number(studentLevelsCtx.levels[s.id])>=1).length;
         $('#studentLevelsAssignedCount').textContent=`${count}/${students.length} assegnati`;
+        $('#studentLevelsMsg').textContent='Modifiche non ancora salvate';
       };
     });
   });
@@ -291,23 +301,41 @@ async function saveStudentSportLevels(){
   const btn=$('#studentLevelsSaveBtn'),msg=$('#studentLevelsMsg');
   btn.disabled=true;btn.textContent='Salvataggio…';msg.textContent='Salvo i livelli…';
   try{
-    const assigned=studentLevelsCtx.students.filter(s=>studentLevelsCtx.levels[s.id]).map(s=>({
-      owner_id:st.user.id,
-      school_year_id:studentLevelsCtx.schoolYearId,
-      class_id:studentLevelsCtx.classId,
-      student_id:s.id,
-      sport_key:studentLevelsCtx.sportKey,
-      level:Number(studentLevelsCtx.levels[s.id]),
-      updated_at:new Date().toISOString()
-    }));
-    if(assigned.length){
-      const{error}=await db.from('pe_student_sport_levels').upsert(
-        assigned,{onConflict:'school_year_id,class_id,student_id,sport_key'}
-      );
-      if(error)throw error;
-    }
-    $('#studentSportLevelsModal').close();
+    // Il DOM è la fonte di verità: così ciò che l'utente vede selezionato è esattamente ciò che viene salvato.
+    $$('[data-level-student]').forEach(group=>{
+      const sid=group.dataset.levelStudent;
+      const chosen=group.querySelector('.student-level-choice.selected,[data-level][aria-pressed="true"]');
+      if(chosen)studentLevelsCtx.levels[sid]=Number(chosen.dataset.level);
+    });
+    const assigned=studentLevelsCtx.students
+      .filter(s=>Number(studentLevelsCtx.levels[s.id])>=1&&Number(studentLevelsCtx.levels[s.id])<=5)
+      .map(s=>({
+        owner_id:st.user.id,
+        school_year_id:studentLevelsCtx.schoolYearId,
+        class_id:studentLevelsCtx.classId,
+        student_id:s.id,
+        sport_key:studentLevelsCtx.sportKey,
+        level:Number(studentLevelsCtx.levels[s.id]),
+        updated_at:new Date().toISOString()
+      }));
+    if(!assigned.length)throw new Error('Seleziona almeno un livello prima di salvare');
+    const{data:saved,error}=await db.from('pe_student_sport_levels').upsert(
+      assigned,{onConflict:'school_year_id,class_id,student_id,sport_key'}
+    ).select('student_id,level,sport_key');
+    if(error)throw error;
+    if(!saved||saved.length!==assigned.length)throw new Error('Salvataggio incompleto: riprova');
+    // Verifica immediata rileggendo dal database.
+    const{data:verify,error:verifyErr}=await db.from('pe_student_sport_levels')
+      .select('student_id,level')
+      .eq('school_year_id',studentLevelsCtx.schoolYearId)
+      .eq('class_id',studentLevelsCtx.classId)
+      .eq('sport_key',studentLevelsCtx.sportKey);
+    if(verifyErr)throw verifyErr;
+    studentLevelsCtx.levels=Object.fromEntries((verify||[]).map(x=>[x.student_id,Number(x.level)]));
+    msg.textContent=`Salvati ${verify?.length||0} livelli`;
     toast(`Livelli salvati · ${sportLabelFromKey(studentLevelsCtx.sportKey)}`);
+    await new Promise(r=>setTimeout(r,250));
+    $('#studentSportLevelsModal').close();
   }catch(err){
     console.error(err);msg.textContent='Errore: '+(err.message||'salvataggio non riuscito');
     toast('Impossibile salvare i livelli');
