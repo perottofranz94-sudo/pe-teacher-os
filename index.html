@@ -731,6 +731,87 @@
 #behaviorTab-teacher.active{display:block}
 #behaviorTeacherRules{display:block}
 </style>
+
+<style id="team-lineup-v27">
+.team-lineup-modal{
+  width:min(1180px,96vw)!important;
+  max-width:none!important;
+  max-height:94vh!important;
+  padding:0!important;
+  overflow:auto!important;
+  border:1px solid rgba(112,188,255,.22)!important;
+  border-radius:28px!important;
+  background:#061729!important;
+  box-shadow:0 30px 100px rgba(0,0,0,.58)!important;
+}
+.team-lineup-modal::backdrop{background:rgba(0,10,22,.84);backdrop-filter:blur(8px)}
+.team-lineup-shell{
+  min-height:620px;
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% -8%,rgba(45,138,218,.28),transparent 42%),
+    radial-gradient(circle at 8% 92%,rgba(42,191,171,.11),transparent 36%),
+    linear-gradient(180deg,#0a2440 0%,#061729 100%);
+}
+.team-lineup-shell:before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.16;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:34px 34px;
+}
+.team-lineup-close{
+  position:sticky;float:right;top:14px;right:14px;z-index:10;
+  width:42px;height:42px;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(4,20,35,.72);color:white;font-size:1.35rem;cursor:pointer;margin:14px 14px -56px 0
+}
+.team-lineup-stage{position:relative;z-index:2;padding:42px 34px 32px}
+.team-lineup-kicker{text-align:center;font-size:.76rem;font-weight:950;letter-spacing:.22em;color:#63d7c0}
+.team-lineup-title{text-align:center;margin:7px 0 4px;font-size:clamp(2.3rem,5vw,4.5rem);line-height:.98;font-weight:1000;letter-spacing:-.04em}
+.team-lineup-sub{text-align:center;color:rgba(224,238,250,.64);font-size:.95rem;margin-bottom:26px}
+.team-lineup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px;align-items:stretch}
+.team-lineup-team{
+  position:relative;padding:18px;border-radius:22px;
+  background:linear-gradient(160deg,rgba(255,255,255,.075),rgba(255,255,255,.025));
+  border:1px solid rgba(120,184,232,.17);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 18px 40px rgba(0,0,0,.16);
+  animation:teamLineupIn .38s ease both;
+}
+.team-lineup-team:nth-child(2){animation-delay:.05s}.team-lineup-team:nth-child(3){animation-delay:.10s}.team-lineup-team:nth-child(4){animation-delay:.15s}
+.team-lineup-team:nth-child(5){animation-delay:.20s}.team-lineup-team:nth-child(6){animation-delay:.25s}
+@keyframes teamLineupIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+.team-lineup-team-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.075)}
+.team-lineup-number{display:flex;align-items:center;gap:10px}
+.team-lineup-shield{
+  width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
+  background:linear-gradient(145deg,rgba(68,164,224,.22),rgba(47,204,179,.14));
+  border:1px solid rgba(99,215,192,.23);font-size:1.1rem;font-weight:1000
+}
+.team-lineup-team h3{margin:0;font-size:1.08rem}.team-lineup-count{font-size:.72rem;font-weight:850;color:rgba(230,242,252,.52)}
+.team-lineup-players{display:grid;gap:8px;margin-top:12px}
+.team-lineup-player{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:13px;
+  background:rgba(3,20,35,.34);border:1px solid rgba(255,255,255,.05)
+}
+.team-lineup-avatar{
+  width:31px;height:31px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto;
+  background:rgba(70,150,212,.14);font-size:.77rem;font-weight:950
+}
+.team-lineup-player strong{font-size:.89rem;line-height:1.15}
+.team-lineup-footer{
+  position:sticky;bottom:0;z-index:5;margin:26px -34px -32px;padding:16px 34px;
+  display:flex;justify-content:center;gap:10px;
+  background:linear-gradient(180deg,rgba(6,23,41,0),rgba(6,23,41,.96) 30%);
+}
+#teamLineupRegenerateBtn{min-width:210px;min-height:48px;font-size:.95rem;font-weight:950}
+.team-lineup-note{text-align:center;margin-top:15px;color:rgba(225,239,251,.45);font-size:.75rem}
+@media(max-width:650px){
+ .team-lineup-stage{padding:34px 15px 22px}
+ .team-lineup-grid{grid-template-columns:1fr}
+ .team-lineup-footer{margin:20px -15px -22px;padding:16px 15px}
+ .team-lineup-shell{min-height:auto}
+ .team-lineup-title{font-size:2.65rem}
+}
+</style>
 </head>
 <body>
 <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div><div class="bg-orb orb-c"></div>
@@ -1551,6 +1632,14 @@
     <button type="button" class="btn primary" id="studentLevelsSaveBtn">Salva livelli</button>
   </div>
   <small id="studentLevelsMsg" class="muted"></small>
+</dialog>
+
+
+<dialog id="teamLineupModal" class="team-lineup-modal">
+  <div class="team-lineup-shell">
+    <button type="button" class="team-lineup-close" data-close="teamLineupModal" aria-label="Chiudi">×</button>
+    <div id="teamLineupContent"></div>
+  </div>
 </dialog>
 
 </body>

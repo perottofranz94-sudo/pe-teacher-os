@@ -463,16 +463,32 @@ function renderGeneratedTeams(teams,meta){
   const results=$('#teamGenResults'),empty=$('#teamGenEmpty');
   empty.classList.add('hidden');results.classList.remove('hidden');
   const missing=meta.players.filter(p=>!p.hasLevel).length;
-  const warning=meta.balance==='balanced'&&missing?`<div class="teamgen-warning">⚠ ${missing} alunn${missing===1?'o non ha':'i non hanno'} un livello salvato per ${esc(meta.sportLabel)}. Per il bilanciamento ${missing===1?'è stato usato':'è stato usato'} il livello neutro 3.</div>`:'';
+  const warning=meta.balance==='balanced'&&missing?`<div class="teamgen-warning">⚠ ${missing} alunn${missing===1?'o non ha':'i non hanno'} un livello salvato per ${esc(meta.sportLabel)}. Il sistema ha comunque effettuato il bilanciamento automaticamente.</div>`:'';
   results.innerHTML=`<article class="glass teamgen-results-panel">
     <div class="teamgen-result-head"><div><span class="kicker">RISULTATO</span><h3>${teams.length} squadre · ${esc(meta.className)}</h3><p>${esc(meta.sportLabel)} · ${meta.balance==='balanced'?'equilibrate':'casuali'} · ${meta.gender==='mixed'?'♀♂ mescolati':'♀ / ♂ separati'}</p></div>
-    <div class="teamgen-result-actions"><button id="regenerateTeamsBtn" type="button" class="btn secondary">↻ Rigenera</button></div></div>
-    ${warning}<div class="teamgen-grid">${teams.map((team,i)=>{
-      const avg=team.length?(team.reduce((s,p)=>s+(p.level||3),0)/team.length):0;
-      return `<article class="team-card"><div class="team-card-head"><h4>Squadra ${i+1}</h4><span class="team-card-score">${team.length} alunni${meta.balance==='balanced'?` · Ø ${avg.toFixed(1)}`:''}</span></div>
-        ${team.map(p=>`<div class="team-player"><span class="team-player-avatar">${p.sex==='F'?'♀':p.sex==='M'?'♂':'•'}</span><div class="team-player-name"><strong>${esc(p.last_name)} ${esc(p.first_name)}</strong><small>${p.sex==='F'?'Femmina':p.sex==='M'?'Maschio':'Alunno'}</small></div>${meta.balance==='balanced'?`<span class="team-player-level">L${p.level||3}</span>`:''}</div>`).join('')}
-      </article>`}).join('')}</div></article>`;
+    <div class="teamgen-result-actions"><button id="regenerateTeamsBtn" type="button" class="btn secondary">↻ Rigenera</button><button id="showTeamLineupBtn" type="button" class="btn primary">🏟 Presenta squadre</button></div></div>
+    ${warning}<div class="teamgen-grid">${teams.map((team,i)=>`<article class="team-card"><div class="team-card-head"><h4>Squadra ${i+1}</h4><span class="team-card-score">${team.length} alunni</span></div>
+        ${team.map(p=>`<div class="team-player"><span class="team-player-avatar">${p.sex==='F'?'♀':p.sex==='M'?'♂':'•'}</span><div class="team-player-name"><strong>${esc(p.last_name)} ${esc(p.first_name)}</strong><small>${p.sex==='F'?'Femmina':p.sex==='M'?'Maschio':'Alunno'}</small></div></div>`).join('')}
+      </article>`).join('')}</div></article>`;
   $('#regenerateTeamsBtn').onclick=()=>generateTeams(true);
+  $('#showTeamLineupBtn').onclick=()=>openTeamLineup(teams,meta);
+}
+function openTeamLineup(teams,meta){
+  const el=$('#teamLineupContent');if(!el)return;
+  el.innerHTML=`<div class="team-lineup-stage">
+    <div class="team-lineup-kicker">ATTIVAMENTE · TEAM LINE UP</div>
+    <h2 class="team-lineup-title">LE SQUADRE SONO PRONTE</h2>
+    <div class="team-lineup-sub">${esc(meta.className)} · ${esc(meta.sportLabel)} · ${teams.length} squadre</div>
+    <div class="team-lineup-grid">${teams.map((team,i)=>`<article class="team-lineup-team">
+      <div class="team-lineup-team-head"><div class="team-lineup-number"><span class="team-lineup-shield">${i+1}</span><div><h3>Squadra ${i+1}</h3><span class="team-lineup-count">${team.length} ${team.length===1?'alunno':'alunni'}</span></div></div><span>⚡</span></div>
+      <div class="team-lineup-players">${team.map(p=>{const initials=((p.first_name||'')[0]||'')+((p.last_name||'')[0]||'');return`<div class="team-lineup-player"><span class="team-lineup-avatar">${esc(initials)}</span><strong>${esc(p.last_name)} ${esc(p.first_name)}</strong></div>`}).join('')}</div>
+    </article>`).join('')}</div>
+    <div class="team-lineup-note">I livelli sono utilizzati solo per il bilanciamento interno e non vengono mostrati agli alunni.</div>
+    <div class="team-lineup-footer"><button type="button" class="btn primary" id="teamLineupRegenerateBtn">↻ Rigenera squadre</button></div>
+  </div>`;
+  $('#teamLineupRegenerateBtn').onclick=()=>generateTeams(true);
+  const dlg=$('#teamLineupModal');
+  if(!dlg.open)dlg.showModal();
 }
 async function generateTeams(isRegenerate=false){
   const cl=teamGenClassObj();
@@ -496,6 +512,7 @@ async function generateTeams(isRegenerate=false){
   const meta={players,className:cl.name,sportLabel:sportLabelFromKey(sportKey),balance:teamGenState.balance,gender:teamGenState.gender};
   teamGenState.last={teams,meta};
   renderGeneratedTeams(teams,meta);
+  openTeamLineup(teams,meta);
 }
 $('#teamGenClass')?.addEventListener('change',updateTeamGenInfo);
 $('#teamCountMinus')?.addEventListener('click',()=>setTeamCount(teamGenState.count-1));
