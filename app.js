@@ -66,7 +66,7 @@ function appConfirm({
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2300)}
 function openMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');b?.classList.remove('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','true');document.body.classList.add('menu-open')}
 function closeMobileMenu(){const m=$('#mobileMenu'),b=$('#mobileMenuBackdrop');if(!m)return;m.classList.remove('open');m.setAttribute('aria-hidden','true');b?.classList.add('hidden');$('#mobileMenuBtn')?.setAttribute('aria-expanded','false');document.body.classList.remove('menu-open')}
-function go(v){closeMobileMenu();$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${v}`));$$('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));let m={dashboard:['PANORAMICA','Dashboard'],calendar:['ANNO SCOLASTICO','Calendario'],classes:['GESTIONE','Classi'],teams:['STRUMENTI','Generatore di squadre'],planner:['MOTORE DIDATTICO','Programmazione'],sports:['MEGA ARCHIVIO','Archivio sport'],tests:['VALUTAZIONE','Test motori'],rubriche:['VALUTAZIONE','Rubriche di valutazione'],primarygames:['SCUOLA PRIMARIA','Giochi scuola primaria'],behavior:['SCUOLA PRIMARIA','TOKEN ECONOMY'],owner:['AREA RISERVATA','Area OWNER'],settings:['CONFIGURAZIONE','Impostazioni']}[v];$('#pageKicker').textContent=m[0];$('#pageTitle').textContent=m[1];if(v==='sports')renderSports();if(v==='primarygames')loadPrimaryGames();if(v==='behavior')renderBehaviorGame();if(v==='tests')renderTests();if(v==='rubriche')renderRubrics();if(v==='calendar')renderCalendar();if(v==='settings')renderSettings();if(v==='teams'){populateSelects();updateTeamGenInfo()}}
+function go(v){closeMobileMenu();$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${v}`));$$('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));let m={dashboard:['PANORAMICA','Dashboard'],calendar:['ANNO SCOLASTICO','Calendario'],classes:['GESTIONE','Classi'],teams:['STRUMENTI','Generatore di squadre'],challenges:['STRUMENTI','SFIDE'],planner:['MOTORE DIDATTICO','Programmazione'],sports:['MEGA ARCHIVIO','Archivio sport'],tests:['VALUTAZIONE','Test motori'],rubriche:['VALUTAZIONE','Rubriche di valutazione'],primarygames:['SCUOLA PRIMARIA','Giochi scuola primaria'],behavior:['SCUOLA PRIMARIA','TOKEN ECONOMY'],owner:['AREA RISERVATA','Area OWNER'],settings:['CONFIGURAZIONE','Impostazioni']}[v];$('#pageKicker').textContent=m[0];$('#pageTitle').textContent=m[1];if(v==='sports')renderSports();if(v==='primarygames')loadPrimaryGames();if(v==='behavior')renderBehaviorGame();if(v==='tests')renderTests();if(v==='rubriche')renderRubrics();if(v==='calendar')renderCalendar();if(v==='settings')renderSettings();if(v==='teams'){populateSelects();updateTeamGenInfo()}if(v==='challenges')updateChallengeInfo()}
 $$('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));$$('[data-jump]').forEach(b=>b.onclick=()=>go(b.dataset.jump));$('#quickPlan').onclick=()=>go('planner');$$('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).close());
 $('#mobileMenuBtn').onclick=openMobileMenu;$('#mobileMoreBtn').onclick=openMobileMenu;$('#mobileMenuClose').onclick=closeMobileMenu;$('#mobileMenuBackdrop').onclick=closeMobileMenu;$('#mobileLogoutBtn').onclick=()=>db.auth.signOut();document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu()});
 
@@ -384,7 +384,7 @@ $('#studentLevelsCancelBtn')?.addEventListener('click',()=>$('#studentSportLevel
 /* =========================================================
    GENERATORE DI SQUADRE V13
    ========================================================= */
-let teamGenState={count:2,balance:'balanced',gender:'mixed',last:null};
+let teamGenState={count:2,balance:'balanced',gender:'mixed',last:null,pendingPlayers:[],presentIds:new Set()};
 
 function teamGenClassObj(){
   return st.classes.find(x=>x.id===$('#teamGenClass')?.value);
@@ -490,30 +490,81 @@ function openTeamLineup(teams,meta){
   const dlg=$('#teamLineupModal');
   if(!dlg.open)dlg.showModal();
 }
+async function buildTeamsFromPresentPlayers(players,cl,sportKey){
+  if(players.length<2)return toast('Servono almeno 2 alunni presenti');
+  const {data:levels,error:lvErr}=await db.from('pe_student_sport_levels').select('student_id,level').eq('school_year_id',st.year.id).eq('class_id',cl.id).eq('sport_key',sportKey);
+  if(lvErr){console.error('Generatore squadre:',lvErr);return toast(lvErr.message||'Impossibile caricare i livelli')}
+  const levelMap=Object.fromEntries((levels||[]).map(x=>[x.student_id,Number(x.level)]));
+  const enriched=players.map(s=>({...s,level:levelMap[s.id]||3,hasLevel:!!levelMap[s.id]}));
+  const n=Math.min(teamGenState.count,enriched.length);
+  let teams;
+  if(teamGenState.gender==='separate')teams=generateSeparatedTeams(enriched,n,teamGenState.balance==='balanced');
+  else teams=genderBalancedMixed(enriched,n,teamGenState.balance==='balanced');
+  teams=teams.filter(t=>t.length);
+  const meta={players:enriched,className:cl.name,sportLabel:sportLabelFromKey(sportKey),balance:teamGenState.balance,gender:teamGenState.gender};
+  teamGenState.last={teams,meta};
+  renderGeneratedTeams(teams,meta);
+  openTeamLineup(teams,meta);
+}
+
+function renderTeamPresencePicker(){
+  const list=$('#teamAbsenceList');
+  const players=teamGenState.pendingPlayers||[];
+  if(!list)return;
+  list.innerHTML=players.map(s=>{
+    const present=teamGenState.presentIds.has(s.id);
+    return `<button type="button" class="team-presence-item ${present?'present':'absent'}" data-presence-id="${s.id}">
+      <span class="team-presence-dot">${present?'✓':'×'}</span>
+      <span class="team-presence-name"><strong>${esc(s.last_name)} ${esc(s.first_name)}</strong><small>${present?'Presente':'Assente'}</small></span>
+    </button>`;
+  }).join('');
+  const count=teamGenState.presentIds.size;
+  $('#teamPresenceCount').textContent=`${count}/${players.length} presenti`;
+  $$('[data-presence-id]').forEach(btn=>btn.onclick=()=>{
+    const id=btn.dataset.presenceId;
+    if(teamGenState.presentIds.has(id))teamGenState.presentIds.delete(id);else teamGenState.presentIds.add(id);
+    renderTeamPresencePicker();
+  });
+}
+
 async function generateTeams(isRegenerate=false){
   const cl=teamGenClassObj();
   if(!cl)return toast('Seleziona una classe');
   const sportKey=isPrimaryLowerClass(cl)?GENERAL_STUDENT_LEVEL_KEY:$('#teamGenSport')?.value;
   if(!sportKey)return toast('Seleziona la disciplina');
-  const [{data:studentsRaw,error:enErr},{data:levels,error:lvErr}]=await Promise.all([
-    fetchActiveClassStudents(cl.id),
-    db.from('pe_student_sport_levels').select('student_id,level').eq('school_year_id',st.year.id).eq('class_id',cl.id).eq('sport_key',sportKey)
-  ]);
-  if(enErr||lvErr){console.error('Generatore squadre:',enErr||lvErr);return toast((enErr||lvErr)?.message||'Impossibile caricare gli alunni')}
-  const levelMap=Object.fromEntries((levels||[]).map(x=>[x.student_id,Number(x.level)]));
-  const players=(studentsRaw||[]).filter(Boolean).map(s=>({...s,level:levelMap[s.id]||3,hasLevel:!!levelMap[s.id]}));
+
+  // Rigenera mantiene esattamente gli stessi presenti scelti.
+  if(isRegenerate && teamGenState.last?.meta?.players?.length){
+    const base=teamGenState.last.meta.players.map(({level,hasLevel,...s})=>s);
+    return buildTeamsFromPresentPlayers(base,cl,sportKey);
+  }
+
+  const {data:studentsRaw,error:enErr}=await fetchActiveClassStudents(cl.id);
+  if(enErr){console.error('Generatore squadre:',enErr);return toast(enErr.message||'Impossibile caricare gli alunni')}
+  const players=(studentsRaw||[]).filter(Boolean).sort((a,b)=>`${a.last_name||''} ${a.first_name||''}`.localeCompare(`${b.last_name||''} ${b.first_name||''}`,'it'));
   if(players.length<2)return toast('Servono almeno 2 alunni');
-  const n=Math.min(teamGenState.count,players.length);
-  let teams;
-  if(teamGenState.gender==='separate')teams=generateSeparatedTeams(players,n,teamGenState.balance==='balanced');
-  else teams=genderBalancedMixed(players,n,teamGenState.balance==='balanced');
-  // Rimuove eventuali team vuoti solo nei casi limite.
-  teams=teams.filter(t=>t.length);
-  const meta={players,className:cl.name,sportLabel:sportLabelFromKey(sportKey),balance:teamGenState.balance,gender:teamGenState.gender};
-  teamGenState.last={teams,meta};
-  renderGeneratedTeams(teams,meta);
-  openTeamLineup(teams,meta);
+
+  teamGenState.pendingPlayers=players;
+  teamGenState.presentIds=new Set(players.map(s=>s.id));
+  renderTeamPresencePicker();
+  const dlg=$('#teamAbsenceModal');
+  if(!dlg.open)dlg.showModal();
 }
+
+$('#teamAllPresentBtn')?.addEventListener('click',()=>{
+  teamGenState.presentIds=new Set((teamGenState.pendingPlayers||[]).map(s=>s.id));
+  renderTeamPresencePicker();
+});
+$('#teamConfirmPresenceBtn')?.addEventListener('click',async()=>{
+  const cl=teamGenClassObj();
+  if(!cl)return;
+  const sportKey=isPrimaryLowerClass(cl)?GENERAL_STUDENT_LEVEL_KEY:$('#teamGenSport')?.value;
+  const present=(teamGenState.pendingPlayers||[]).filter(s=>teamGenState.presentIds.has(s.id));
+  if(present.length<2)return toast('Seleziona almeno 2 alunni presenti');
+  $('#teamAbsenceModal')?.close();
+  await buildTeamsFromPresentPlayers(present,cl,sportKey);
+});
+
 $('#teamGenClass')?.addEventListener('change',updateTeamGenInfo);
 $('#teamCountMinus')?.addEventListener('click',()=>setTeamCount(teamGenState.count-1));
 $('#teamCountPlus')?.addEventListener('click',()=>setTeamCount(teamGenState.count+1));
@@ -527,6 +578,105 @@ $$('[data-team-gender]').forEach(b=>b.addEventListener('click',()=>{
 }));
 $('#generateTeamsBtn')?.addEventListener('click',()=>generateTeams(false));
 setTeamCount(2);
+
+
+
+/* =========================================================
+   SFIDE V29
+   ========================================================= */
+function challengeConfig(){
+  return {
+    fields:Math.max(1,Math.min(12,Number($('#challengeFields')?.value)||1)),
+    teams:Math.max(2,Math.min(30,Number($('#challengeTeams')?.value)||2)),
+    total:Math.max(1,Number($('#challengeTotalMinutes')?.value)||1),
+    duration:Math.max(1,Number($('#challengeRoundMinutes')?.value)||1)
+  };
+}
+function updateChallengeInfo(){
+  const el=$('#challengeInfo');if(!el)return;
+  const c=challengeConfig(),rounds=Math.floor(c.total/c.duration),remainder=c.total%c.duration;
+  if(rounds<1){el.innerHTML='⚠ La durata complessiva deve contenere almeno una sfida completa.';return}
+  const usableFields=Math.min(c.fields,Math.floor(c.teams/2));
+  el.innerHTML=`${rounds} ${rounds===1?'rotazione':'rotazioni'} · fino a ${usableFields} ${usableFields===1?'campo attivo':'campi attivi'} per turno${remainder?` · ${remainder} min finali non utilizzati`:''}.`;
+}
+function challengePairKey(a,b){return a<b?`${a}-${b}`:`${b}-${a}`}
+function generateChallengeSchedule(c){
+  const rounds=Math.floor(c.total/c.duration);
+  const teamIds=Array.from({length:c.teams},(_,i)=>i+1);
+  const pairCount=new Map(),fieldCount=Array.from({length:c.teams+1},()=>Array(c.fields).fill(0));
+  const playCount=Array(c.teams+1).fill(0);
+  const schedule=[];
+  let previousPairs=new Set();
+
+  for(let r=0;r<rounds;r++){
+    const available=new Set(teamIds),matches=[];
+    const fieldLimit=Math.min(c.fields,Math.floor(c.teams/2));
+    for(let f=0;f<fieldLimit;f++){
+      let best=null,bestScore=Infinity;
+      const arr=[...available];
+      for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){
+        const a=arr[i],b=arr[j],key=challengePairKey(a,b);
+        const repeats=pairCount.get(key)||0;
+        const immediate=previousPairs.has(key)?1:0;
+        const imbalance=Math.abs(playCount[a]-playCount[b]);
+        const fieldReuse=fieldCount[a][f]+fieldCount[b][f];
+        const score=repeats*1000+immediate*250+fieldReuse*12+imbalance*3+Math.random();
+        if(score<bestScore){bestScore=score;best={a,b,key}}
+      }
+      if(!best)break;
+      matches.push({field:f+1,a:best.a,b:best.b});
+      available.delete(best.a);available.delete(best.b);
+      pairCount.set(best.key,(pairCount.get(best.key)||0)+1);
+      fieldCount[best.a][f]++;fieldCount[best.b][f]++;
+      playCount[best.a]++;playCount[best.b]++;
+    }
+    previousPairs=new Set(matches.map(m=>challengePairKey(m.a,m.b)));
+    schedule.push({round:r+1,matches,rest:[...available]});
+  }
+  return schedule;
+}
+function renderChallenges(schedule,c){
+  const results=$('#challengeResults'),empty=$('#challengeEmpty');
+  empty.classList.add('hidden');results.classList.remove('hidden');
+  const uniquePairs=new Set(schedule.flatMap(r=>r.matches.map(m=>challengePairKey(m.a,m.b)))).size;
+  const totalMatches=schedule.reduce((n,r)=>n+r.matches.length,0);
+  const usedMinutes=schedule.length*c.duration;
+  results.innerHTML=`<article class="glass challenge-summary">
+    <span class="kicker">PROGRAMMA GENERATO</span><h3>${schedule.length} rotazioni · ${c.teams} squadre</h3>
+    <div class="challenge-summary-grid">
+      <div class="challenge-stat"><b>${c.fields}</b><small>campi</small></div>
+      <div class="challenge-stat"><b>${totalMatches}</b><small>sfide</small></div>
+      <div class="challenge-stat"><b>${uniquePairs}</b><small>abbinamenti diversi</small></div>
+      <div class="challenge-stat"><b>${usedMinutes}'</b><small>tempo utilizzato</small></div>
+    </div>
+    <div class="challenge-note">Il motore evita le ripetizioni finché matematicamente possibile e prova anche a cambiare campo alle squadre. Se squadre o campi non permettono a tutti di giocare contemporaneamente, vengono inseriti turni di riposo.</div>
+  </article>
+  <div class="challenge-rounds">${schedule.map((round,ri)=>{
+    const start=ri*c.duration,end=start+c.duration;
+    return `<article class="glass challenge-round">
+      <div class="challenge-round-head"><h4>⚡ Rotazione ${ri+1}</h4><span>${start}' → ${end}' · ${c.duration} minuti</span></div>
+      <div class="challenge-fields">${round.matches.map(m=>`<div class="challenge-match">
+        <div class="challenge-match-top"><span>Campo / Gioco ${m.field}</span><span>SFIDA</span></div>
+        <div class="challenge-versus"><strong>Squadra ${m.a}</strong><span class="challenge-vs">VS</span><strong>Squadra ${m.b}</strong></div>
+      </div>`).join('')}</div>
+      ${round.rest.length?`<div class="challenge-rest">⏸ Riposo: ${round.rest.map(t=>`Squadra ${t}`).join(' · ')}</div>`:''}
+    </article>`;
+  }).join('')}</div>
+  <button id="regenerateChallengesBtn" type="button" class="btn secondary" style="margin-top:14px">↻ Rigenera abbinamenti</button>`;
+  $('#regenerateChallengesBtn').onclick=()=>generateChallenges();
+}
+function generateChallenges(){
+  const c=challengeConfig();
+  if(c.total<c.duration)return toast('La durata complessiva è inferiore alla durata di una sfida');
+  if(c.fields<1||c.teams<2)return toast('Controlla numero di campi e squadre');
+  const schedule=generateChallengeSchedule(c);
+  renderChallenges(schedule,c);
+}
+['challengeFields','challengeTeams','challengeTotalMinutes','challengeRoundMinutes'].forEach(id=>{
+  $('#'+id)?.addEventListener('input',updateChallengeInfo);
+});
+$('#generateChallengesBtn')?.addEventListener('click',generateChallenges);
+
 
 $('#newClassBtn').onclick=()=>openClass(null);
 async function openClass(id){
