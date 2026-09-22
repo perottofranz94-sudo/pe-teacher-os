@@ -450,12 +450,29 @@ function generateSeparatedTeams(players,n,balance){
   return teams;
 }
 function genderBalancedMixed(players,n,balance){
-  // Distribuisce F e M separatamente sugli stessi team per rendere uniforme anche il genere.
+  // Vincolo prioritario: la differenza numerica tra la squadra più grande e la più piccola
+  // non può mai superare 1. Genere e livello vengono ottimizzati solo dentro questo vincolo.
   const teams=Array.from({length:n},()=>[]);
-  const groups=[players.filter(p=>p.sex==='F'),players.filter(p=>p.sex==='M'),players.filter(p=>p.sex!=='F'&&p.sex!=='M')];
-  groups.forEach(group=>{
-    const parts=balance?distributeBalanced(group,n):distributeRandom(group,n);
-    parts.forEach((part,i)=>teams[i].push(...part));
+  const targetSizes=Array.from({length:n},(_,i)=>Math.floor(players.length/n)+(i<players.length%n?1:0));
+  const pool=shuffled(players).sort((a,b)=>balance?((b.level||3)-(a.level||3)):0);
+
+  const genderCount=(team,sex)=>team.reduce((tot,p)=>tot+(p.sex===sex?1:0),0);
+  const levelSum=team=>team.reduce((tot,p)=>tot+(p.level||3),0);
+
+  pool.forEach(p=>{
+    const candidates=teams.map((team,i)=>({team,i}))
+      .filter(x=>x.team.length<targetSizes[x.i]);
+    let best=candidates[0],bestScore=Infinity;
+    candidates.forEach(c=>{
+      const afterSize=c.team.length+1;
+      const genderPenalty=p.sex==='F'||p.sex==='M'?genderCount(c.team,p.sex)*18:0;
+      const avgAfter=(levelSum(c.team)+(p.level||3))/afterSize;
+      const levelPenalty=balance?avgAfter*4:0;
+      const fillPenalty=(c.team.length/targetSizes[c.i])*8;
+      const score=genderPenalty+levelPenalty+fillPenalty+Math.random();
+      if(score<bestScore){bestScore=score;best=c}
+    });
+    best.team.push(p);
   });
   return teams;
 }
@@ -501,6 +518,17 @@ async function buildTeamsFromPresentPlayers(players,cl,sportKey){
   if(teamGenState.gender==='separate')teams=generateSeparatedTeams(enriched,n,teamGenState.balance==='balanced');
   else teams=genderBalancedMixed(enriched,n,teamGenState.balance==='balanced');
   teams=teams.filter(t=>t.length);
+  // Garanzia finale: nessuna squadra può avere più di 1 alunno di differenza.
+  // Vale anche per modalità casuale e per eventuali futuri algoritmi.
+  if(teamGenState.gender!=='separate'){
+    let guard=0;
+    while(teams.length>1 && guard++<enriched.length*2){
+      const sizes=teams.map(t=>t.length),max=Math.max(...sizes),min=Math.min(...sizes);
+      if(max-min<=1)break;
+      const big=teams[sizes.indexOf(max)],small=teams[sizes.indexOf(min)];
+      small.push(big.pop());
+    }
+  }
   const meta={players:enriched,className:cl.name,sportLabel:sportLabelFromKey(sportKey),balance:teamGenState.balance,gender:teamGenState.gender};
   teamGenState.last={teams,meta};
   renderGeneratedTeams(teams,meta);
